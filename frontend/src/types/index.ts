@@ -11,6 +11,7 @@ export interface Usuario {
   telefono?: string | null;
   activo?: boolean;
   fotoUrl?: string | null;
+  debeCambiarPassword?: boolean;
   departamento?: { id: string; numero: string; torre: { nombre: string } | null } | null;
   condominio?: { id: string; nombre: string } | null;
 }
@@ -157,7 +158,6 @@ export interface Documento {
   id: string;
   titulo: string;
   categoria?: string | null;
-  archivoUrl: string;
   createdAt: string;
 }
 

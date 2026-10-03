@@ -40,6 +40,10 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       throw new UnauthorizedError("Sesión inválida o expirada.");
     }
 
+    if (typeof payload.sub !== "string") {
+      throw new UnauthorizedError("Sesión inválida o expirada.");
+    }
+
     const usuario = await prisma.usuario.findUnique({
       where: { id: payload.sub },
       select: { activo: true, rol: true, condominioId: true },

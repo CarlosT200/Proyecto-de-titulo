@@ -33,7 +33,8 @@ export const authApi = {
     formData.append("foto", foto);
     return api.patch<Usuario>("/auth/me/foto", formData, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
   },
-  cambiarPassword: (actual: string, nueva: string) => api.patch("/auth/me/password", { actual, nueva }),
+  cambiarPassword: (actual: string, nueva: string) =>
+    api.patch<Usuario>("/auth/me/password", { actual, nueva }).then((r) => r.data),
 };
 
 // --- Usuarios (HU-02) ---
@@ -51,6 +52,8 @@ export const usuariosApi = {
   }) => api.post<Usuario>("/usuarios", data).then((r) => r.data),
   actualizar: (id: string, data: Partial<Pick<Usuario, "nombre" | "apellido" | "telefono" | "departamentoId" | "activo">>) =>
     api.patch<Usuario>(`/usuarios/${id}`, data).then((r) => r.data),
+  restablecerPassword: (id: string, password: string) =>
+    api.post(`/usuarios/${id}/restablecer-password`, { password }).then(() => undefined),
 };
 
 // --- Condominio (HU-03) ---
@@ -187,6 +190,8 @@ export const documentosApi = {
     api.post<Documento>("/documentos", data, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   listar: () => api.get<Documento[]>("/documentos").then((r) => r.data),
   eliminar: (id: string) => api.delete(`/documentos/${id}`),
+  // enlace temporal (2 minutos) para abrir el archivo en una pestaña nueva
+  crearEnlace: (id: string) => api.post<{ url: string }>(`/documentos/${id}/enlace`).then((r) => r.data),
 };
 
 // --- Dashboard (HU-24) ---

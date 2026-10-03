@@ -35,9 +35,13 @@ export default function AdminMultas() {
       textoConfirmar: "Eliminar",
     });
     if (!ok) return;
-    await multasApi.eliminar(id);
-    toast.info("Multa eliminada.");
-    recargar();
+    try {
+      await multasApi.eliminar(id);
+      toast.info("Multa eliminada.");
+      recargar();
+    } catch (err) {
+      toast.error(mensajeError(err));
+    }
   }
 
   return (

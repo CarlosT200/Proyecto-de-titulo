@@ -36,6 +36,5 @@ export async function actualizarFotoController(req: Request, res: Response) {
 
 export async function cambiarPasswordController(req: Request, res: Response) {
   const { actual, nueva } = cambiarPasswordSchema.parse(req.body);
-  await cambiarPassword(req.auth!.sub, actual, nueva);
-  res.status(204).send();
+  res.json(await cambiarPassword(req.auth!.sub, actual, nueva));
 }

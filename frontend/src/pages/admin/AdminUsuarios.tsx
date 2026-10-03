@@ -1,19 +1,23 @@
 import { FormEvent, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { generarPasswordTemporal } from "../../lib/password";
 import { motion } from "framer-motion";
-import { UserPlus, Users } from "@phosphor-icons/react";
+import { Copy, Key, MagicWand, UserPlus, Users } from "@phosphor-icons/react";
 import { condominioApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, staggerFade } from "../../components/ui";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
-import type { Rol } from "../../types";
+import type { Rol, Usuario } from "../../types";
 
 const ROL_LABEL: Record<Rol, string> = { ADMIN: "Administrador", RESIDENTE: "Residente", CONSERJE: "Conserje" };
 
 export default function AdminUsuarios() {
   const toast = useToast();
   const confirmar = useConfirm();
+  const { usuario: yo } = useAuth();
+  const [usuarioClave, setUsuarioClave] = useState<Usuario | null>(null);
   const { data: usuarios, cargando, error, recargar } = useAsync(() => usuariosApi.listar(), []);
   const { data: departamentos } = useAsync(() => condominioApi.listarDepartamentos(), []);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -95,24 +99,38 @@ export default function AdminUsuarios() {
                       <Badge tone={u.activo ? "green" : "slate"}>{u.activo ? "Activo" : "Deshabilitado"}</Badge>
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          if (u.activo) {
-                            const ok = await confirmar(
-                              `¿Deshabilitar a ${u.nombre} ${u.apellido}? No podrá iniciar sesión hasta que lo vuelvas a habilitar.`,
-                              { titulo: "Deshabilitar usuario", textoConfirmar: "Deshabilitar" }
-                            );
-                            if (!ok) return;
-                          }
-                          await usuariosApi.actualizar(u.id, { activo: !u.activo });
-                          toast.success(u.activo ? "Usuario deshabilitado." : "Usuario habilitado.");
-                          recargar();
-                        }}
-                      >
-                        {u.activo ? "Deshabilitar" : "Habilitar"}
-                      </Button>
+                      {u.id === yo?.id ? (
+                        <span className="text-xs text-slate-400 dark:text-slate-500">Tu cuenta</span>
+                      ) : (
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={() => setUsuarioClave(u)}>
+                            <Key size={14} /> Restablecer clave
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="whitespace-nowrap"
+                            onClick={async () => {
+                              if (u.activo) {
+                                const ok = await confirmar(
+                                  `¿Deshabilitar a ${u.nombre} ${u.apellido}? No podrá iniciar sesión hasta que lo vuelvas a habilitar.`,
+                                  { titulo: "Deshabilitar usuario", textoConfirmar: "Deshabilitar" }
+                                );
+                                if (!ok) return;
+                              }
+                              try {
+                                await usuariosApi.actualizar(u.id, { activo: !u.activo });
+                                toast.success(u.activo ? "Usuario deshabilitado." : "Usuario habilitado.");
+                                recargar();
+                              } catch (err) {
+                                toast.error(mensajeError(err));
+                              }
+                            }}
+                          >
+                            {u.activo ? "Deshabilitar" : "Habilitar"}
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </motion.tr>
                 ))}
@@ -121,6 +139,14 @@ export default function AdminUsuarios() {
           </div>
         )}
       </Card>
+
+      <Modal
+        open={usuarioClave !== null}
+        onClose={() => setUsuarioClave(null)}
+        title={usuarioClave ? `Restablecer clave de ${usuarioClave.nombre}` : "Restablecer clave"}
+      >
+        {usuarioClave && <FormularioRestablecer usuario={usuarioClave} onListo={() => setUsuarioClave(null)} />}
+      </Modal>
 
       <Modal open={modalAbierto} onClose={() => setModalAbierto(false)} title="Registrar usuario">
         <FormularioUsuario
@@ -192,7 +218,22 @@ function FormularioUsuario({
       </div>
       <div>
         <Label htmlFor="campo-usuarios-4">Contraseña temporal</Label>
-        <Input id="campo-usuarios-4" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="flex gap-2">
+          <Input
+            id="campo-usuarios-4"
+            required
+            minLength={8}
+            autoComplete="off"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button type="button" variant="secondary" onClick={() => setPassword(generarPasswordTemporal())} className="shrink-0">
+            <MagicWand size={16} /> Generar
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Entrégasela a la persona: tendrá que cambiarla la primera vez que entre.
+        </p>
       </div>
       <div>
         <Label htmlFor="campo-usuarios-5">Rol</Label>
@@ -218,6 +259,91 @@ function FormularioUsuario({
       {error && <Alert tone="red">{error}</Alert>}
       <Button type="submit" className="w-full" loading={cargando}>
         Registrar usuario
+      </Button>
+    </form>
+  );
+}
+
+function FormularioRestablecer({ usuario, onListo }: { usuario: Usuario; onListo: () => void }) {
+  const toast = useToast();
+  const [password, setPassword] = useState(() => generarPasswordTemporal());
+  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(false);
+  const [entregada, setEntregada] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setCargando(true);
+    try {
+      await usuariosApi.restablecerPassword(usuario.id, password);
+      setEntregada(password);
+    } catch (err) {
+      setError(mensajeError(err));
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(entregada ?? "");
+      toast.success("Contraseña copiada.");
+    } catch {
+      toast.error("No se pudo copiar; anótala a mano.");
+    }
+  }
+
+  if (entregada) {
+    return (
+      <div className="space-y-4">
+        <Alert tone="green">La contraseña de {usuario.nombre} quedó restablecida.</Alert>
+        <div>
+          <p className="text-sm text-slate-600 dark:text-slate-300">Entrégale esta contraseña temporal:</p>
+          <p className="mt-2 select-all rounded-lg bg-slate-100 px-4 py-3 text-center font-mono text-xl tracking-wider text-slate-900 dark:bg-slate-900 dark:text-white">
+            {entregada}
+          </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            No se vuelve a mostrar. Al entrar con ella, el sistema le pedirá elegir una contraseña propia.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="secondary" onClick={copiar} className="flex-1">
+            <Copy size={16} /> Copiar
+          </Button>
+          <Button type="button" onClick={onListo} className="flex-1">
+            Listo
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <p className="text-sm text-slate-600 dark:text-slate-300">
+        Define una contraseña temporal para {usuario.nombre} {usuario.apellido}. La anterior dejará de funcionar y tendrá que
+        elegir una propia al entrar.
+      </p>
+      <div>
+        <Label htmlFor="campo-restablecer-password">Contraseña temporal</Label>
+        <div className="flex gap-2">
+          <Input
+            id="campo-restablecer-password"
+            required
+            minLength={8}
+            autoComplete="off"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button type="button" variant="secondary" onClick={() => setPassword(generarPasswordTemporal())} className="shrink-0">
+            <MagicWand size={16} /> Generar
+          </Button>
+        </div>
+      </div>
+      {error && <Alert tone="red">{error}</Alert>}
+      <Button type="submit" className="w-full" loading={cargando}>
+        Restablecer contraseña
       </Button>
     </form>
   );

@@ -42,9 +42,13 @@ export default function AdminComunicados() {
       textoConfirmar: "Eliminar",
     });
     if (!ok) return;
-    await comunicadosApi.eliminar(id);
-    toast.info("Comunicado eliminado.");
-    recargar();
+    try {
+      await comunicadosApi.eliminar(id);
+      toast.info("Comunicado eliminado.");
+      recargar();
+    } catch (err) {
+      toast.error(mensajeError(err));
+    }
   }
 
   async function handleSubmit(e: FormEvent) {

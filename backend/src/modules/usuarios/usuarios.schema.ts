@@ -19,6 +19,10 @@ export const actualizarUsuarioSchema = z.object({
   activo: z.boolean().optional(),
 });
 
+export const restablecerPasswordSchema = z.object({
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+});
+
 export const listarUsuariosQuerySchema = z.object({
   rol: z.nativeEnum(Rol).optional(),
   activo: z

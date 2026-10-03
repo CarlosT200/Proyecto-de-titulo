@@ -3,8 +3,15 @@ import {
   crearUsuarioSchema,
   actualizarUsuarioSchema,
   listarUsuariosQuerySchema,
+  restablecerPasswordSchema,
 } from "./usuarios.schema";
-import { crearUsuario, listarUsuarios, obtenerUsuario, actualizarUsuario } from "./usuarios.service";
+import {
+  crearUsuario,
+  listarUsuarios,
+  obtenerUsuario,
+  actualizarUsuario,
+  restablecerPassword,
+} from "./usuarios.service";
 import { auditar } from "../auditoria/auditoria.service";
 import { ConflictError } from "../../lib/errors";
 
@@ -19,12 +26,12 @@ export async function crearUsuarioController(req: Request, res: Response) {
 
 export async function listarUsuariosController(req: Request, res: Response) {
   const filtros = listarUsuariosQuerySchema.parse(req.query);
-  const usuarios = await listarUsuarios(req.auth!.condominioId, filtros);
+  const usuarios = await listarUsuarios(req.auth!.condominioId, filtros, req.auth!.rol);
   res.json(usuarios);
 }
 
 export async function obtenerUsuarioController(req: Request, res: Response) {
-  const usuario = await obtenerUsuario(req.auth!.condominioId, req.params.id);
+  const usuario = await obtenerUsuario(req.auth!.condominioId, req.params.id, req.auth!.rol);
   res.json(usuario);
 }
 
@@ -44,4 +51,20 @@ export async function actualizarUsuarioController(req: Request, res: Response) {
         : `Actualizó los datos de ${nombre}.`;
   await auditar(req, "ACTUALIZAR", "Usuario", descripcion, usuario.id);
   res.json(usuario);
+}
+
+export async function restablecerPasswordController(req: Request, res: Response) {
+  const { password } = restablecerPasswordSchema.parse(req.body);
+  if (req.params.id === req.auth!.sub) {
+    throw new ConflictError("Para cambiar tu propia contraseña usa Mi perfil.");
+  }
+  const usuario = await restablecerPassword(req.auth!.condominioId, req.params.id, password);
+  await auditar(
+    req,
+    "ACTUALIZAR",
+    "Usuario",
+    `Restableció la contraseña de ${usuario.nombre} ${usuario.apellido}.`,
+    usuario.id
+  );
+  res.status(204).send();
 }

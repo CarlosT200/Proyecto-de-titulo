@@ -5,6 +5,7 @@ import { documentosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, SearchInput, Spinner, staggerFade } from "../../components/ui";
 import { formatFecha } from "../../lib/format";
+import { abrirDocumento } from "../../lib/documentos";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -30,9 +31,17 @@ export default function AdminDocumentos() {
       textoConfirmar: "Eliminar",
     });
     if (!ok) return;
-    await documentosApi.eliminar(id);
-    toast.info("Documento eliminado.");
-    recargar();
+    try {
+      await documentosApi.eliminar(id);
+      toast.info("Documento eliminado.");
+      recargar();
+    } catch (err) {
+      toast.error(mensajeError(err));
+    }
+  }
+
+  function handleAbrir(id: string) {
+    abrirDocumento(id).catch((err) => toast.error(mensajeError(err, "No se pudo abrir el documento.")));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -88,21 +97,20 @@ export default function AdminDocumentos() {
                   {...staggerFade(i)}
                   className="group flex items-center justify-between gap-2 px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
                 >
-                  <a href={doc.archivoUrl} target="_blank" rel="noreferrer" className="min-w-0 flex-1">
+                  <button type="button" onClick={() => handleAbrir(doc.id)} className="min-w-0 flex-1 text-left">
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{doc.titulo}</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">
                       {doc.categoria ?? "General"} · {formatFecha(doc.createdAt)}
                     </p>
-                  </a>
+                  </button>
                   <div className="flex shrink-0 items-center gap-1">
-                    <a
-                      href={doc.archivoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 transition-transform group-hover:translate-x-0.5"
+                    <button
+                      type="button"
+                      onClick={() => handleAbrir(doc.id)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 transition-transform group-hover:translate-x-0.5 max-sm:min-h-11"
                     >
                       Ver <ArrowRight size={14} />
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleEliminar(doc.id, doc.titulo)}

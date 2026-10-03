@@ -7,6 +7,7 @@ import {
   listarUsuariosController,
   obtenerUsuarioController,
   actualizarUsuarioController,
+  restablecerPasswordController,
 } from "./usuarios.controller";
 
 const router = Router();
@@ -19,5 +20,6 @@ router.get("/:id", requireRole(Rol.ADMIN, Rol.CONSERJE), asyncHandler(obtenerUsu
 
 router.post("/", requireRole(Rol.ADMIN), asyncHandler(crearUsuarioController));
 router.patch("/:id", requireRole(Rol.ADMIN), asyncHandler(actualizarUsuarioController));
+router.post("/:id/restablecer-password", requireRole(Rol.ADMIN), asyncHandler(restablecerPasswordController));
 
 export default router;

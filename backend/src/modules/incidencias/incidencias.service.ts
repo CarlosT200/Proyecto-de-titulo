@@ -38,11 +38,18 @@ export async function crearIncidencia(
 }
 
 // HU-09: consultar estado (residente, solo sus incidencias).
+// Las listas no llevan la foto (base64, decenas de KB cada una): se ve al abrir el detalle.
+function sinFoto<T extends { fotoUrl: string | null }>(incidencia: T) {
+  const { fotoUrl, ...resto } = incidencia;
+  return { ...resto, tieneFoto: Boolean(fotoUrl) };
+}
+
 export async function listarMisIncidencias(usuarioId: string) {
-  return prisma.incidencia.findMany({
+  const incidencias = await prisma.incidencia.findMany({
     where: { usuarioId },
     orderBy: { createdAt: "desc" },
   });
+  return incidencias.map(sinFoto);
 }
 
 // HU-10: el administrador visualiza todas las incidencias del condominio.
@@ -50,7 +57,7 @@ export async function listarIncidenciasCondominio(
   condominioId: string,
   filtros: { estado?: EstadoIncidencia; prioridad?: PrioridadIncidencia }
 ) {
-  return prisma.incidencia.findMany({
+  const incidencias = await prisma.incidencia.findMany({
     where: { condominioId, estado: filtros.estado, prioridad: filtros.prioridad },
     include: {
       usuario: { select: { id: true, nombre: true, apellido: true, departamento: true } },
@@ -58,6 +65,7 @@ export async function listarIncidenciasCondominio(
     },
     orderBy: { createdAt: "desc" },
   });
+  return incidencias.map(sinFoto);
 }
 
 // HU-11: historial de una incidencia.

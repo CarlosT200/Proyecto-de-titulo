@@ -17,6 +17,9 @@ const router = Router();
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
+  // Solo cuentan los intentos fallidos: el dia que todo el condominio entra por primera vez desde
+  // la misma red WiFi, los ingresos correctos no pueden agotar el limite.
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Demasiados intentos. Intenta nuevamente en unos minutos." },
@@ -26,6 +29,7 @@ const loginLimiter = rateLimit({
 const passwordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Demasiados intentos. Intenta nuevamente en unos minutos." },

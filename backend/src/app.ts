@@ -25,6 +25,12 @@ import auditoriaRoutes from "./modules/auditoria/auditoria.routes";
 
 export const app = express();
 
+// En Render la aplicacion esta detras de un proxy (un solo salto). Sin esto, req.ip es la direccion
+// del proxy para TODAS las personas y los limites por IP (login, cambio de contraseña) se compartian
+// entre todo el condominio: con pocos intentos, nadie mas podia entrar. Se confia en exactamente un
+// salto (no en "true") para que nadie pueda falsear su IP con su propia cabecera X-Forwarded-For.
+if (env.isProd) app.set("trust proxy", 1);
+
 // RNF-03/RNF-05: cabeceras de seguridad y validacion de entradas en el backend.
 app.use(helmet());
 app.use(cors({ origin: env.corsOrigin, credentials: true }));

@@ -4,8 +4,12 @@ import { documentosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Card, EmptyState, PageHeader, Spinner, staggerFade } from "../../components/ui";
 import { formatFecha } from "../../lib/format";
+import { abrirDocumento } from "../../lib/documentos";
+import { mensajeError } from "../../api/client";
+import { useToast } from "../../context/ToastContext";
 
 export default function ResidenteDocumentos() {
+  const toast = useToast();
   const { data, cargando, error } = useAsync(() => documentosApi.listar(), []);
 
   return (
@@ -22,13 +26,12 @@ export default function ResidenteDocumentos() {
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((doc, i) => (
-              <motion.a
+              <motion.button
                 key={doc.id}
                 {...staggerFade(i)}
-                href={doc.archivoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="group flex items-center justify-between px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
+                type="button"
+                onClick={() => abrirDocumento(doc.id).catch((err) => toast.error(mensajeError(err, "No se pudo abrir el documento.")))}
+                className="group flex w-full items-center justify-between px-5 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
               >
                 <div>
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{doc.titulo}</p>
@@ -39,7 +42,7 @@ export default function ResidenteDocumentos() {
                 <span className="flex items-center gap-1 text-xs text-brand-600 transition-transform group-hover:translate-x-0.5">
                   Ver <ArrowRight size={14} />
                 </span>
-              </motion.a>
+              </motion.button>
             ))}
           </div>
         )}

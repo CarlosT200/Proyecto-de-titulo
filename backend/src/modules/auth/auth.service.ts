@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
 import { signAuthToken } from "../../lib/jwt";
-import { UnauthorizedError, ForbiddenError } from "../../lib/errors";
+import { UnauthorizedError, ForbiddenError, ConflictError } from "../../lib/errors";
 
 const PERFIL_SELECT = {
   id: true,
@@ -13,6 +13,7 @@ const PERFIL_SELECT = {
   departamentoId: true,
   telefono: true,
   fotoUrl: true,
+  debeCambiarPassword: true,
   condominio: { select: { id: true, nombre: true } },
   departamento: { select: { id: true, numero: true, torre: { select: { nombre: true } } } },
 } as const;
@@ -73,6 +74,15 @@ export async function cambiarPassword(usuarioId: string, actual: string, nueva: 
     throw new UnauthorizedError("La contraseña actual no es correcta.");
   }
 
+  if (nueva === actual) {
+    throw new ConflictError("La nueva contraseña tiene que ser distinta de la actual.");
+  }
+
   const passwordHash = await hashPassword(nueva);
-  await prisma.usuario.update({ where: { id: usuarioId }, data: { passwordHash } });
+  // Al elegir una contraseña propia deja de ser obligatorio cambiarla.
+  return prisma.usuario.update({
+    where: { id: usuarioId },
+    data: { passwordHash, debeCambiarPassword: false },
+    select: PERFIL_SELECT,
+  });
 }
