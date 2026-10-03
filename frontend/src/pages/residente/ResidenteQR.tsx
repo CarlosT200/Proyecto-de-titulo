@@ -91,7 +91,7 @@ export default function ResidenteQR() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={QrCode} title="Mi QR y visitas" subtitle="Identificación digital y autorización de visitas (HU-17, HU-19, HU-20)." />
+      <PageHeader icon={QrCode} title="Mi QR y visitas" subtitle="Identificación digital y autorización de visitas." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="h-fit">

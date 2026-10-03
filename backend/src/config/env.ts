@@ -15,7 +15,12 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET"),
+  // Personal (administracion y conserjeria): sesion corta, suelen usar equipos compartidos.
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "8h",
+  // Residentes: sesion larga para no pedirles la contraseña todos los dias. Es seguro porque cada
+  // pedido revisa la cuenta en la base (se corta al deshabilitarla) y cambiar o restablecer la
+  // contraseña cierra las sesiones anteriores (ver middleware/auth.ts).
+  jwtExpiresInResidente: process.env.JWT_EXPIRES_IN_RESIDENTE ?? "30d",
   qrTokenSecret: required("QR_TOKEN_SECRET"),
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
   // Base publica de la app (mismo origen que sirve frontend+API). Se usa para

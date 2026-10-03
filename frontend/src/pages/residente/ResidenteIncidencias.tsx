@@ -47,7 +47,7 @@ export default function ResidenteIncidencias() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Wrench} title="Incidencias" subtitle="Reporta problemas y haz seguimiento (HU-08, HU-09)." />
+      <PageHeader icon={Wrench} title="Incidencias" subtitle="Reporta problemas y haz seguimiento." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

@@ -11,7 +11,7 @@ import { PieDePagina } from "./PieDePagina";
 // le dio la administracion (cuenta nueva, o contraseña restablecida). La contraseña temporal la
 // conoce otra persona: hasta que elija la suya no se puede usar nada mas.
 export function CambioPasswordObligatorio() {
-  const { usuario, actualizarUsuario, logout } = useAuth();
+  const { usuario, reemplazarSesion, logout } = useAuth();
   const toast = useToast();
   const [actual, setActual] = useState("");
   const [nueva, setNueva] = useState("");
@@ -28,7 +28,8 @@ export function CambioPasswordObligatorio() {
     }
     setGuardando(true);
     try {
-      actualizarUsuario(await authApi.cambiarPassword(actual, nueva));
+      const sesion = await authApi.cambiarPassword(actual, nueva);
+      reemplazarSesion(sesion.token, sesion.usuario);
       toast.success("Listo, tu contraseña quedó guardada.");
     } catch (err) {
       setError(mensajeError(err));

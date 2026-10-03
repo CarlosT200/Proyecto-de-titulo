@@ -11,7 +11,7 @@ export default function ResidenteMultas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Warning} title="Mis multas" subtitle="Motivo, monto y estado de tus sanciones (HU-07)." />
+      <PageHeader icon={Warning} title="Mis multas" subtitle="Motivo, monto y estado de tus sanciones." />
 
       <Card>
         {cargando ? (

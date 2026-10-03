@@ -9,6 +9,7 @@ vi.mock("../../lib/prisma", () => ({
 
 import { prisma } from "../../lib/prisma";
 import { cambiarPassword } from "./auth.service";
+import { verifyAuthToken } from "../../lib/jwt";
 import { ConflictError, UnauthorizedError } from "../../lib/errors";
 
 const findUniqueOrThrow = prisma.usuario.findUniqueOrThrow as unknown as Mock;
@@ -17,7 +18,12 @@ const update = prisma.usuario.update as unknown as Mock;
 beforeEach(async () => {
   vi.clearAllMocks();
   // costo 4: suficiente para el test y mucho mas rapido que el 12 de produccion
-  findUniqueOrThrow.mockResolvedValue({ id: "u-1", passwordHash: await bcrypt.hash("temporal-123", 4) });
+  findUniqueOrThrow.mockResolvedValue({
+    id: "u-1",
+    rol: "RESIDENTE",
+    condominioId: "c-1",
+    passwordHash: await bcrypt.hash("temporal-123", 4),
+  });
   update.mockResolvedValue({ id: "u-1", debeCambiarPassword: false });
 });
 
@@ -31,6 +37,18 @@ describe("cambiarPassword", () => {
     expect(data.debeCambiarPassword).toBe(false);
     expect(data.passwordHash).not.toBe("mi-clave-personal");
     expect(await bcrypt.compare("mi-clave-personal", data.passwordHash)).toBe(true);
+  });
+
+  it("anota cuando cambio la contraseña (cierra las sesiones anteriores) y entrega una sesion nueva", async () => {
+    const antes = Date.now();
+    const resultado = await cambiarPassword("u-1", "temporal-123", "mi-clave-personal");
+
+    const { data } = update.mock.calls[0][0];
+    expect(data.passwordCambiadaEn).toBeInstanceOf(Date);
+    expect(data.passwordCambiadaEn.getTime()).toBeGreaterThanOrEqual(antes);
+    // la sesion nueva es de la misma persona
+    expect(verifyAuthToken(resultado.token)).toMatchObject({ sub: "u-1", rol: "RESIDENTE", condominioId: "c-1" });
+    expect(resultado.usuario).toEqual({ id: "u-1", debeCambiarPassword: false });
   });
 
   it("rechaza si la contraseña actual no es la correcta", async () => {

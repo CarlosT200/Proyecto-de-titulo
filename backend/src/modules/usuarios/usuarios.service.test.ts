@@ -52,6 +52,8 @@ describe("restablecerPassword", () => {
     expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "u-1", condominioId: "condo-1" } }));
     const { data } = update.mock.calls[0][0];
     expect(data.debeCambiarPassword).toBe(true);
+    // las sesiones que la persona tenia abiertas dejan de valer
+    expect(data.passwordCambiadaEn).toBeInstanceOf(Date);
     expect(await bcrypt.compare("otra-temporal-456", data.passwordHash)).toBe(true);
   });
 

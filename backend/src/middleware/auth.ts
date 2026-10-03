@@ -9,6 +9,7 @@ export interface AuthPayload {
   sub: string; // usuarioId
   rol: Rol;
   condominioId: string;
+  iat?: number; // cuando se emitio el token (segundos); lo agrega jsonwebtoken
 }
 
 declare global {
@@ -46,10 +47,15 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
     const usuario = await prisma.usuario.findUnique({
       where: { id: payload.sub },
-      select: { activo: true, rol: true, condominioId: true },
+      select: { activo: true, rol: true, condominioId: true, passwordCambiadaEn: true },
     });
     if (!usuario || !usuario.activo) {
       throw new UnauthorizedError("Tu cuenta no está disponible. Contacta a la administración.");
+    }
+    // Si la contraseña se cambio o restablecio despues de emitido este token, la sesion ya no vale
+    // (alguien con una sesion robada o en un equipo ajeno queda fuera al cambiar la contraseña).
+    if (usuario.passwordCambiadaEn && (payload.iat ?? 0) < Math.floor(usuario.passwordCambiadaEn.getTime() / 1000)) {
+      throw new UnauthorizedError("Tu contraseña cambió. Inicia sesión de nuevo.");
     }
 
     req.auth = { sub: payload.sub, rol: usuario.rol, condominioId: usuario.condominioId };

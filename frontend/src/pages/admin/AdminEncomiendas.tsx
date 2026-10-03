@@ -28,7 +28,7 @@ export default function AdminEncomiendas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro completo de encomiendas del condominio (HU-12 a HU-14)." />
+      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro completo de encomiendas del condominio." />
 
       <Card>
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 dark:border-slate-700/60 p-5">

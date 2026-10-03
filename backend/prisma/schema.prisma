@@ -160,6 +160,8 @@ model Usuario {
   fotoUrl        String?
   // true mientras la persona usa la contraseña temporal que le dio la administracion
   debeCambiarPassword Boolean @default(false)
+  // Cuando se cambio o restablecio la contraseña por ultima vez: las sesiones iniciadas antes ya no valen
+  passwordCambiadaEn DateTime?
 
   condominio   Condominio    @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   departamento Departamento? @relation(fields: [departamentoId], references: [id], onDelete: SetNull)

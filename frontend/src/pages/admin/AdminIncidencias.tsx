@@ -43,7 +43,7 @@ export default function AdminIncidencias() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Wrench} title="Incidencias" subtitle="Gestión, priorización e historial (HU-10, HU-11, HU-25)." />
+      <PageHeader icon={Wrench} title="Incidencias" subtitle="Gestión, priorización e historial." />
 
       <div className="flex flex-wrap gap-3">
         <SearchInput

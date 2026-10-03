@@ -133,6 +133,8 @@ Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:mi
 | `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves de sesión y de códigos QR (Render las genera) |
 | `APP_URL` | Dirección pública de la aplicación (se usa en los códigos QR) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Notificaciones del sistema (incluida la alerta SOS) |
+| `JWT_EXPIRES_IN` | Duración de la sesión del **personal** (administración y conserjería). Por defecto `8h` |
+| `JWT_EXPIRES_IN_RESIDENTE` | Duración de la sesión de los **residentes**. Por defecto `30d`: no tienen que volver a entrar cada día. Cambiar o restablecer la contraseña cierra todas las sesiones anteriores |
 | `MOSTRAR_CUENTAS_DEMO` | `true` muestra en el login los botones de cuentas de demostración. **Por defecto están ocultos en producción.** Activar solo para una demostración o la defensa, y volver a quitar después |
 
 ## 6. Rutina de respaldos

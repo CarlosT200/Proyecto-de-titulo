@@ -5,7 +5,7 @@ import { AuthPayload } from "../middleware/auth";
 
 export function signAuthToken(payload: { sub: string; rol: Rol; condominioId: string }): string {
   return jwt.sign(payload, env.jwtSecret, {
-    expiresIn: env.jwtExpiresIn,
+    expiresIn: payload.rol === Rol.RESIDENTE ? env.jwtExpiresInResidente : env.jwtExpiresIn,
   } as SignOptions);
 }
 

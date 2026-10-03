@@ -44,7 +44,7 @@ export default function AdminAuditoria() {
       <PageHeader
         icon={ClipboardText}
         title="Registro de actividad"
-        subtitle="Quién hizo qué y cuándo: acciones de administración y conserjería (RNF-06)."
+        subtitle="Quién hizo qué y cuándo: acciones de administración y conserjería."
       />
 
       <div className="w-full sm:max-w-xs">

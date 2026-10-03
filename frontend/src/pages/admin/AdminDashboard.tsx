@@ -70,7 +70,7 @@ export default function AdminDashboard() {
           </>
         }
         titulo={`${saludoSegunHora()}, ${usuario?.nombre ?? ""}`}
-        subtitulo="Así está tu condominio hoy. Indicadores generales (HU-24)."
+        subtitulo="Así está tu condominio hoy. Indicadores generales."
       >
         <div className="flex flex-wrap gap-2">
           <BotonHero to="/comunicados" icon={Megaphone} principal>

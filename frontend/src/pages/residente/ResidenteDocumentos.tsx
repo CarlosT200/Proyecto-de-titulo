@@ -14,7 +14,7 @@ export default function ResidenteDocumentos() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={FileText} title="Documentos" subtitle="Reglamentos y documentos informativos del condominio (HU-23)." />
+      <PageHeader icon={FileText} title="Documentos" subtitle="Reglamentos y documentos informativos del condominio." />
 
       <Card>
         {cargando ? (

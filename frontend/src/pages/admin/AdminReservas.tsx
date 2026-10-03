@@ -22,7 +22,7 @@ export default function AdminReservas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={CalendarBlank} title="Reservas de espacios comunes" subtitle="Consulta de todas las reservas realizadas (HU-05)." />
+      <PageHeader icon={CalendarBlank} title="Reservas de espacios comunes" subtitle="Consulta de todas las reservas realizadas." />
 
       <SearchInput
         value={busqueda}

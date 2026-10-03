@@ -70,7 +70,7 @@ export default function AdminComunicados() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Publicación de avisos para los residentes (HU-15, HU-16)." />
+      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Publicación de avisos para los residentes." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

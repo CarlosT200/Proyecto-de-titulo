@@ -15,7 +15,7 @@ const ROL_LABEL: Record<string, string> = {
 };
 
 export default function Perfil() {
-  const { usuario, actualizarUsuario } = useAuth();
+  const { usuario, actualizarUsuario, reemplazarSesion } = useAuth();
   const toast = useToast();
   const push = usePushNotifications();
   const iosSinInstalar = !push.soportado && esIOS() && !abiertaComoApp();
@@ -95,7 +95,8 @@ export default function Perfil() {
     }
     setCambiandoPassword(true);
     try {
-      await authApi.cambiarPassword(actual, nueva);
+      const sesion = await authApi.cambiarPassword(actual, nueva);
+      reemplazarSesion(sesion.token, sesion.usuario);
       setActual("");
       setNueva("");
       setConfirmarNueva("");
@@ -185,7 +186,7 @@ export default function Perfil() {
         </Card>
 
         <Card className="h-fit">
-          <CardHeader title="Cambiar contraseña" subtitle="RNF-02: se almacena mediante hash seguro" />
+          <CardHeader title="Cambiar contraseña" subtitle="Tu contraseña se guarda cifrada." />
           <form onSubmit={handleCambiarPassword} className="space-y-4 p-5">
             <div>
               <Label htmlFor="campo-perfil-5">Contraseña actual</Label>

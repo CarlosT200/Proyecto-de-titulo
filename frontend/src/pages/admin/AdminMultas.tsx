@@ -49,7 +49,7 @@ export default function AdminMultas() {
       <PageHeader
         icon={Warning}
         title="Multas"
-        subtitle="Registro y seguimiento de sanciones (HU-06, HU-07)."
+        subtitle="Registro y seguimiento de sanciones."
         action={
           <Button onClick={() => setModalAbierto(true)}>
             <Plus size={16} weight="bold" /> Registrar multa

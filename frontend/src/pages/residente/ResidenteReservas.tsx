@@ -52,7 +52,7 @@ export default function ResidenteReservas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={CalendarBlank} title="Reservar espacios comunes" subtitle="Consulta disponibilidad y reserva (HU-04, HU-05)." />
+      <PageHeader icon={CalendarBlank} title="Reservar espacios comunes" subtitle="Consulta disponibilidad y reserva." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 h-fit">

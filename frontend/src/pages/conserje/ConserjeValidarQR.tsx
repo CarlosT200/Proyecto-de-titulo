@@ -125,7 +125,7 @@ export default function ConserjeValidarQR() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={QrCode} title="Validar acceso QR" subtitle="Escanea el código de un residente o una visita (HU-18, HU-21)." />
+      <PageHeader icon={QrCode} title="Validar acceso QR" subtitle="Escanea el código de un residente o una visita." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

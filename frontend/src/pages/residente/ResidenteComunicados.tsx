@@ -11,7 +11,7 @@ export default function ResidenteComunicados() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Avisos publicados por la administración (HU-16)." />
+      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Avisos publicados por la administración." />
 
       <Card>
         {cargando ? (

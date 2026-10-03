@@ -12,7 +12,7 @@ export default function AdminAccesos() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={QrCode} title="Control de acceso" subtitle="Historial de validaciones de códigos QR (HU-18, HU-21)." />
+      <PageHeader icon={QrCode} title="Control de acceso" subtitle="Historial de validaciones de códigos QR." />
 
       <Card>
         {cargando ? (

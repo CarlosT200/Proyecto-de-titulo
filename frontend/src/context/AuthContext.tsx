@@ -9,6 +9,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<Usuario>;
   logout: () => void;
   actualizarUsuario: (usuario: Usuario) => void;
+  // Reemplaza la sesion por una nueva (despues de cambiar la contraseña)
+  reemplazarSesion: (token: string, usuario: Usuario) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -44,9 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const actualizarUsuario = useCallback((u: Usuario) => setUsuario(u), []);
 
+  const reemplazarSesion = useCallback((token: string, u: Usuario) => {
+    setToken(token);
+    setUsuario(u);
+  }, []);
+
   const value = useMemo(
-    () => ({ usuario, cargando, login, logout, actualizarUsuario }),
-    [usuario, cargando, login, logout, actualizarUsuario]
+    () => ({ usuario, cargando, login, logout, actualizarUsuario, reemplazarSesion }),
+    [usuario, cargando, login, logout, actualizarUsuario, reemplazarSesion]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

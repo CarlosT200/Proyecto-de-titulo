@@ -91,7 +91,7 @@ export default function ConserjeEncomiendas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro de recepción y retiro (HU-12, HU-14)." />
+      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro de recepción y retiro." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="h-fit">

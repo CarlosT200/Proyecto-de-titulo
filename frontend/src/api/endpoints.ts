@@ -33,8 +33,9 @@ export const authApi = {
     formData.append("foto", foto);
     return api.patch<Usuario>("/auth/me/foto", formData, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
   },
+  // devuelve una sesion nueva: al cambiar la contraseña se cierran las sesiones anteriores
   cambiarPassword: (actual: string, nueva: string) =>
-    api.patch<Usuario>("/auth/me/password", { actual, nueva }).then((r) => r.data),
+    api.patch<{ token: string; usuario: Usuario }>("/auth/me/password", { actual, nueva }).then((r) => r.data),
 };
 
 // --- Usuarios (HU-02) ---

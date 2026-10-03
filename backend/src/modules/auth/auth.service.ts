@@ -79,10 +79,13 @@ export async function cambiarPassword(usuarioId: string, actual: string, nueva: 
   }
 
   const passwordHash = await hashPassword(nueva);
-  // Al elegir una contraseña propia deja de ser obligatorio cambiarla.
-  return prisma.usuario.update({
+  // Al elegir una contraseña propia deja de ser obligatorio cambiarla. Se anotan la fecha del cambio
+  // (cierra las demas sesiones) y se entrega una sesion nueva para quien acaba de cambiarla.
+  const usuarioActualizado = await prisma.usuario.update({
     where: { id: usuarioId },
-    data: { passwordHash, debeCambiarPassword: false },
+    data: { passwordHash, debeCambiarPassword: false, passwordCambiadaEn: new Date() },
     select: PERFIL_SELECT,
   });
+  const token = signAuthToken({ sub: usuario.id, rol: usuario.rol, condominioId: usuario.condominioId });
+  return { token, usuario: usuarioActualizado };
 }

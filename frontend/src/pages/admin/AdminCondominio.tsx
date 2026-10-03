@@ -15,7 +15,7 @@ export default function AdminCondominio() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Buildings} title="Estructura del condominio" subtitle="Torres, departamentos y espacios comunes (HU-03)." />
+      <PageHeader icon={Buildings} title="Estructura del condominio" subtitle="Torres, departamentos y espacios comunes." />
 
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
         {(

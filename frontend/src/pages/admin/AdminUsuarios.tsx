@@ -37,7 +37,7 @@ export default function AdminUsuarios() {
       <PageHeader
         icon={Users}
         title="Residentes y usuarios"
-        subtitle="Registro y administración de residentes (HU-02)."
+        subtitle="Registro y administración de residentes."
         action={
           <Button onClick={() => setModalAbierto(true)}>
             <UserPlus size={16} weight="bold" /> Nuevo usuario

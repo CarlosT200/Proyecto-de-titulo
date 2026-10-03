@@ -73,7 +73,7 @@ export default function AdminDocumentos() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={FileText} title="Repositorio de documentos" subtitle="Reglamentos y documentos informativos (HU-22, HU-23)." />
+      <PageHeader icon={FileText} title="Repositorio de documentos" subtitle="Reglamentos y documentos informativos." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

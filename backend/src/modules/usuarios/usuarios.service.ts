@@ -113,7 +113,7 @@ export async function restablecerPassword(condominioId: string, usuarioId: strin
   const passwordHash = await hashPassword(password);
   return prisma.usuario.update({
     where: { id: usuarioId },
-    data: { passwordHash, debeCambiarPassword: true },
+    data: { passwordHash, debeCambiarPassword: true, passwordCambiadaEn: new Date() },
     select: SELECT_PUBLICO,
   });
 }
