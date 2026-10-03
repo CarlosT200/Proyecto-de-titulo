@@ -163,7 +163,7 @@ export default function Perfil() {
               <Label htmlFor="campo-perfil-1">Correo electrónico</Label>
               <Input id="campo-perfil-1" value={usuario.email} disabled className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="campo-perfil-2">Nombre</Label>
                 <Input id="campo-perfil-2" required value={nombre} onChange={(e) => setNombre(e.target.value)} />

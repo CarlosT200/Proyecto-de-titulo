@@ -202,7 +202,7 @@ function FormularioUsuario({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="campo-usuarios-1">Nombre</Label>
           <Input id="campo-usuarios-1" required value={nombre} onChange={(e) => setNombre(e.target.value)} />

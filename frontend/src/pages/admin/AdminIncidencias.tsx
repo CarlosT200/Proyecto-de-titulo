@@ -219,7 +219,7 @@ function DetalleIncidencia({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-3 border-t border-slate-100 dark:border-slate-700/60 pt-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="campo-incidencias-1">Estado</Label>
                 <Select id="campo-incidencias-1" value={estado} onChange={(e) => setEstado(e.target.value as EstadoIncidencia)}>
@@ -242,7 +242,7 @@ function DetalleIncidencia({
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="campo-incidencias-3">Categoría</Label>
                 <Input id="campo-incidencias-3" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Ej: Filtración" />

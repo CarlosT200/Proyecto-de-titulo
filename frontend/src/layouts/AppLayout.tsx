@@ -205,7 +205,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur-xl lg:px-8 dark:border-white/[0.06] dark:bg-slate-900/80">
           <div className="flex items-center gap-2">
             <button
-              className="flex h-10 w-10 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex h-10 w-10 max-sm:h-11 max-sm:w-11 max-[359px]:h-10 max-[359px]:w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               onClick={alternarMenu}
               aria-label={menuVisible ? "Ocultar menú" : "Mostrar menú"}
               aria-expanded={menuVisible}
@@ -227,7 +227,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               </span>
             </Link>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 min-[360px]:gap-2 sm:gap-4">
             <div className="flex items-center gap-0.5 rounded-full border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
               <button
                 type="button"
@@ -236,7 +236,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                 aria-pressed={tema === "claro"}
                 title="Modo claro"
                 className={clsx(
-                  "flex h-9 w-9 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-full transition-colors",
+                  "flex h-9 w-9 max-sm:h-11 max-sm:w-11 max-[359px]:h-9 max-[359px]:w-9 items-center justify-center rounded-full transition-colors",
                   tema === "claro"
                     ? "bg-white text-amber-500 shadow-sm dark:bg-slate-700"
                     : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
@@ -251,7 +251,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                 aria-pressed={tema === "oscuro"}
                 title="Modo oscuro"
                 className={clsx(
-                  "flex h-9 w-9 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-full transition-colors",
+                  "flex h-9 w-9 max-sm:h-11 max-sm:w-11 max-[359px]:h-9 max-[359px]:w-9 items-center justify-center rounded-full transition-colors",
                   tema === "oscuro"
                     ? "bg-white text-brand-600 shadow-sm dark:bg-slate-700 dark:text-brand-300"
                     : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
@@ -260,9 +260,9 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                 <Moon size={19} weight={tema === "oscuro" ? "fill" : "regular"} />
               </button>
             </div>
-            <div className="relative" ref={panelRef}>
+            <div className="sm:relative" ref={panelRef}>
               <button
-                className="relative rounded-lg p-2 max-sm:p-3 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                className="relative rounded-lg p-2 max-sm:p-3 max-[359px]:p-2.5 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                 onClick={() => setPanelAbierto((v) => !v)}
                 aria-label="Notificaciones"
               >
@@ -286,7 +286,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.98 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 z-30 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
+                    className="absolute inset-x-3 top-full z-30 mt-2 rounded-xl border border-slate-200 bg-white shadow-lg sm:inset-x-auto sm:right-0 sm:top-auto sm:w-80 dark:border-slate-700 dark:bg-slate-800"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-700/60">
                       <span className="text-sm font-semibold dark:text-white">Notificaciones</span>
@@ -317,7 +317,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                         </button>
                       </div>
                     </div>
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-[min(20rem,calc(100dvh-9rem))] overflow-y-auto">
                       {notificaciones.length === 0 ? (
                         <p className="px-4 py-6 text-center text-xs text-slate-400 dark:text-slate-500">Sin notificaciones.</p>
                       ) : (
@@ -370,7 +370,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               to="/perfil"
               aria-label="Mi perfil"
               title="Mi perfil"
-              className="flex items-center gap-2.5 rounded-full p-0.5 max-sm:p-1 transition-colors hover:bg-slate-50 sm:rounded-lg sm:px-2 sm:py-1 dark:hover:bg-slate-800"
+              className="flex items-center gap-2.5 rounded-full p-0.5 max-sm:p-1 max-[359px]:p-0.5 transition-colors hover:bg-slate-50 sm:rounded-lg sm:px-2 sm:py-1 dark:hover:bg-slate-800"
             >
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
@@ -388,7 +388,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
             </Link>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 max-sm:min-h-11 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-red-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 max-sm:min-h-11 max-[359px]:px-2 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-red-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-400"
             >
               <SignOut size={14} />
               Salir
