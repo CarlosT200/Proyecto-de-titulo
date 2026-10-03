@@ -13,11 +13,11 @@ function responder(err: unknown) {
 }
 
 describe("errorHandler", () => {
-  it("devuelve 422 con detalle por campo para errores de validacion", () => {
-    const resultado = z.object({ email: z.string().email("Correo invalido.") }).safeParse({ email: "x" });
+  it("devuelve 422 con detalle por campo para errores de validación", () => {
+    const resultado = z.object({ email: z.string().email("Correo inválido.") }).safeParse({ email: "x" });
     const { status, body } = responder(resultado.error);
     expect(status).toBe(422);
-    expect(body.detalles).toEqual([{ campo: "email", mensaje: "Correo invalido." }]);
+    expect(body.detalles).toEqual([{ campo: "email", mensaje: "Correo inválido." }]);
   });
 
   it("respeta el status de los errores de negocio (AppError)", () => {

@@ -11,7 +11,7 @@ export default function ResidenteEncomiendas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Package} title="Mis encomiendas" subtitle="Notificaciones de encomiendas recibidas en conserjeria (HU-13)." />
+      <PageHeader icon={Package} title="Mis encomiendas" subtitle="Notificaciones de encomiendas recibidas en conserjería (HU-13)." />
 
       <Card>
         {cargando ? (

@@ -38,6 +38,7 @@ export function Button({
       className={clsx(
         "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all disabled:cursor-not-allowed disabled:opacity-60",
         size === "md" ? "px-4 py-2 text-sm" : "px-3 py-1.5 text-xs",
+        "max-sm:min-h-11",
         variant === "primary" &&
           "bg-gradient-to-br from-brand-600 to-brand-700 text-white shadow-md shadow-brand-600/25 hover:shadow-lg hover:shadow-brand-600/40 hover:brightness-110",
         variant === "secondary" && "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700",
@@ -104,6 +105,7 @@ export function SearchInput({
       <MagnifyingGlass size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
       <input
         type="search"
+        aria-label={placeholder.replace(/\.+$/, "")}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

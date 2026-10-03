@@ -67,11 +67,13 @@ export const ESTADO_VISITA_LABEL: Record<string, string> = {
 export const ESTADO_RESERVA_TONO: Record<string, Tono> = {
   CONFIRMADA: "green",
   CANCELADA: "slate",
+  FINALIZADA: "blue",
 };
 
 export const ESTADO_RESERVA_LABEL: Record<string, string> = {
   CONFIRMADA: "Confirmada",
   CANCELADA: "Cancelada",
+  FINALIZADA: "Finalizada",
 };
 
 export const RESULTADO_ACCESO_LABEL: Record<string, string> = {

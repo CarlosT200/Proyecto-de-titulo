@@ -11,7 +11,7 @@ export default function ResidenteComunicados() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Avisos publicados por la administracion (HU-16)." />
+      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Avisos publicados por la administración (HU-16)." />
 
       <Card>
         {cargando ? (
@@ -19,7 +19,7 @@ export default function ResidenteComunicados() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Megaphone} title="Aun no hay comunicados publicados" />
+          <EmptyState icon={Megaphone} title="Aún no hay comunicados publicados" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((c, i) => (

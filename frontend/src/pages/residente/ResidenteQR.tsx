@@ -19,7 +19,7 @@ import {
   Textarea,
 } from "../../components/ui";
 import { CredencialResidente } from "../../components/CredencialResidente";
-import { formatFechaHora } from "../../lib/format";
+import { formatFechaHora, hoyLocal } from "../../lib/format";
 import { ESTADO_VISITA_LABEL, ESTADO_VISITA_TONO } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -91,9 +91,9 @@ export default function ResidenteQR() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={QrCode} title="Mi QR y visitas" subtitle="Identificacion digital y autorizacion de visitas (HU-17, HU-19, HU-20)." />
+      <PageHeader icon={QrCode} title="Mi QR y visitas" subtitle="Identificación digital y autorización de visitas (HU-17, HU-19, HU-20)." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="h-fit">
           <CardHeader title="Mi credencial" subtitle="Muéstrala en conserjería para tu ingreso" />
           <div className="flex flex-col items-center gap-3 p-5">
@@ -116,7 +116,7 @@ export default function ResidenteQR() {
               <UserPlus size={16} /> QR para un invitado
             </Button>
             <p className="text-center text-xs text-slate-400 dark:text-slate-500">
-              Genera un codigo para que alguien te visite, sin registrar la visita a mano.
+              Genera un código para que alguien te visite, sin registrar la visita a mano.
             </p>
           </div>
         </Card>
@@ -131,7 +131,7 @@ export default function ResidenteQR() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !visitas?.length ? (
-            <EmptyState icon={QrCode} title="Aun no has registrado visitas" />
+            <EmptyState icon={QrCode} title="Aún no has registrado visitas" />
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {visitas.map((v, i) => (
@@ -164,12 +164,12 @@ export default function ResidenteQR() {
                         variant="ghost"
                         onClick={async () => {
                           const ok = await confirmar(
-                            `¿Revocar la autorizacion de ${v.nombreVisita}? Ya no podra ingresar con ese QR.`,
+                            `¿Revocar la autorización de ${v.nombreVisita}? Ya no podrá ingresar con ese QR.`,
                             { titulo: "Revocar visita", textoConfirmar: "Revocar" }
                           );
                           if (!ok) return;
                           await qrApi.revocarVisita(v.id);
-                          toast.info("Autorizacion de visita revocada.");
+                          toast.info("Autorización de visita revocada.");
                           recargar();
                         }}
                       >
@@ -203,12 +203,12 @@ export default function ResidenteQR() {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Se genera una autorizacion de 4 horas, de un solo uso. Comparte el codigo con tu visita y el conserje lo
+            Se genera una autorización de 4 horas, de un solo uso. Comparte el código con tu visita y el conserje lo
             validara al ingreso; quedara en tu lista de visitas autorizadas automaticamente.
           </p>
           <div>
-            <Label>Nombre del invitado (opcional)</Label>
-            <Input
+            <Label htmlFor="campo-qr-1">Nombre del invitado (opcional)</Label>
+            <Input id="campo-qr-1"
               value={nombreInvitado}
               onChange={(e) => setNombreInvitado(e.target.value)}
               placeholder="Invitado"
@@ -228,7 +228,7 @@ export default function ResidenteQR() {
             <img src={visitaQr.qrDataUrl} alt="QR de visita" className="h-56 w-56" />
             <p className="text-xs text-slate-500 dark:text-slate-400">Vigente hasta {formatFechaHora(visitaQr.expiraEn)}</p>
             <p className="text-center text-xs text-slate-400 dark:text-slate-500">
-              Comparte este codigo con tu visita. El conserje lo validara al ingreso.
+              Comparte este código con tu visita. El conserje lo validará al ingreso.
             </p>
           </div>
         )}
@@ -240,7 +240,7 @@ export default function ResidenteQR() {
 function FormularioVisita({ onCreado }: { onCreado: () => void }) {
   const toast = useToast();
   const [nombreVisita, setNombreVisita] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(hoyLocal());
   const [horaInicio, setHoraInicio] = useState("09:00");
   const [horaFin, setHoraFin] = useState("20:00");
   const [observaciones, setObservaciones] = useState("");
@@ -268,36 +268,36 @@ function FormularioVisita({ onCreado }: { onCreado: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label>Nombre de la visita</Label>
-        <Input required value={nombreVisita} onChange={(e) => setNombreVisita(e.target.value)} />
+        <Label htmlFor="campo-qr-2">Nombre de la visita</Label>
+        <Input id="campo-qr-2" required value={nombreVisita} onChange={(e) => setNombreVisita(e.target.value)} />
       </div>
       <div>
-        <Label>Fecha</Label>
-        <Input
+        <Label htmlFor="campo-qr-3">Fecha</Label>
+        <Input id="campo-qr-3"
           type="date"
           required
-          min={new Date().toISOString().slice(0, 10)}
+          min={hoyLocal()}
           value={fecha}
           onChange={(e) => setFecha(e.target.value)}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Desde</Label>
-          <Input type="time" required value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
+          <Label htmlFor="campo-qr-4">Desde</Label>
+          <Input id="campo-qr-4" type="time" required value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
         </div>
         <div>
-          <Label>Hasta</Label>
-          <Input type="time" required value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
+          <Label htmlFor="campo-qr-5">Hasta</Label>
+          <Input id="campo-qr-5" type="time" required value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
         </div>
       </div>
       <div>
-        <Label>Observaciones</Label>
-        <Textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
+        <Label htmlFor="campo-qr-6">Observaciones</Label>
+        <Textarea id="campo-qr-6" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
       </div>
       <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
         <input type="checkbox" checked={soloUnUso} onChange={(e) => setSoloUnUso(e.target.checked)} />
-        Autorizacion de un solo uso
+        Autorización de un solo uso
       </label>
       {error && <Alert tone="red">{error}</Alert>}
       <Button type="submit" className="w-full" loading={cargando}>

@@ -4,8 +4,8 @@ import { Rol } from "@prisma/client";
 export const crearUsuarioSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio."),
   apellido: z.string().min(1, "El apellido es obligatorio."),
-  email: z.string().email("Ingresa un correo valido."),
-  password: z.string().min(8, "La contrasena debe tener al menos 8 caracteres."),
+  email: z.string().email("Ingresa un correo válido."),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
   rol: z.nativeEnum(Rol),
   telefono: z.string().optional(),
   departamentoId: z.string().uuid().optional().nullable(),

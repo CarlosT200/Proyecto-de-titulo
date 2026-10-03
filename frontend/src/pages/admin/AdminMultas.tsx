@@ -4,7 +4,7 @@ import { Plus, Trash, Warning } from "@phosphor-icons/react";
 import { multasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea, staggerFade } from "../../components/ui";
-import { formatFecha, formatMonto } from "../../lib/format";
+import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
 import { ESTADO_MULTA_LABEL, ESTADO_MULTA_TONO } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -30,7 +30,7 @@ export default function AdminMultas() {
   });
 
   async function handleEliminar(id: string, motivo: string) {
-    const ok = await confirmar(`¿Eliminar la multa "${motivo}"? Esta accion no se puede deshacer.`, {
+    const ok = await confirmar(`¿Eliminar la multa "${motivo}"? Esta acción no se puede deshacer.`, {
       titulo: "Eliminar multa",
       textoConfirmar: "Eliminar",
     });
@@ -60,7 +60,7 @@ export default function AdminMultas() {
           placeholder="Buscar por motivo o residente..."
           className="w-full sm:max-w-xs"
         />
-        <Select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoMulta | "")} className="w-full sm:w-48">
+        <Select aria-label="Filtrar por estado" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoMulta | "")} className="w-full sm:w-48">
           <option value="">Todos los estados</option>
           {ESTADOS.map((estado) => (
             <option key={estado} value={estado}>
@@ -76,9 +76,9 @@ export default function AdminMultas() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState title="Aun no hay multas registradas" />
+          <EmptyState title="Aún no hay multas registradas" />
         ) : !filtradas.length ? (
-          <EmptyState title="Sin resultados" description="Ninguna multa coincide con la busqueda." />
+          <EmptyState title="Sin resultados" description="Ninguna multa coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -103,6 +103,7 @@ export default function AdminMultas() {
                     <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatMonto(m.monto)}</td>
                     <td className="px-5 py-3">
                       <Select
+                        aria-label={`Estado de la multa: ${m.motivo}`}
                         className="w-36"
                         value={m.estado}
                         onChange={async (e) => {
@@ -122,7 +123,7 @@ export default function AdminMultas() {
                       <button
                         type="button"
                         onClick={() => handleEliminar(m.id, m.motivo)}
-                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                        className="rounded-lg p-1.5 max-sm:p-3 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                         aria-label="Eliminar multa"
                         title="Eliminar multa"
                       >
@@ -160,7 +161,7 @@ function FormularioMulta({
   const toast = useToast();
   const [usuarioId, setUsuarioId] = useState("");
   const [motivo, setMotivo] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(hoyLocal());
   const [monto, setMonto] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -184,8 +185,8 @@ function FormularioMulta({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label>Residente</Label>
-        <Select required value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)}>
+        <Label htmlFor="campo-multas-1">Residente</Label>
+        <Select id="campo-multas-1" required value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)}>
           <option value="">Selecciona un residente</option>
           {residentes.map((r) => (
             <option key={r.id} value={r.id}>
@@ -195,22 +196,22 @@ function FormularioMulta({
         </Select>
       </div>
       <div>
-        <Label>Motivo</Label>
-        <Input required value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+        <Label htmlFor="campo-multas-2">Motivo</Label>
+        <Input id="campo-multas-2" required value={motivo} onChange={(e) => setMotivo(e.target.value)} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Fecha</Label>
-          <Input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
+          <Label htmlFor="campo-multas-3">Fecha</Label>
+          <Input id="campo-multas-3" type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
         </div>
         <div>
-          <Label>Monto (CLP)</Label>
-          <Input type="number" min={1} required value={monto} onChange={(e) => setMonto(e.target.value)} />
+          <Label htmlFor="campo-multas-4">Monto (CLP)</Label>
+          <Input id="campo-multas-4" type="number" min={1} required value={monto} onChange={(e) => setMonto(e.target.value)} />
         </div>
       </div>
       <div>
-        <Label>Observaciones</Label>
-        <Textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
+        <Label htmlFor="campo-multas-5">Observaciones</Label>
+        <Textarea id="campo-multas-5" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
       </div>
       {error && <Alert tone="red">{error}</Alert>}
       <Button type="submit" className="w-full" loading={cargando}>

@@ -33,7 +33,7 @@ export default function AdminUsuarios() {
       <PageHeader
         icon={Users}
         title="Residentes y usuarios"
-        subtitle="Registro y administracion de residentes (HU-02)."
+        subtitle="Registro y administración de residentes (HU-02)."
         action={
           <Button onClick={() => setModalAbierto(true)}>
             <UserPlus size={16} weight="bold" /> Nuevo usuario
@@ -48,7 +48,7 @@ export default function AdminUsuarios() {
           placeholder="Buscar por nombre o correo..."
           className="w-full sm:max-w-xs"
         />
-        <Select value={filtroRol} onChange={(e) => setFiltroRol(e.target.value as Rol | "")} className="w-full sm:w-48">
+        <Select aria-label="Filtrar por rol" value={filtroRol} onChange={(e) => setFiltroRol(e.target.value as Rol | "")} className="w-full sm:w-48">
           <option value="">Todos los roles</option>
           <option value="ADMIN">Administrador</option>
           <option value="RESIDENTE">Residente</option>
@@ -62,9 +62,9 @@ export default function AdminUsuarios() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !usuarios?.length ? (
-          <EmptyState title="Aun no hay usuarios registrados" />
+          <EmptyState title="Aún no hay usuarios registrados" />
         ) : !filtrados.length ? (
-          <EmptyState title="Sin resultados" description="Ningun usuario coincide con la busqueda." />
+          <EmptyState title="Sin resultados" description="Ningún usuario coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -101,7 +101,7 @@ export default function AdminUsuarios() {
                         onClick={async () => {
                           if (u.activo) {
                             const ok = await confirmar(
-                              `¿Deshabilitar a ${u.nombre} ${u.apellido}? No podra iniciar sesion hasta que lo vuelvas a habilitar.`,
+                              `¿Deshabilitar a ${u.nombre} ${u.apellido}? No podrá iniciar sesión hasta que lo vuelvas a habilitar.`,
                               { titulo: "Deshabilitar usuario", textoConfirmar: "Deshabilitar" }
                             );
                             if (!ok) return;
@@ -178,25 +178,25 @@ function FormularioUsuario({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Nombre</Label>
-          <Input required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <Label htmlFor="campo-usuarios-1">Nombre</Label>
+          <Input id="campo-usuarios-1" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </div>
         <div>
-          <Label>Apellido</Label>
-          <Input required value={apellido} onChange={(e) => setApellido(e.target.value)} />
+          <Label htmlFor="campo-usuarios-2">Apellido</Label>
+          <Input id="campo-usuarios-2" required value={apellido} onChange={(e) => setApellido(e.target.value)} />
         </div>
       </div>
       <div>
-        <Label>Correo electronico</Label>
-        <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Label htmlFor="campo-usuarios-3">Correo electrónico</Label>
+        <Input id="campo-usuarios-3" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div>
-        <Label>Contrasena temporal</Label>
-        <Input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Label htmlFor="campo-usuarios-4">Contraseña temporal</Label>
+        <Input id="campo-usuarios-4" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       <div>
-        <Label>Rol</Label>
-        <Select value={rol} onChange={(e) => setRol(e.target.value as Rol)}>
+        <Label htmlFor="campo-usuarios-5">Rol</Label>
+        <Select id="campo-usuarios-5" value={rol} onChange={(e) => setRol(e.target.value as Rol)}>
           <option value="RESIDENTE">Residente</option>
           <option value="CONSERJE">Conserje</option>
           <option value="ADMIN">Administrador</option>
@@ -204,8 +204,8 @@ function FormularioUsuario({
       </div>
       {rol === "RESIDENTE" && (
         <div>
-          <Label>Unidad</Label>
-          <Select value={departamentoId} onChange={(e) => setDepartamentoId(e.target.value)}>
+          <Label htmlFor="campo-usuarios-6">Unidad</Label>
+          <Select id="campo-usuarios-6" value={departamentoId} onChange={(e) => setDepartamentoId(e.target.value)}>
             <option value="">Sin asignar</option>
             {departamentos.map((d) => (
               <option key={d.id} value={d.id}>

@@ -45,7 +45,7 @@ const OPCIONES: {
     tipo: "AMBULANCIA",
     numero: "131",
     titulo: "Ambulancia (SAMU)",
-    descripcion: "Emergencia medica",
+    descripcion: "Emergencia médica",
     logo: "/emergencias/samu.gif",
     clases: "bg-amber-400 hover:bg-amber-500",
     textoClases: "text-slate-900",

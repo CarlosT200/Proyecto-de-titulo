@@ -39,7 +39,7 @@ api.interceptors.response.use(
   }
 );
 
-export function mensajeError(error: unknown, fallback = "Ocurrio un error. Intenta nuevamente."): string {
+export function mensajeError(error: unknown, fallback = "Ocurrió un error. Intenta nuevamente."): string {
   if (axios.isAxiosError(error)) {
     // Sin respuesta del servidor (backend caido, sin conexion, etc.): nunca debe confundirse
     // con un error de negocio como "credenciales incorrectas".

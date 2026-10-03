@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { fechaCalendario } from "../../lib/fechas";
 import { EstadoMulta } from "@prisma/client";
 
 export const crearMultaSchema = z.object({
   usuarioId: z.string().uuid(),
   motivo: z.string().min(1, "El motivo es obligatorio."),
-  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha invalido (YYYY-MM-DD)."),
+  fecha: fechaCalendario,
   monto: z.number().int().positive("El monto debe ser mayor a cero."),
   observaciones: z.string().optional(),
 });

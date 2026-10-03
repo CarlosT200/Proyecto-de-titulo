@@ -1,15 +1,22 @@
 import { EstadoReserva } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../lib/errors";
+import { ahoraEnChile } from "../../lib/fechas";
 
 function seSuperponen(aInicio: string, aFin: string, bInicio: string, bFin: string): boolean {
   return aInicio < bFin && bInicio < aFin;
 }
 
-// HU-04: disponibilidad del espacio comun para una fecha determinada.
+// Fecha (YYYY-MM-DD) y hora (HH:mm) son cadenas de ancho fijo: comparar texto equivale a comparar tiempo.
+function yaPaso(fecha: string, hora: string): boolean {
+  const ahora = ahoraEnChile();
+  return `${fecha} ${hora}` <= `${ahora.fecha} ${ahora.hora}`;
+}
+
+// HU-04: disponibilidad del espacio común para una fecha determinada.
 export async function consultarDisponibilidad(condominioId: string, espacioComunId: string, fecha: string) {
   const espacio = await prisma.espacioComun.findFirst({ where: { id: espacioComunId, condominioId } });
-  if (!espacio) throw new NotFoundError("Espacio comun no encontrado.");
+  if (!espacio) throw new NotFoundError("Espacio común no encontrado.");
 
   const reservas = await prisma.reserva.findMany({
     where: {
@@ -36,11 +43,15 @@ export async function crearReserva(
   const espacio = await prisma.espacioComun.findFirst({
     where: { id: data.espacioComunId, condominioId, activo: true },
   });
-  if (!espacio) throw new NotFoundError("Espacio comun no encontrado o no disponible.");
+  if (!espacio) throw new NotFoundError("Espacio común no encontrado o no disponible.");
+
+  if (yaPaso(data.fecha, data.horaInicio)) {
+    throw new ConflictError("No puedes reservar en un horario que ya pasó. Elige una fecha y hora futuras.");
+  }
 
   if (data.horaInicio < espacio.horarioInicio || data.horaFin > espacio.horarioFin) {
     throw new ConflictError(
-      `El espacio "${espacio.nombre}" solo esta disponible entre ${espacio.horarioInicio} y ${espacio.horarioFin}.`
+      `El espacio "${espacio.nombre}" solo está disponible entre ${espacio.horarioInicio} y ${espacio.horarioFin}.`
     );
   }
 
@@ -106,6 +117,12 @@ export async function cancelarReserva(
   if (!reserva) throw new NotFoundError("Reserva no encontrada.");
   if (!rolEsAdmin && reserva.usuarioId !== usuarioId) {
     throw new ForbiddenError("Solo puedes cancelar tus propias reservas.");
+  }
+  if (reserva.estado === EstadoReserva.CANCELADA) {
+    throw new ConflictError("Esta reserva ya estaba cancelada.");
+  }
+  if (yaPaso(reserva.fecha.toISOString().slice(0, 10), reserva.horaFin)) {
+    throw new ConflictError("Esta reserva ya finalizó, no se puede cancelar.");
   }
 
   return prisma.reserva.update({

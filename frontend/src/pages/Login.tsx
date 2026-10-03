@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import {
@@ -29,7 +29,7 @@ const CARACTERISTICAS: { icon: PhosphorIcon; titulo: string; texto: string; tono
   { icon: QrCode, titulo: "Acceso con QR", texto: "Credencial digital e invitados", tono: "from-brand-500 to-brand-700" },
   { icon: Siren, titulo: "Boton SOS", texto: "Ayuda inmediata 24/7", tono: "from-red-500 to-rose-600" },
   { icon: Package, titulo: "Encomiendas", texto: "Aviso apenas llegan", tono: "from-violet-500 to-purple-700" },
-  { icon: CalendarCheck, titulo: "Reservas", texto: "Quincho, salas y mas", tono: "from-emerald-400 to-emerald-600" },
+  { icon: CalendarCheck, titulo: "Reservas", texto: "Quincho, salas y más", tono: "from-emerald-400 to-emerald-600" },
 ];
 
 // Cuentas del seed (ver backend/prisma/seed.ts). Un toque completa y entra:
@@ -61,6 +61,11 @@ function Wordmark({ claro = false }: { claro?: boolean }) {
 export default function Login() {
   const { usuario, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Si el conserje abrio un QR con la camara del celular y su sesion habia vencido, despues
+  // de iniciar sesion vuelve a ese QR en vez de caer en el inicio.
+  const volverA = (location.state as { volverA?: string } | null)?.volverA;
+  const destino = volverA?.startsWith("/acceso/") ? volverA : "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verPassword, setVerPassword] = useState(false);
@@ -68,7 +73,7 @@ export default function Login() {
   const [cargando, setCargando] = useState(false);
 
   if (usuario) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={destino} replace />;
   }
 
   async function entrar(correo: string, clave: string) {
@@ -76,9 +81,9 @@ export default function Login() {
     setCargando(true);
     try {
       await login(correo, clave);
-      navigate("/");
+      navigate(destino);
     } catch (err) {
-      setError(mensajeError(err, "Correo o contrasena incorrectos."));
+      setError(mensajeError(err, "Correo o contraseña incorrectos."));
     } finally {
       setCargando(false);
     }
@@ -118,7 +123,7 @@ export default function Login() {
             </h1>
             <p className="mt-4 max-w-md text-base text-white/80">
               Comunicados, reservas, encomiendas, multas y control de acceso por QR. Todo en un solo lugar, para
-              residentes, conserjeria y administracion.
+              residentes, conserjería y administración.
             </p>
 
             <div className="mt-8 grid max-w-lg grid-cols-2 gap-3">
@@ -176,12 +181,12 @@ export default function Login() {
               <div className="h-1.5 bg-gradient-to-r from-brand-600 via-violet-500 to-accent-500" />
               <div className="p-7 sm:p-8">
                 <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">Bienvenido</h2>
-                <p className="mt-1 text-sm text-slate-500">Ingresa con tu correo y contrasena.</p>
+                <p className="mt-1 text-sm text-slate-500">Ingresa con tu correo y contraseña.</p>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                   <div>
                     <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Correo electronico
+                      Correo electrónico
                     </label>
                     <div className="relative">
                       <Envelope size={20} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -217,7 +222,7 @@ export default function Login() {
                       <button
                         type="button"
                         onClick={() => setVerPassword((v) => !v)}
-                        aria-label={verPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+                        aria-label={verPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                         aria-pressed={verPassword}
                         className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                       >
@@ -239,7 +244,7 @@ export default function Login() {
                   )}
 
                   <Button type="submit" className="h-12 w-full rounded-xl text-base" loading={cargando}>
-                    Iniciar sesion
+                    Iniciar sesión
                   </Button>
                 </form>
 

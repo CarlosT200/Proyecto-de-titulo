@@ -43,16 +43,17 @@ export default function AdminIncidencias() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Wrench} title="Incidencias" subtitle="Gestion, priorizacion e historial (HU-10, HU-11, HU-25)." />
+      <PageHeader icon={Wrench} title="Incidencias" subtitle="Gestión, priorización e historial (HU-10, HU-11, HU-25)." />
 
       <div className="flex flex-wrap gap-3">
         <SearchInput
           value={busqueda}
           onChange={setBusqueda}
-          placeholder="Buscar por titulo, ubicacion o residente..."
+          placeholder="Buscar por título, ubicación o residente..."
           className="w-full sm:max-w-xs"
         />
         <Select
+          aria-label="Filtrar por estado"
           value={filtroEstado}
           onChange={(e) => setFiltroEstado(e.target.value as EstadoIncidencia | "")}
           className="w-full sm:w-48"
@@ -72,17 +73,17 @@ export default function AdminIncidencias() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState title="Aun no hay incidencias reportadas" />
+          <EmptyState title="Aún no hay incidencias reportadas" />
         ) : !filtradas.length ? (
-          <EmptyState title="Sin resultados" description="Ninguna incidencia coincide con la busqueda." />
+          <EmptyState title="Sin resultados" description="Ninguna incidencia coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
                 <tr>
-                  <th className="px-5 py-3">Titulo</th>
+                  <th className="px-5 py-3">Título</th>
                   <th className="px-5 py-3">Residente</th>
-                  <th className="px-5 py-3">Ubicacion</th>
+                  <th className="px-5 py-3">Ubicación</th>
                   <th className="px-5 py-3">Prioridad</th>
                   <th className="px-5 py-3">Estado</th>
                   <th className="px-5 py-3">Reportada</th>
@@ -209,8 +210,8 @@ function DetalleIncidencia({
           <form onSubmit={handleSubmit} className="space-y-3 border-t border-slate-100 dark:border-slate-700/60 pt-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Estado</Label>
-                <Select value={estado} onChange={(e) => setEstado(e.target.value as EstadoIncidencia)}>
+                <Label htmlFor="campo-incidencias-1">Estado</Label>
+                <Select id="campo-incidencias-1" value={estado} onChange={(e) => setEstado(e.target.value as EstadoIncidencia)}>
                   {ESTADOS.map((e2) => (
                     <option key={e2} value={e2}>
                       {ESTADO_INCIDENCIA_LABEL[e2]}
@@ -219,8 +220,8 @@ function DetalleIncidencia({
                 </Select>
               </div>
               <div>
-                <Label>Prioridad</Label>
-                <Select value={prioridad} onChange={(e) => setPrioridad(e.target.value as PrioridadIncidencia)}>
+                <Label htmlFor="campo-incidencias-2">Prioridad</Label>
+                <Select id="campo-incidencias-2" value={prioridad} onChange={(e) => setPrioridad(e.target.value as PrioridadIncidencia)}>
                   <option value="">Sin definir</option>
                   {PRIORIDADES.map((p) => (
                     <option key={p} value={p}>
@@ -232,12 +233,12 @@ function DetalleIncidencia({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Categoria</Label>
-                <Input value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Ej: Filtracion" />
+                <Label htmlFor="campo-incidencias-3">Categoría</Label>
+                <Input id="campo-incidencias-3" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Ej: Filtracion" />
               </div>
               <div>
-                <Label>Responsable</Label>
-                <Select value={responsableId} onChange={(e) => setResponsableId(e.target.value)}>
+                <Label htmlFor="campo-incidencias-4">Responsable</Label>
+                <Select id="campo-incidencias-4" value={responsableId} onChange={(e) => setResponsableId(e.target.value)}>
                   <option value="">Sin asignar</option>
                   {admins?.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -248,8 +249,8 @@ function DetalleIncidencia({
               </div>
             </div>
             <div>
-              <Label>Observacion (queda en el historial)</Label>
-              <Textarea rows={2} value={observacion} onChange={(e) => setObservacion(e.target.value)} />
+              <Label htmlFor="campo-incidencias-5">Observación (queda en el historial)</Label>
+              <Textarea id="campo-incidencias-5" rows={2} value={observacion} onChange={(e) => setObservacion(e.target.value)} />
             </div>
             {error && <Alert tone="red">{error}</Alert>}
             <Button type="submit" className="w-full" loading={guardando}>

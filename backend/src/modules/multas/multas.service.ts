@@ -2,6 +2,7 @@ import { EstadoMulta } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { NotFoundError } from "../../lib/errors";
 import { crearNotificacion } from "../notificaciones/notificaciones.service";
+import { ESTADO_MULTA_LABEL } from "../../lib/etiquetas";
 
 // HU-06: registrar multa asociada a un residente.
 export async function crearMulta(
@@ -28,7 +29,7 @@ export async function crearMulta(
     usuarioId: data.usuarioId,
     tipo: "MULTA",
     titulo: "Nueva multa registrada",
-    mensaje: `Se registro una multa: ${data.motivo}.`,
+    mensaje: `Se registró una multa: ${data.motivo}.`,
     entidadTipo: "Multa",
     entidadId: multa.id,
   });
@@ -66,8 +67,8 @@ export async function actualizarMulta(
     await crearNotificacion({
       usuarioId: multa.usuarioId,
       tipo: "MULTA",
-      titulo: "Actualizacion de multa",
-      mensaje: `Tu multa cambio de estado a ${data.estado}.`,
+      titulo: "Actualización de multa",
+      mensaje: `Tu multa cambió de estado a ${ESTADO_MULTA_LABEL[data.estado]}.`,
       entidadTipo: "Multa",
       entidadId: multa.id,
     });

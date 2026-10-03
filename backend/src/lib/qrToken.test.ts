@@ -7,7 +7,7 @@ import { env } from "../config/env";
 // por QR (HU-17 a HU-21, RNF-08/RNF-09): si esto falla, falla el control de
 // acceso del condominio entero.
 describe("qrToken", () => {
-  it("firma y verifica un token valido, preservando jti y tipo", () => {
+  it("firma y verifica un token válido, preservando jti y tipo", () => {
     const token = signQrToken("registro-1", "RESIDENTE", new Date(Date.now() + 60_000));
     const payload = verifyQrToken(token);
     expect(payload).toMatchObject({ jti: "registro-1", tipo: "RESIDENTE" });

@@ -67,7 +67,7 @@ export default function ResidenteInicio() {
         )}
       </HeroBanner>
 
-      <section aria-label="Accesos rapidos" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <section aria-label="Accesos rápidos" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <AccesoRapido to="/qr" icon={IdentificationBadge} titulo="Mi credencial" descripcion="QR e invitados" tono="brand" index={0} />
         <AccesoRapido to="/reservas" icon={CalendarCheck} titulo="Reservar" descripcion="Espacios comunes" tono="green" index={1} />
         <AccesoRapido to="/incidencias" icon={Wrench} titulo="Reportar" descripcion="Un problema" tono="amber" index={2} />
@@ -85,7 +85,7 @@ export default function ResidenteInicio() {
           </div>
 
           <Card>
-            <CardHeader title="Ultimos comunicados" subtitle="Avisos de la administracion" />
+            <CardHeader title="Últimos comunicados" subtitle="Avisos de la administración" />
             {!comunicados?.length ? (
               <EmptyState icon={Megaphone} title="Sin comunicados recientes" />
             ) : (

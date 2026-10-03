@@ -29,7 +29,7 @@ export default function AdminCondominio() {
             key={value}
             onClick={() => setTab(value)}
             className={clsx(
-              "border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              "border-b-2 px-3 py-2 max-sm:py-3 text-sm font-medium transition-colors",
               tab === value
                 ? "border-brand-600 text-brand-700 dark:text-brand-300"
                 : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
@@ -73,7 +73,7 @@ function EspaciosComunes() {
       setNombre("");
       setDescripcion("");
       setCapacidad("");
-      toast.success("Espacio comun creado.");
+      toast.success("Espacio común creado.");
       recargar();
     } catch (err) {
       setFormError(mensajeError(err));
@@ -83,7 +83,7 @@ function EspaciosComunes() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2">
         <CardHeader title="Espacios comunes registrados" />
         {cargando ? (
@@ -91,7 +91,7 @@ function EspaciosComunes() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Buildings} title="Aun no hay espacios comunes" />
+          <EmptyState icon={Buildings} title="Aún no hay espacios comunes" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((esp, i) => (
@@ -123,28 +123,28 @@ function EspaciosComunes() {
       </Card>
 
       <Card className="h-fit">
-        <CardHeader title="Nuevo espacio comun" />
+        <CardHeader title="Nuevo espacio común" />
         <form onSubmit={handleSubmit} className="space-y-3 p-5">
           <div>
-            <Label>Nombre</Label>
-            <Input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Quincho" />
+            <Label htmlFor="campo-condominio-1">Nombre</Label>
+            <Input id="campo-condominio-1" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Quincho" />
           </div>
           <div>
-            <Label>Descripcion</Label>
-            <Input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+            <Label htmlFor="campo-condominio-2">Descripción</Label>
+            <Input id="campo-condominio-2" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
           </div>
           <div>
-            <Label>Capacidad</Label>
-            <Input type="number" min={1} value={capacidad} onChange={(e) => setCapacidad(e.target.value)} />
+            <Label htmlFor="campo-condominio-3">Capacidad</Label>
+            <Input id="campo-condominio-3" type="number" min={1} value={capacidad} onChange={(e) => setCapacidad(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Horario desde</Label>
-              <Input type="time" value={horarioInicio} onChange={(e) => setHorarioInicio(e.target.value)} />
+              <Label htmlFor="campo-condominio-4">Horario desde</Label>
+              <Input id="campo-condominio-4" type="time" value={horarioInicio} onChange={(e) => setHorarioInicio(e.target.value)} />
             </div>
             <div>
-              <Label>Horario hasta</Label>
-              <Input type="time" value={horarioFin} onChange={(e) => setHorarioFin(e.target.value)} />
+              <Label htmlFor="campo-condominio-5">Horario hasta</Label>
+              <Input id="campo-condominio-5" type="time" value={horarioFin} onChange={(e) => setHorarioFin(e.target.value)} />
             </div>
           </div>
           {formError && <Alert tone="red">{formError}</Alert>}
@@ -177,7 +177,7 @@ function Torres() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2">
         <CardHeader title="Torres / edificios" />
         {cargando ? (
@@ -185,7 +185,7 @@ function Torres() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Buildings} title="Aun no hay torres registradas" />
+          <EmptyState icon={Buildings} title="Aún no hay torres registradas" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((t, i) => (
@@ -200,8 +200,8 @@ function Torres() {
         <CardHeader title="Nueva torre" />
         <form onSubmit={handleSubmit} className="space-y-3 p-5">
           <div>
-            <Label>Nombre</Label>
-            <Input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Torre B" />
+            <Label htmlFor="campo-condominio-6">Nombre</Label>
+            <Input id="campo-condominio-6" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Torre B" />
           </div>
           <Button type="submit" className="w-full" loading={enviando}>
             Crear torre
@@ -238,7 +238,7 @@ function Departamentos() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2">
         <CardHeader title="Departamentos" />
         {cargando ? (
@@ -246,7 +246,7 @@ function Departamentos() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Buildings} title="Aun no hay departamentos registrados" />
+          <EmptyState icon={Buildings} title="Aún no hay departamentos registrados" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((d, i) => (
@@ -266,8 +266,8 @@ function Departamentos() {
         <CardHeader title="Nuevo departamento" />
         <form onSubmit={handleSubmit} className="space-y-3 p-5">
           <div>
-            <Label>Torre</Label>
-            <Select value={torreId} onChange={(e) => setTorreId(e.target.value)}>
+            <Label htmlFor="campo-condominio-7">Torre</Label>
+            <Select id="campo-condominio-7" value={torreId} onChange={(e) => setTorreId(e.target.value)}>
               <option value="">Sin torre</option>
               {torres?.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -277,8 +277,8 @@ function Departamentos() {
             </Select>
           </div>
           <div>
-            <Label>Numero</Label>
-            <Input required value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="101" />
+            <Label htmlFor="campo-condominio-8">Número</Label>
+            <Input id="campo-condominio-8" required value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="101" />
           </div>
           {formError && <Alert tone="red">{formError}</Alert>}
           <Button type="submit" className="w-full" loading={enviando}>

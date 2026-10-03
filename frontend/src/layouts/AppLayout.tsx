@@ -123,7 +123,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
   }
 
   async function eliminarTodasNotificaciones() {
-    const ok = await confirmar("¿Borrar todas las notificaciones? Esta accion no se puede deshacer.", {
+    const ok = await confirmar("¿Borrar todas las notificaciones? Esta acción no se puede deshacer.", {
       titulo: "Borrar notificaciones",
       textoConfirmar: "Borrar todas",
     });
@@ -189,9 +189,9 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               className="relative flex h-full w-64 flex-col bg-white shadow-xl dark:bg-slate-900"
             >
               <button
-                className="absolute right-3 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-800"
+                className="absolute right-3 top-3 rounded-lg p-1.5 max-sm:p-3 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-800"
                 onClick={() => setMenuMovilAbierto(false)}
-                aria-label="Cerrar menu"
+                aria-label="Cerrar menú"
               >
                 <X size={18} />
               </button>
@@ -205,11 +205,11 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur-xl lg:px-8 dark:border-white/[0.06] dark:bg-slate-900/80">
           <div className="flex items-center gap-2">
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex h-10 w-10 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               onClick={alternarMenu}
-              aria-label={menuVisible ? "Ocultar menu" : "Mostrar menu"}
+              aria-label={menuVisible ? "Ocultar menú" : "Mostrar menú"}
               aria-expanded={menuVisible}
-              title={menuVisible ? "Ocultar menu" : "Mostrar menu"}
+              title={menuVisible ? "Ocultar menú" : "Mostrar menú"}
             >
               <List size={22} weight="bold" />
             </button>
@@ -236,7 +236,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                 aria-pressed={tema === "claro"}
                 title="Modo claro"
                 className={clsx(
-                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                  "flex h-9 w-9 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-full transition-colors",
                   tema === "claro"
                     ? "bg-white text-amber-500 shadow-sm dark:bg-slate-700"
                     : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
@@ -251,7 +251,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                 aria-pressed={tema === "oscuro"}
                 title="Modo oscuro"
                 className={clsx(
-                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                  "flex h-9 w-9 max-sm:h-11 max-sm:w-11 items-center justify-center rounded-full transition-colors",
                   tema === "oscuro"
                     ? "bg-white text-brand-600 shadow-sm dark:bg-slate-700 dark:text-brand-300"
                     : "text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
@@ -262,7 +262,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
             </div>
             <div className="relative" ref={panelRef}>
               <button
-                className="relative rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                className="relative rounded-lg p-2 max-sm:p-3 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                 onClick={() => setPanelAbierto((v) => !v)}
                 aria-label="Notificaciones"
               >
@@ -293,24 +293,24 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                       <div className="flex items-center gap-3">
                         {noLeidas > 0 && (
                           <button
-                            className="text-xs text-brand-600 hover:underline dark:text-brand-400"
+                            className="text-xs text-brand-600 hover:underline dark:text-brand-400 max-sm:min-h-11"
                             onClick={() => {
                               notificacionesApi.leerTodas().then(() =>
                                 setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })))
                               );
                             }}
                           >
-                            Marcar todas como leidas
+                            Marcar todas como leídas
                           </button>
                         )}
                         {notificaciones.length > 0 && (
-                          <button className="text-xs text-slate-500 hover:underline dark:text-slate-400" onClick={eliminarTodasNotificaciones}>
+                          <button className="text-xs text-slate-500 hover:underline dark:text-slate-400 max-sm:min-h-11" onClick={eliminarTodasNotificaciones}>
                             Borrar todas
                           </button>
                         )}
                         <button
                           onClick={() => setPanelAbierto(false)}
-                          className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+                          className="rounded-lg p-1 max-sm:p-3 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                           aria-label="Cerrar notificaciones"
                         >
                           <X size={16} />
@@ -337,7 +337,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                                 onClick={() => abrirNotificacion(n)}
                                 disabled={!clicable}
                                 className={clsx(
-                                  "block w-full px-4 py-3 pr-10 text-left transition-colors",
+                                  "block w-full px-4 py-3 pr-10 max-sm:pr-14 text-left transition-colors",
                                   clicable && (sos ? "cursor-pointer" : "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/40")
                                 )}
                               >
@@ -348,11 +348,11 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
                                 type="button"
                                 onClick={() => eliminarNotificacion(n.id)}
                                 className={clsx(
-                                  "absolute right-2 top-2.5 rounded-lg p-1.5 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400",
+                                  "absolute right-1 top-1.5 rounded-lg p-1.5 max-sm:p-3.5 transition-colors hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400",
                                   sos ? sos.titulo : "text-slate-400 dark:text-slate-500"
                                 )}
-                                aria-label="Eliminar notificacion"
-                                title="Eliminar notificacion"
+                                aria-label="Eliminar notificación"
+                                title="Eliminar notificación"
                               >
                                 <Trash size={14} />
                               </button>
@@ -370,7 +370,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               to="/perfil"
               aria-label="Mi perfil"
               title="Mi perfil"
-              className="flex items-center gap-2.5 rounded-full p-0.5 transition-colors hover:bg-slate-50 sm:rounded-lg sm:px-2 sm:py-1 dark:hover:bg-slate-800"
+              className="flex items-center gap-2.5 rounded-full p-0.5 max-sm:p-1 transition-colors hover:bg-slate-50 sm:rounded-lg sm:px-2 sm:py-1 dark:hover:bg-slate-800"
             >
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
@@ -388,7 +388,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
             </Link>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-red-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 max-sm:min-h-11 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-red-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-400"
             >
               <SignOut size={14} />
               Salir
@@ -438,7 +438,7 @@ function SidebarContent({
             Habita<span className="text-brand-600 dark:text-brand-400">Smart</span>
           </p>
           <p className="mt-1 truncate text-[11px] text-slate-400 dark:text-slate-500">
-            {usuario?.condominio?.nombre ?? "Gestion de condominios"}
+            {usuario?.condominio?.nombre ?? "Gestión de condominios"}
           </p>
         </div>
       </div>

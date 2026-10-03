@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email("Ingresa un correo valido."),
-  password: z.string().min(1, "La contrasena es obligatoria."),
+  email: z.string().email("Ingresa un correo válido."),
+  password: z.string().min(1, "La contraseña es obligatoria."),
 });
 
 export const actualizarPerfilSchema = z.object({
@@ -12,6 +12,6 @@ export const actualizarPerfilSchema = z.object({
 });
 
 export const cambiarPasswordSchema = z.object({
-  actual: z.string().min(1, "Ingresa tu contrasena actual."),
-  nueva: z.string().min(8, "La nueva contrasena debe tener al menos 8 caracteres."),
+  actual: z.string().min(1, "Ingresa tu contraseña actual."),
+  nueva: z.string().min(8, "La nueva contraseña debe tener al menos 8 caracteres."),
 });

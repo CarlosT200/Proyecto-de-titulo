@@ -29,16 +29,16 @@ export async function login(email: string, password: string) {
   // HU-01: si las credenciales son incorrectas, se informa con un mensaje generico
   // (no se revela si el correo existe o no).
   if (!usuario) {
-    throw new UnauthorizedError("Correo o contrasena incorrectos.");
+    throw new UnauthorizedError("Correo o contraseña incorrectos.");
   }
 
   const valido = await bcrypt.compare(password, usuario.passwordHash);
   if (!valido) {
-    throw new UnauthorizedError("Correo o contrasena incorrectos.");
+    throw new UnauthorizedError("Correo o contraseña incorrectos.");
   }
 
   if (!usuario.activo) {
-    throw new ForbiddenError("Tu cuenta se encuentra deshabilitada. Contacta a la administracion.");
+    throw new ForbiddenError("Tu cuenta se encuentra deshabilitada. Contacta a la administración.");
   }
 
   const token = signAuthToken({ sub: usuario.id, rol: usuario.rol, condominioId: usuario.condominioId });
@@ -70,7 +70,7 @@ export async function cambiarPassword(usuarioId: string, actual: string, nueva: 
 
   const valido = await bcrypt.compare(actual, usuario.passwordHash);
   if (!valido) {
-    throw new UnauthorizedError("La contrasena actual no es correcta.");
+    throw new UnauthorizedError("La contraseña actual no es correcta.");
   }
 
   const passwordHash = await hashPassword(nueva);

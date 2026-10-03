@@ -30,8 +30,27 @@ export function formatFechaHora(fecha: string | Date): string {
   });
 }
 
+// Una reserva confirmada cuyo horario ya termino se muestra como "Finalizada": antes seguia
+// diciendo "Confirmada" y ofrecia "Cancelar" para reservas de hace semanas.
+export function reservaFinalizada(r: { fecha: string; horaFin: string; estado: string }): boolean {
+  if (r.estado !== "CONFIRMADA") return false;
+  const ahora = new Date();
+  const hora = `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
+  return `${r.fecha.slice(0, 10)} ${r.horaFin}` <= `${hoyLocal()} ${hora}`;
+}
+
 export function formatMonto(monto: number): string {
   return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(
     monto
   );
+}
+
+// Fecha de hoy (YYYY-MM-DD) segun el reloj del dispositivo. new Date().toISOString() entrega
+// la fecha en UTC: en Chile (UTC-3/-4) desde las ~20:00 ya marca "manana" y el selector de
+// fecha no dejaba reservar para hoy en la noche.
+export function hoyLocal(): string {
+  const d = new Date();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mes}-${dia}`;
 }

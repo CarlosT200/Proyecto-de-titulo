@@ -44,7 +44,7 @@ export default function ConserjeValidarQR() {
       const res = await qrApi.validar(extraerToken(token));
       setResultado(res);
     } catch (err) {
-      setResultado({ resultado: "RECHAZADO", motivo: mensajeError(err, "No se pudo validar el codigo.") });
+      setResultado({ resultado: "RECHAZADO", motivo: mensajeError(err, "No se pudo validar el código.") });
     } finally {
       procesandoRef.current = false;
     }
@@ -87,7 +87,7 @@ export default function ConserjeValidarQR() {
       );
       setEscaneando(true);
     } catch {
-      setErrorCamara("No se pudo acceder a la camara. Usa la validacion manual mas abajo.");
+      setErrorCamara("No se pudo acceder a la cámara. Usa la validación manual más abajo.");
     }
   }
 
@@ -125,11 +125,11 @@ export default function ConserjeValidarQR() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={QrCode} title="Validar acceso QR" subtitle="Escanea el codigo de un residente o una visita (HU-18, HU-21)." />
+      <PageHeader icon={QrCode} title="Validar acceso QR" subtitle="Escanea el código de un residente o una visita (HU-18, HU-21)." />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Escaner de camara" />
+          <CardHeader title="Escáner de cámara" />
           <div className="space-y-3 p-5">
             <div id={READER_ID} className="mx-auto w-full max-w-sm overflow-hidden rounded-lg bg-slate-900" />
             {escaneando && (
@@ -139,17 +139,17 @@ export default function ConserjeValidarQR() {
             )}
             {errorCamara && <Alert tone="amber">{errorCamara}</Alert>}
             <Button className="w-full" variant={escaneando ? "secondary" : "primary"} onClick={escaneando ? detenerCamara : iniciarCamara}>
-              {escaneando ? "Detener escaner" : "Iniciar escaner"}
+              {escaneando ? "Detener escáner" : "Iniciar escáner"}
             </Button>
           </div>
         </Card>
 
         <Card>
-          <CardHeader title="Validacion manual" subtitle="Si no hay camara disponible, pega el codigo QR" />
+          <CardHeader title="Validación manual" subtitle="Si no hay cámara disponible, pega el código QR" />
           <form onSubmit={handleManualSubmit} className="space-y-3 p-5">
             <div>
-              <Label>Codigo</Label>
-              <Input value={tokenManual} onChange={(e) => setTokenManual(e.target.value)} placeholder="Pega el contenido del QR" />
+              <Label htmlFor="campo-validarqr-1">Código</Label>
+              <Input id="campo-validarqr-1" value={tokenManual} onChange={(e) => setTokenManual(e.target.value)} placeholder="Pega el contenido del QR" />
             </div>
             <Button type="submit" className="w-full" loading={validandoManual} disabled={!tokenManual.trim()}>
               Validar

@@ -23,7 +23,7 @@ declare global {
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
-    throw new UnauthorizedError("Debes iniciar sesion para acceder a este recurso.");
+    throw new UnauthorizedError("Debes iniciar sesión para acceder a este recurso.");
   }
 
   const token = header.slice("Bearer ".length);
@@ -32,7 +32,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     req.auth = payload;
     next();
   } catch {
-    throw new UnauthorizedError("Sesion invalida o expirada.");
+    throw new UnauthorizedError("Sesión inválida o expirada.");
   }
 }
 

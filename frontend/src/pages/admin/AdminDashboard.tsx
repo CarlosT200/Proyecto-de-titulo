@@ -88,12 +88,12 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         <StatCard icon={Warning} label="Incidencias pendientes" value={data.incidencias.pendientes} tone="amber" index={0} />
         <StatCard icon={CheckCircle} label="Incidencias resueltas" value={data.incidencias.resueltas} tone="green" index={1} />
-        <StatCard icon={Clock} label="Reservas proximas" value={data.reservas.proximas} tone="brand" index={2} />
+        <StatCard icon={Clock} label="Reservas próximas" value={data.reservas.proximas} tone="brand" index={2} />
         <StatCard icon={Package} label="Encomiendas por retirar" value={data.encomiendas.pendientesDeRetiro} tone="purple" index={3} />
-        <StatCard icon={QrCode} label="Accesos autorizados (ult. 10)" value={data.accesos.autorizadosUltimos10} tone="green" index={4} />
+        <StatCard icon={QrCode} label="Accesos autorizados (últ. 10)" value={data.accesos.autorizadosUltimos10} tone="green" index={4} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Multas por estado" />
           <HorizontalBarChart
@@ -118,16 +118,16 @@ export default function AdminDashboard() {
       </div>
 
       <Card>
-        <CardHeader title="Accesos por resultado" subtitle="Historico completo de validaciones QR" />
+        <CardHeader title="Accesos por resultado" subtitle="Histórico completo de validaciones QR" />
         {totalAccesos === 0 ? (
-          <EmptyState icon={QrCode} title="Aun no hay accesos registrados" />
+          <EmptyState icon={QrCode} title="Aún no hay accesos registrados" />
         ) : (
           <Meter label="Accesos autorizados" value={data.accesos.totalAutorizados} total={totalAccesos} color="#0ca30c" />
         )}
       </Card>
 
       <Card>
-        <CardHeader title="Accesos recientes" subtitle="Ultimos 10 registros de validacion QR" />
+        <CardHeader title="Accesos recientes" subtitle="Últimos 10 registros de validación QR" />
         {data.accesos.recientes.length === 0 ? (
           <EmptyState icon={QrCode} title="Sin accesos registrados" />
         ) : (

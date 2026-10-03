@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { NotFoundError } from "../../lib/errors";
 import { sugerirClasificacion } from "./clasificador-ia";
 import { crearNotificacion } from "../notificaciones/notificaciones.service";
+import { ESTADO_INCIDENCIA_LABEL } from "../../lib/etiquetas";
 
 // HU-08: reportar incidencia.
 export async function crearIncidencia(
@@ -116,12 +117,12 @@ export async function actualizarIncidencia(
     },
   });
 
-  if (cambiaEstado) {
+  if (cambiaEstado && data.estado) {
     await crearNotificacion({
       usuarioId: incidencia.usuarioId,
       tipo: "INCIDENCIA",
-      titulo: "Actualizacion de tu incidencia",
-      mensaje: `Tu incidencia "${incidencia.titulo}" cambio de estado a ${data.estado}.`,
+      titulo: "Actualización de tu incidencia",
+      mensaje: `Tu incidencia "${incidencia.titulo}" cambió de estado a "${ESTADO_INCIDENCIA_LABEL[data.estado]}".`,
       entidadTipo: "Incidencia",
       entidadId: incidencia.id,
     });

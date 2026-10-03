@@ -4,7 +4,7 @@ import { CalendarBlank } from "@phosphor-icons/react";
 import { reservasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, SearchInput, Spinner, staggerFade } from "../../components/ui";
-import { formatFecha } from "../../lib/format";
+import { formatFecha, reservaFinalizada } from "../../lib/format";
 import { ESTADO_RESERVA_LABEL, ESTADO_RESERVA_TONO } from "../../lib/badges";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -37,9 +37,9 @@ export default function AdminReservas() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState title="Aun no hay reservas registradas" />
+          <EmptyState title="Aún no hay reservas registradas" />
         ) : !filtradas.length ? (
-          <EmptyState title="Sin resultados" description="Ninguna reserva coincide con la busqueda." />
+          <EmptyState title="Sin resultados" description="Ninguna reserva coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -54,41 +54,45 @@ export default function AdminReservas() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                {filtradas.map((r, i) => (
-                  <motion.tr key={r.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                    <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{r.espacioComun.nombre}</td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
-                      {r.usuario ? `${r.usuario.nombre} ${r.usuario.apellido}` : "—"}
-                    </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFecha(r.fecha)}</td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
-                      {r.horaInicio} - {r.horaFin}
-                    </td>
-                    <td className="px-5 py-3">
-                      <Badge tone={ESTADO_RESERVA_TONO[r.estado]}>{ESTADO_RESERVA_LABEL[r.estado]}</Badge>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      {r.estado === "CONFIRMADA" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            const ok = await confirmar(`¿Cancelar la reserva de ${r.espacioComun.nombre}?`, {
-                              titulo: "Cancelar reserva",
-                              textoConfirmar: "Cancelar reserva",
-                            });
-                            if (!ok) return;
-                            await reservasApi.cancelar(r.id);
-                            toast.success("Reserva cancelada.");
-                            recargar();
-                          }}
-                        >
-                          Cancelar
-                        </Button>
-                      )}
-                    </td>
-                  </motion.tr>
-                ))}
+                {filtradas.map((r, i) => {
+                  const finalizada = reservaFinalizada(r);
+                  const estado = finalizada ? "FINALIZADA" : r.estado;
+                  return (
+                    <motion.tr key={r.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
+                      <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{r.espacioComun.nombre}</td>
+                      <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                        {r.usuario ? `${r.usuario.nombre} ${r.usuario.apellido}` : "—"}
+                      </td>
+                      <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFecha(r.fecha)}</td>
+                      <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                        {r.horaInicio} - {r.horaFin}
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge tone={ESTADO_RESERVA_TONO[estado]}>{ESTADO_RESERVA_LABEL[estado]}</Badge>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {r.estado === "CONFIRMADA" && !finalizada && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              const ok = await confirmar(`¿Cancelar la reserva de ${r.espacioComun.nombre}?`, {
+                                titulo: "Cancelar reserva",
+                                textoConfirmar: "Cancelar reserva",
+                              });
+                              if (!ok) return;
+                              await reservasApi.cancelar(r.id);
+                              toast.success("Reserva cancelada.");
+                              recargar();
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        )}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

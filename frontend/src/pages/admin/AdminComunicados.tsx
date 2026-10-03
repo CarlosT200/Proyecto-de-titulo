@@ -37,7 +37,7 @@ export default function AdminComunicados() {
   );
 
   async function handleEliminar(id: string, titulo: string) {
-    const ok = await confirmar(`¿Eliminar el comunicado "${titulo}"? Ya no sera visible para los residentes.`, {
+    const ok = await confirmar(`¿Eliminar el comunicado "${titulo}"? Ya no será visible para los residentes.`, {
       titulo: "Eliminar comunicado",
       textoConfirmar: "Eliminar",
     });
@@ -66,9 +66,9 @@ export default function AdminComunicados() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Publicacion de avisos para los residentes (HU-15, HU-16)." />
+      <PageHeader icon={Megaphone} title="Comunicados" subtitle="Publicación de avisos para los residentes (HU-15, HU-16)." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader
             title="Comunicados publicados"
@@ -79,9 +79,9 @@ export default function AdminComunicados() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={Megaphone} title="Aun no hay comunicados publicados" />
+            <EmptyState icon={Megaphone} title="Aún no hay comunicados publicados" />
           ) : !filtrados.length ? (
-            <EmptyState title="Sin resultados" description="Ningun comunicado coincide con la busqueda." />
+            <EmptyState title="Sin resultados" description="Ningún comunicado coincide con la búsqueda." />
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {filtrados.map((c, i) => (
@@ -97,7 +97,7 @@ export default function AdminComunicados() {
                   <button
                     type="button"
                     onClick={() => handleEliminar(c.id, c.titulo)}
-                    className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                    className="shrink-0 rounded-lg p-1.5 max-sm:p-3 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                     aria-label="Eliminar comunicado"
                     title="Eliminar comunicado"
                   >
@@ -113,8 +113,8 @@ export default function AdminComunicados() {
           <CardHeader title="Publicar nuevo comunicado" />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
-              <Label>Tipo</Label>
-              <Select value={tipo} onChange={(e) => setTipo(e.target.value as TipoComunicado)}>
+              <Label htmlFor="campo-comunicados-1">Tipo</Label>
+              <Select id="campo-comunicados-1" value={tipo} onChange={(e) => setTipo(e.target.value as TipoComunicado)}>
                 {TIPOS.map((t) => (
                   <option key={t} value={t}>
                     {TIPO_COMUNICADO_LABEL[t]}
@@ -123,12 +123,12 @@ export default function AdminComunicados() {
               </Select>
             </div>
             <div>
-              <Label>Titulo</Label>
-              <Input required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+              <Label htmlFor="campo-comunicados-2">Título</Label>
+              <Input id="campo-comunicados-2" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
             </div>
             <div>
-              <Label>Contenido</Label>
-              <Textarea required rows={4} value={contenido} onChange={(e) => setContenido(e.target.value)} />
+              <Label htmlFor="campo-comunicados-3">Contenido</Label>
+              <Textarea id="campo-comunicados-3" required rows={4} value={contenido} onChange={(e) => setContenido(e.target.value)} />
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>

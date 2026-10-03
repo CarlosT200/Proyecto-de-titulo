@@ -27,8 +27,8 @@ export async function crearEncomienda(
     tipo: "ENCOMIENDA",
     titulo: "Encomienda recibida",
     mensaje: data.remitente
-      ? `Llego una encomienda de ${data.remitente}. Puedes retirarla en conserjeria.`
-      : "Llego una encomienda para ti. Puedes retirarla en conserjeria.",
+      ? `Llegó una encomienda de ${data.remitente}. Puedes retirarla en conserjería.`
+      : "Llegó una encomienda para ti. Puedes retirarla en conserjería.",
     entidadTipo: "Encomienda",
     entidadId: encomienda.id,
   });

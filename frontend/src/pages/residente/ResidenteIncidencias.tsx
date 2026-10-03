@@ -49,7 +49,7 @@ export default function ResidenteIncidencias() {
     <div className="space-y-6">
       <PageHeader icon={Wrench} title="Incidencias" subtitle="Reporta problemas y haz seguimiento (HU-08, HU-09)." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader title="Mis incidencias" />
           {cargando ? (
@@ -57,7 +57,7 @@ export default function ResidenteIncidencias() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={Wrench} title="Aun no has reportado incidencias" />
+            <EmptyState icon={Wrench} title="Aún no has reportado incidencias" />
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {data.map((inc, i) => (
@@ -79,12 +79,12 @@ export default function ResidenteIncidencias() {
           <CardHeader title="Reportar nueva incidencia" />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
-              <Label>Titulo</Label>
-              <Input required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej: Filtracion" />
+              <Label htmlFor="campo-incidencias-1">Título</Label>
+              <Input id="campo-incidencias-1" required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej: Filtracion" />
             </div>
             <div>
-              <Label>Ubicacion</Label>
-              <Input
+              <Label htmlFor="campo-incidencias-2">Ubicación</Label>
+              <Input id="campo-incidencias-2"
                 required
                 value={ubicacion}
                 onChange={(e) => setUbicacion(e.target.value)}
@@ -92,12 +92,12 @@ export default function ResidenteIncidencias() {
               />
             </div>
             <div>
-              <Label>Descripcion</Label>
-              <Textarea required rows={4} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+              <Label htmlFor="campo-incidencias-3">Descripción</Label>
+              <Textarea id="campo-incidencias-3" required rows={4} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
             </div>
             <div>
-              <Label>Fotografia (opcional)</Label>
-              <input ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
+              <Label htmlFor="campo-incidencias-foto">Fotografía (opcional)</Label>
+              <input id="campo-incidencias-foto" ref={fileRef} type="file" accept="image/*" className="block w-full text-sm" />
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>

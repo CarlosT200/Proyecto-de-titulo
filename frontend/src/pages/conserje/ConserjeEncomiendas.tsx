@@ -91,15 +91,15 @@ export default function ConserjeEncomiendas() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro de recepcion y retiro (HU-12, HU-14)." />
+      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro de recepción y retiro (HU-12, HU-14)." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="h-fit">
           <CardHeader title="Registrar encomienda" />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
-              <Label>Residente</Label>
-              <Select required value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)}>
+              <Label htmlFor="campo-encomiendas-1">Residente</Label>
+              <Select id="campo-encomiendas-1" required value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)}>
                 <option value="">Selecciona un residente</option>
                 {residentes?.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -110,8 +110,8 @@ export default function ConserjeEncomiendas() {
               </Select>
             </div>
             <div>
-              <Label>Remitente / empresa (opcional)</Label>
-              <Select value={empresa} onChange={(e) => setEmpresa(e.target.value)}>
+              <Label htmlFor="campo-encomiendas-2">Remitente / empresa (opcional)</Label>
+              <Select id="campo-encomiendas-2" value={empresa} onChange={(e) => setEmpresa(e.target.value)}>
                 <option value="">Sin especificar</option>
                 {EMPRESAS_ENCOMIENDA.map((nombre) => (
                   <option key={nombre} value={nombre}>
@@ -123,8 +123,8 @@ export default function ConserjeEncomiendas() {
             </div>
             {esOtro && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-                <Label>Especifica el remitente</Label>
-                <Input
+                <Label htmlFor="campo-encomiendas-3">Especifica el remitente</Label>
+                <Input id="campo-encomiendas-3"
                   autoFocus
                   value={otroRemitente}
                   onChange={(e) => setOtroRemitente(e.target.value)}
@@ -147,8 +147,8 @@ export default function ConserjeEncomiendas() {
               <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por residente o remitente..." />
             </div>
             <div className="w-full sm:w-40">
-              <Label>Estado</Label>
-              <Select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoEncomienda | "")}>
+              <Label htmlFor="campo-encomiendas-4">Estado</Label>
+              <Select id="campo-encomiendas-4" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoEncomienda | "")}>
                 <option value="">Todos</option>
                 {ESTADOS.map((estado) => (
                   <option key={estado} value={estado}>
@@ -158,12 +158,12 @@ export default function ConserjeEncomiendas() {
               </Select>
             </div>
             <div className="w-full sm:w-36">
-              <Label>Desde</Label>
-              <Input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+              <Label htmlFor="campo-encomiendas-5">Desde</Label>
+              <Input id="campo-encomiendas-5" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
             </div>
             <div className="w-full sm:w-36">
-              <Label>Hasta</Label>
-              <Input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+              <Label htmlFor="campo-encomiendas-6">Hasta</Label>
+              <Input id="campo-encomiendas-6" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
             </div>
             {hayFiltrosActivos && (
               <button
@@ -174,7 +174,7 @@ export default function ConserjeEncomiendas() {
                   setFechaDesde("");
                   setFechaHasta("");
                 }}
-                className="text-xs text-brand-600 hover:underline"
+                className="text-xs text-brand-600 hover:underline max-sm:min-h-11"
               >
                 Limpiar filtros
               </button>
@@ -186,7 +186,7 @@ export default function ConserjeEncomiendas() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={Package} title="Aun no hay encomiendas registradas" />
+            <EmptyState icon={Package} title="Aún no hay encomiendas registradas" />
           ) : !filtradas.length ? (
             <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
           ) : (
@@ -196,7 +196,7 @@ export default function ConserjeEncomiendas() {
                   <tr>
                     <th className="px-5 py-3">Residente</th>
                     <th className="px-5 py-3">Remitente</th>
-                    <th className="px-5 py-3">Recepcion</th>
+                    <th className="px-5 py-3">Recepción</th>
                     <th className="px-5 py-3">Retiro</th>
                     <th className="px-5 py-3">Estado</th>
                     <th className="px-5 py-3"></th>

@@ -36,8 +36,8 @@ export default function AdminEncomiendas() {
             <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por residente o remitente..." />
           </div>
           <div className="w-full sm:w-44">
-            <Label>Estado</Label>
-            <Select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoEncomienda | "")}>
+            <Label htmlFor="campo-encomiendas-1">Estado</Label>
+            <Select id="campo-encomiendas-1" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoEncomienda | "")}>
               <option value="">Todos los estados</option>
               {ESTADOS.map((estado) => (
                 <option key={estado} value={estado}>
@@ -47,12 +47,12 @@ export default function AdminEncomiendas() {
             </Select>
           </div>
           <div className="w-full sm:w-40">
-            <Label>Desde</Label>
-            <Input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+            <Label htmlFor="campo-encomiendas-2">Desde</Label>
+            <Input id="campo-encomiendas-2" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
           </div>
           <div className="w-full sm:w-40">
-            <Label>Hasta</Label>
-            <Input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+            <Label htmlFor="campo-encomiendas-3">Hasta</Label>
+            <Input id="campo-encomiendas-3" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
           </div>
           {(busqueda || filtroEstado || fechaDesde || fechaHasta) && (
             <button
@@ -63,7 +63,7 @@ export default function AdminEncomiendas() {
                 setFechaDesde("");
                 setFechaHasta("");
               }}
-              className="text-xs text-brand-600 hover:underline"
+              className="text-xs text-brand-600 hover:underline max-sm:min-h-11"
             >
               Limpiar filtros
             </button>
@@ -75,7 +75,7 @@ export default function AdminEncomiendas() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Package} title="Aun no hay encomiendas registradas" />
+          <EmptyState icon={Package} title="Aún no hay encomiendas registradas" />
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
         ) : (
@@ -85,7 +85,7 @@ export default function AdminEncomiendas() {
                 <tr>
                   <th className="px-5 py-3">Residente</th>
                   <th className="px-5 py-3">Remitente</th>
-                  <th className="px-5 py-3">Recepcion</th>
+                  <th className="px-5 py-3">Recepción</th>
                   <th className="px-5 py-3">Retiro</th>
                   <th className="px-5 py-3">Estado</th>
                 </tr>

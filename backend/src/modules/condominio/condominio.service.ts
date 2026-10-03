@@ -80,6 +80,6 @@ export async function actualizarEspacioComun(
   }>
 ) {
   const espacio = await prisma.espacioComun.findFirst({ where: { id: espacioId, condominioId } });
-  if (!espacio) throw new NotFoundError("Espacio comun no encontrado.");
+  if (!espacio) throw new NotFoundError("Espacio común no encontrado.");
   return prisma.espacioComun.update({ where: { id: espacioId }, data });
 }

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Buildings, CheckCircle, QrCode, WarningCircle } from "@phosphor-icons/react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { Buildings, CheckCircle, QrCode, SignIn, WarningCircle, XCircle } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
 import { qrApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { Button, Spinner } from "../components/ui";
 import { DetalleAcceso, DetalleAccesoData } from "../components/DetalleAcceso";
+import { PieDePagina } from "../components/PieDePagina";
 
 // Pagina publica (fuera de ProtectedRoute) a la que apunta el link codificado
 // en el QR (ver backend/src/modules/qr/qr.service.ts, urlAcceso). Antes el QR
@@ -21,6 +22,7 @@ type Resultado = { resultado: "AUTORIZADO" | "RECHAZADO"; motivo: string; detall
 
 export default function AccesoQR() {
   const { token } = useParams<{ token: string }>();
+  const location = useLocation();
   const { usuario, cargando } = useAuth();
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [validando, setValidando] = useState(false);
@@ -33,7 +35,7 @@ export default function AccesoQR() {
     qrApi
       .validar(token)
       .then(setResultado)
-      .catch((err) => setResultado({ resultado: "RECHAZADO", motivo: mensajeError(err, "No se pudo validar el codigo.") }))
+      .catch((err) => setResultado({ resultado: "RECHAZADO", motivo: mensajeError(err, "No se pudo validar el código.") }))
       .finally(() => setValidando(false));
   }, [esConserje, token]);
 
@@ -46,9 +48,9 @@ export default function AccesoQR() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 dark:bg-slate-950">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg dark:border-slate-700 dark:bg-slate-800">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm shadow-brand-600/30">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-brand-50 via-slate-50 to-slate-100 px-4 py-10 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-brand-900/5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-600/30">
           <Buildings size={24} weight="duotone" />
         </div>
 
@@ -56,7 +58,7 @@ export default function AccesoQR() {
           <>
             <WarningCircle size={40} weight="fill" className="mx-auto mb-3 text-red-500" />
             <p className="font-display text-lg font-bold text-slate-900 dark:text-white">Código no reconocido</p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">El link no incluye un código de acceso valido.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">El link no incluye un código de acceso válido.</p>
           </>
         ) : esConserje ? (
           validando ? (
@@ -79,7 +81,15 @@ export default function AccesoQR() {
                     : "text-lg font-bold text-red-700 dark:text-red-300"
                 }
               >
-                {resultado.resultado === "AUTORIZADO" ? "✓ Acceso autorizado" : "✗ Acceso rechazado"}
+                {resultado.resultado === "AUTORIZADO" ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <CheckCircle size={26} weight="fill" /> Acceso autorizado
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <XCircle size={26} weight="fill" /> Acceso rechazado
+                  </span>
+                )}
               </p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{resultado.motivo}</p>
               <DetalleAcceso detalle={resultado.detalle} className="mt-3 rounded-md bg-white/60 p-3 text-left dark:bg-slate-900/30" />
@@ -94,8 +104,18 @@ export default function AccesoQR() {
             </p>
             <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
               <CheckCircle size={14} />
-              No necesitas hacer nada mas en esta pantalla.
+              No necesitas hacer nada más en esta pantalla.
             </div>
+            {!usuario && (
+              <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-700">
+                <p className="text-xs text-slate-500 dark:text-slate-400">¿Eres parte del equipo de conserjería?</p>
+                <Link to="/login" state={{ volverA: location.pathname }} className="mt-2 inline-block">
+                  <Button variant="secondary" size="sm">
+                    <SignIn size={16} /> Iniciar sesión para validar
+                  </Button>
+                </Link>
+              </div>
+            )}
           </>
         )}
 
@@ -107,6 +127,7 @@ export default function AccesoQR() {
           </Link>
         )}
       </div>
+      <PieDePagina className="mt-6" />
     </div>
   );
 }

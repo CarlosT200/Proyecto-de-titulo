@@ -108,7 +108,7 @@ export async function generarQrVisita(condominioId: string, residenteId: string,
     throw new ConflictError("Esta visita no se encuentra vigente.");
   }
   if (visita.qrToken) {
-    throw new ConflictError("Ya existe un codigo QR generado para esta visita.");
+    throw new ConflictError("Ya existe un código QR generado para esta visita.");
   }
 
   const registro = await prisma.qrToken.create({
@@ -210,23 +210,23 @@ export async function validarQr(
       },
     });
   } catch {
-    return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Codigo QR invalido o expirado.");
+    return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Código QR inválido o expirado.");
   }
 
   if (!registro) {
-    return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Codigo QR no reconocido.");
+    return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Código QR no reconocido.");
   }
 
   if (registro.revocado) {
-    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El codigo QR fue revocado.");
+    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El código QR fue revocado.");
   }
 
   if (registro.expiraEn.getTime() < Date.now()) {
-    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El codigo QR se encuentra vencido.");
+    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El código QR se encuentra vencido.");
   }
 
   if (registro.usosMaximos !== null && registro.usosRealizados >= registro.usosMaximos) {
-    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El codigo QR ya fue utilizado.");
+    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El código QR ya fue utilizado.");
   }
 
   if (registro.tipo === TipoQrToken.RESIDENTE) {
@@ -247,11 +247,11 @@ export async function validarQr(
   // Validacion de visita.
   const visita = registro.visita;
   if (!visita || visita.estado === EstadoVisita.REVOCADA) {
-    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "La autorizacion de visita fue revocada.");
+    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "La autorización de visita fue revocada.");
   }
   const ahora = Date.now();
   if (ahora < visita.periodoInicio.getTime() || ahora > visita.periodoFin.getTime()) {
-    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "La visita esta fuera del periodo autorizado.");
+    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "La visita está fuera del período autorizado.");
   }
 
   await prisma.qrToken.update({ where: { id: registro.id }, data: { usosRealizados: { increment: 1 } } });

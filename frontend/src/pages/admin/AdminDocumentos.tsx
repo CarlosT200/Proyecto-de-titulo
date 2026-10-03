@@ -25,7 +25,7 @@ export default function AdminDocumentos() {
   );
 
   async function handleEliminar(id: string, titulo: string) {
-    const ok = await confirmar(`¿Eliminar el documento "${titulo}"? Ya no estara disponible para los residentes.`, {
+    const ok = await confirmar(`¿Eliminar el documento "${titulo}"? Ya no estará disponible para los residentes.`, {
       titulo: "Eliminar documento",
       textoConfirmar: "Eliminar",
     });
@@ -66,7 +66,7 @@ export default function AdminDocumentos() {
     <div className="space-y-6">
       <PageHeader icon={FileText} title="Repositorio de documentos" subtitle="Reglamentos y documentos informativos (HU-22, HU-23)." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader
             title="Documentos publicados"
@@ -77,9 +77,9 @@ export default function AdminDocumentos() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={FileText} title="Aun no hay documentos publicados" />
+            <EmptyState icon={FileText} title="Aún no hay documentos publicados" />
           ) : !filtrados.length ? (
-            <EmptyState title="Sin resultados" description="Ningun documento coincide con la busqueda." />
+            <EmptyState title="Sin resultados" description="Ningún documento coincide con la búsqueda." />
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {filtrados.map((doc, i) => (
@@ -106,7 +106,7 @@ export default function AdminDocumentos() {
                     <button
                       type="button"
                       onClick={() => handleEliminar(doc.id, doc.titulo)}
-                      className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                      className="rounded-lg p-1.5 max-sm:p-3 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                       aria-label="Eliminar documento"
                       title="Eliminar documento"
                     >
@@ -123,16 +123,16 @@ export default function AdminDocumentos() {
           <CardHeader title="Publicar documento" />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
-              <Label>Titulo</Label>
-              <Input required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+              <Label htmlFor="campo-documentos-1">Título</Label>
+              <Input id="campo-documentos-1" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
             </div>
             <div>
-              <Label>Categoria</Label>
-              <Input value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Reglamento" />
+              <Label htmlFor="campo-documentos-2">Categoría</Label>
+              <Input id="campo-documentos-2" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Reglamento" />
             </div>
             <div>
-              <Label>Archivo (PDF, imagen)</Label>
-              <input ref={fileRef} type="file" accept=".pdf,image/*" className="block w-full text-sm" />
+              <Label htmlFor="campo-documentos-archivo">Archivo (PDF, imagen)</Label>
+              <input id="campo-documentos-archivo" ref={fileRef} type="file" accept=".pdf,image/*" className="block w-full text-sm" />
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>

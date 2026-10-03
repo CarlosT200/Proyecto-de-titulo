@@ -20,7 +20,7 @@ export default function ConserjeAccesos() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={ClockCounterClockwise} title="Aun no hay accesos registrados" />
+          <EmptyState icon={ClockCounterClockwise} title="Aún no hay accesos registrados" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((a, i) => (

@@ -12,7 +12,7 @@ export default function AdminAccesos() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={QrCode} title="Control de acceso" subtitle="Historial de validaciones de codigos QR (HU-18, HU-21)." />
+      <PageHeader icon={QrCode} title="Control de acceso" subtitle="Historial de validaciones de códigos QR (HU-18, HU-21)." />
 
       <Card>
         {cargando ? (
@@ -20,7 +20,7 @@ export default function AdminAccesos() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={QrCode} title="Aun no hay accesos registrados" />
+          <EmptyState icon={QrCode} title="Aún no hay accesos registrados" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((a, i) => (

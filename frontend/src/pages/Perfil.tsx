@@ -99,7 +99,7 @@ export default function Perfil() {
       setActual("");
       setNueva("");
       setConfirmarNueva("");
-      toast.success("Contrasena actualizada.");
+      toast.success("Contraseña actualizada.");
     } catch (err) {
       setErrorPassword(mensajeError(err));
     } finally {
@@ -111,7 +111,7 @@ export default function Perfil() {
     <div className="space-y-6">
       <PageHeader icon={UserCircle} title="Mi perfil" subtitle="Datos de tu cuenta y seguridad." />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="h-fit">
           <CardHeader title="Datos personales" />
           <form onSubmit={handleGuardarPerfil} className="space-y-4 p-5">
@@ -129,7 +129,7 @@ export default function Perfil() {
                   onClick={() => fotoInputRef.current?.click()}
                   aria-label={usuario.fotoUrl ? "Cambiar foto" : "Subir foto"}
                   title={usuario.fotoUrl ? "Cambiar foto" : "Subir foto"}
-                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-brand-600 text-white shadow-sm transition-colors hover:bg-brand-700 dark:border-slate-800"
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full after:absolute after:-inset-2 after:content-[''] border-2 border-white bg-brand-600 text-white shadow-sm transition-colors hover:bg-brand-700 dark:border-slate-800"
                 >
                   <Pencil size={13} weight="bold" />
                 </button>
@@ -160,22 +160,22 @@ export default function Perfil() {
               <Badge tone="blue">{ROL_LABEL[usuario.rol]}</Badge>
             </div>
             <div>
-              <Label>Correo electronico</Label>
-              <Input value={usuario.email} disabled className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400" />
+              <Label htmlFor="campo-perfil-1">Correo electrónico</Label>
+              <Input id="campo-perfil-1" value={usuario.email} disabled className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Nombre</Label>
-                <Input required value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                <Label htmlFor="campo-perfil-2">Nombre</Label>
+                <Input id="campo-perfil-2" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
               </div>
               <div>
-                <Label>Apellido</Label>
-                <Input required value={apellido} onChange={(e) => setApellido(e.target.value)} />
+                <Label htmlFor="campo-perfil-3">Apellido</Label>
+                <Input id="campo-perfil-3" required value={apellido} onChange={(e) => setApellido(e.target.value)} />
               </div>
             </div>
             <div>
-              <Label>Telefono</Label>
-              <Input value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} placeholder="+56 9 1234 5678" />
+              <Label htmlFor="campo-perfil-4">Teléfono</Label>
+              <Input id="campo-perfil-4" value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} placeholder="+56 9 1234 5678" />
             </div>
             {errorPerfil && <Alert tone="red">{errorPerfil}</Alert>}
             <Button type="submit" className="w-full" loading={guardandoPerfil}>
@@ -185,11 +185,11 @@ export default function Perfil() {
         </Card>
 
         <Card className="h-fit">
-          <CardHeader title="Cambiar contrasena" subtitle="RNF-02: se almacena mediante hash seguro" />
+          <CardHeader title="Cambiar contraseña" subtitle="RNF-02: se almacena mediante hash seguro" />
           <form onSubmit={handleCambiarPassword} className="space-y-4 p-5">
             <div>
-              <Label>Contrasena actual</Label>
-              <Input
+              <Label htmlFor="campo-perfil-5">Contraseña actual</Label>
+              <Input id="campo-perfil-5"
                 type="password"
                 required
                 autoComplete="current-password"
@@ -198,8 +198,8 @@ export default function Perfil() {
               />
             </div>
             <div>
-              <Label>Nueva contrasena</Label>
-              <Input
+              <Label htmlFor="campo-perfil-6">Nueva contraseña</Label>
+              <Input id="campo-perfil-6"
                 type="password"
                 required
                 minLength={8}
@@ -209,8 +209,8 @@ export default function Perfil() {
               />
             </div>
             <div>
-              <Label>Confirmar nueva contrasena</Label>
-              <Input
+              <Label htmlFor="campo-perfil-7">Confirmar nueva contraseña</Label>
+              <Input id="campo-perfil-7"
                 type="password"
                 required
                 minLength={8}
@@ -221,7 +221,7 @@ export default function Perfil() {
             </div>
             {errorPassword && <Alert tone="red">{errorPassword}</Alert>}
             <Button type="submit" variant="secondary" className="w-full" loading={cambiandoPassword}>
-              <LockKey size={16} /> Actualizar contrasena
+              <LockKey size={16} /> Actualizar contraseña
             </Button>
           </form>
         </Card>
@@ -230,7 +230,7 @@ export default function Perfil() {
       <Card className="h-fit">
         <CardHeader
           title="Notificaciones"
-          subtitle="Recibelas como notificacion del sistema, aunque no tengas HabitaSmart abierto. Se desactivan en este dispositivo al cerrar sesion."
+          subtitle="Recíbelas como notificación del sistema, aunque no tengas HabitaSmart abierto. Se desactivan en este dispositivo al cerrar sesión."
         />
         <div className="flex items-center justify-between gap-4 p-5">
           <div className="flex items-center gap-3">
@@ -258,7 +258,7 @@ export default function Perfil() {
                     <strong>Agregar a inicio</strong>, abre HabitaSmart desde ese icono y vuelve aqui para activarlas.
                   </>
                 ) : push.soportado ? (
-                  "Incluye alertas SOS, multas, comunicados y mas."
+                  "Incluye alertas SOS, multas, comunicados y más."
                 ) : (
                   "Prueba desde Chrome, Edge o Firefox."
                 )}

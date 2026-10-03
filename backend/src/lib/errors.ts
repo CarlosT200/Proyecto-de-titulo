@@ -15,7 +15,7 @@ export class UnauthorizedError extends AppError {
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = "No tienes permisos para realizar esta accion") {
+  constructor(message = "No tienes permisos para realizar esta acción") {
     super(message, 403);
     this.name = "ForbiddenError";
   }

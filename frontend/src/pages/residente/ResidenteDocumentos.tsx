@@ -18,7 +18,7 @@ export default function ResidenteDocumentos() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={FileText} title="Aun no hay documentos publicados" />
+          <EmptyState icon={FileText} title="Aún no hay documentos publicados" />
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((doc, i) => (

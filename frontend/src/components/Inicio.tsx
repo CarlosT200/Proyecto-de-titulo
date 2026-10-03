@@ -70,7 +70,7 @@ export function ChipHero({ icon: Icon, children, to }: { icon: PhosphorIcon; chi
     </>
   );
   return to ? (
-    <Link to={to} className={clsx(clases, "transition-colors hover:bg-white/25")}>
+    <Link to={to} className={clsx(clases, "max-sm:min-h-11 transition-colors hover:bg-white/25")}>
       {contenido}
     </Link>
   ) : (

@@ -8,7 +8,7 @@ import { AppError } from "../lib/errors";
 // (no son bugs): sin esto caian todos al 500 generico "error inesperado".
 const PRISMA_ERRORES: Record<string, { status: number; mensaje: string }> = {
   P2002: { status: 409, mensaje: "Ya existe un registro con esos datos." },
-  P2003: { status: 409, mensaje: "No se puede completar la accion porque hay registros asociados." },
+  P2003: { status: 409, mensaje: "No se puede completar la acción porque hay registros asociados." },
   P2025: { status: 404, mensaje: "El registro no existe o ya fue eliminado." },
 };
 
@@ -16,7 +16,7 @@ const PRISMA_ERRORES: Record<string, { status: number; mensaje: string }> = {
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (err instanceof ZodError) {
     return res.status(422).json({
-      error: "Datos invalidos.",
+      error: "Datos inválidos.",
       detalles: err.issues.map((issue) => ({ campo: issue.path.join("."), mensaje: issue.message })),
     });
   }
@@ -27,7 +27,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
-      return res.status(413).json({ error: "El archivo es demasiado grande. El maximo es 8 MB." });
+      return res.status(413).json({ error: "El archivo es demasiado grande. El máximo es 8 MB." });
     }
     return res.status(400).json({ error: "No se pudo procesar el archivo enviado." });
   }
@@ -40,14 +40,14 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   // Errores de express.json(): cuerpo mal formado o mas grande que el limite.
   const errorDeBody = err as { type?: string; status?: number };
   if (errorDeBody?.type === "entity.parse.failed") {
-    return res.status(400).json({ error: "La solicitud no tiene un formato valido." });
+    return res.status(400).json({ error: "La solicitud no tiene un formato válido." });
   }
   if (errorDeBody?.type === "entity.too.large") {
     return res.status(413).json({ error: "La solicitud es demasiado grande." });
   }
 
   console.error(err);
-  return res.status(500).json({ error: "Ocurrio un error inesperado. Intenta nuevamente." });
+  return res.status(500).json({ error: "Ocurrió un error inesperado. Intenta nuevamente." });
 }
 
 export function notFoundHandler(_req: Request, res: Response) {

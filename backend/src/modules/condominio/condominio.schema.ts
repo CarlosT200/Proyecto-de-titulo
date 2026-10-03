@@ -11,7 +11,7 @@ export const crearTorreSchema = z.object({
 });
 
 export const crearDepartamentoSchema = z.object({
-  numero: z.string().min(1, "El numero de departamento es obligatorio."),
+  numero: z.string().min(1, "El número de departamento es obligatorio."),
   torreId: z.string().uuid().optional().nullable(),
 });
 
@@ -21,8 +21,8 @@ export const crearEspacioComunSchema = z.object({
   capacidad: z.number().int().positive().optional(),
   horarioInicio: z
     .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Formato de hora invalido (HH:mm)."),
-  horarioFin: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Formato de hora invalido (HH:mm)."),
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Formato de hora inválido (HH:mm)."),
+  horarioFin: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Formato de hora inválido (HH:mm)."),
 });
 
 export const actualizarEspacioComunSchema = crearEspacioComunSchema.partial().extend({

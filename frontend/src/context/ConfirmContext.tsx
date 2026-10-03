@@ -43,7 +43,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   return (
     <ConfirmContext.Provider value={confirmar}>
       {children}
-      <Modal open={!!estado} onClose={() => responder(false)} title={estado?.titulo ?? "Confirmar accion"}>
+      <Modal open={!!estado} onClose={() => responder(false)} title={estado?.titulo ?? "Confirmar acción"}>
         {estado && (
           <div className="space-y-5">
             <div className="flex items-start gap-3">

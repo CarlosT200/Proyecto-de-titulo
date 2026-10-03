@@ -145,7 +145,7 @@ describe("validarQr", () => {
     expect(resultado.motivo).toMatch(/ya fue utilizado/i);
   });
 
-  it("rechaza un token que no corresponde a ningun registro en la base de datos", async () => {
+  it("rechaza un token que no corresponde a ningún registro en la base de datos", async () => {
     const token = signQrToken("qr-inexistente", "RESIDENTE", new Date(Date.now() + 60_000));
     findUnique.mockResolvedValueOnce(null);
 
@@ -155,11 +155,11 @@ describe("validarQr", () => {
     expect(resultado.motivo).toMatch(/no reconocido/i);
   });
 
-  it("rechaza un texto que no es un QR valido sin consultar la base de datos", async () => {
+  it("rechaza un texto que no es un QR válido sin consultar la base de datos", async () => {
     const resultado = await validarQr("condo-1", "conserje-1", "esto-no-es-un-jwt");
 
     expect(resultado.resultado).toBe(ResultadoAcceso.RECHAZADO);
-    expect(resultado.motivo).toMatch(/invalido o expirado/i);
+    expect(resultado.motivo).toMatch(/inválido o expirado/i);
     expect(findUnique).not.toHaveBeenCalled();
   });
 });

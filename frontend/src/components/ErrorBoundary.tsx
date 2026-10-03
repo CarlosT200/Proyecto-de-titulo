@@ -80,19 +80,19 @@ export class ErrorBoundary extends Component<Props, { error: Error | null }> {
         <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-lg dark:border-slate-700 dark:bg-slate-800">
           <WarningCircle size={40} weight="fill" className="mx-auto mb-3 text-amber-500" />
           <p className="font-display text-base font-bold text-slate-900 dark:text-white">
-            {deCarga ? "Hay una version nueva de HabitaSmart" : "Algo salio mal en esta pantalla"}
+            {deCarga ? "Hay una versión nueva de HabitaSmart" : "Algo salió mal en esta pantalla"}
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {deCarga
-              ? "Recarga la pagina para continuar. Si no tienes conexion, revisala e intenta de nuevo."
-              : "Recarga la pagina para intentarlo de nuevo. Tus datos estan a salvo."}
+              ? "Recarga la página para continuar. Si no tienes conexión, revísala e intenta de nuevo."
+              : "Recarga la página para intentarlo de nuevo. Tus datos están a salvo."}
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
           >
-            <ArrowClockwise size={16} weight="bold" /> Recargar pagina
+            <ArrowClockwise size={16} weight="bold" /> Recargar página
           </button>
         </div>
       </div>

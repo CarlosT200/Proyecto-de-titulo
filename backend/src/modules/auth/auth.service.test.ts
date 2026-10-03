@@ -62,19 +62,19 @@ describe("login (HU-01)", () => {
     expect(findUnique).toHaveBeenCalledWith({ where: { email: "residente@habitasmart.cl" } });
   });
 
-  it("rechaza una contrasena incorrecta con un mensaje generico", async () => {
+  it("rechaza una contraseña incorrecta con un mensaje generico", async () => {
     findUnique.mockResolvedValue(await usuarioEnBd());
 
     await expect(login("residente@habitasmart.cl", "otra")).rejects.toBeInstanceOf(UnauthorizedError);
   });
 
-  it("no revela si el correo existe: mismo error que contrasena incorrecta", async () => {
+  it("no revela si el correo existe: mismo error que contraseña incorrecta", async () => {
     findUnique.mockResolvedValue(null);
 
-    await expect(login("noexiste@habitasmart.cl", "Habita2026!")).rejects.toThrow("Correo o contrasena incorrectos.");
+    await expect(login("noexiste@habitasmart.cl", "Habita2026!")).rejects.toThrow("Correo o contraseña incorrectos.");
   });
 
-  it("bloquea a una cuenta deshabilitada aunque la contrasena sea correcta", async () => {
+  it("bloquea a una cuenta deshabilitada aunque la contraseña sea correcta", async () => {
     findUnique.mockResolvedValue(await usuarioEnBd(false));
 
     await expect(login("residente@habitasmart.cl", "Habita2026!")).rejects.toBeInstanceOf(ForbiddenError);
