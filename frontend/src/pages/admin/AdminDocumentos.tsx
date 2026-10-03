@@ -97,7 +97,7 @@ export default function AdminDocumentos() {
                   {...staggerFade(i)}
                   className="group flex items-center justify-between gap-2 px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
                 >
-                  <button type="button" onClick={() => handleAbrir(doc.id)} className="min-w-0 flex-1 text-left">
+                  <button type="button" onClick={() => handleAbrir(doc.id)} className="min-w-0 flex-1 text-left max-sm:min-h-11">
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{doc.titulo}</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">
                       {doc.categoria ?? "General"} · {formatFecha(doc.createdAt)}
@@ -114,7 +114,7 @@ export default function AdminDocumentos() {
                     <button
                       type="button"
                       onClick={() => handleEliminar(doc.id, doc.titulo)}
-                      className="rounded-lg p-1.5 max-sm:p-3 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                      className="rounded-lg p-1.5 max-sm:p-3.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                       aria-label="Eliminar documento"
                       title="Eliminar documento"
                     >
