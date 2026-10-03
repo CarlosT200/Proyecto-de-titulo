@@ -9,7 +9,7 @@ Guía para pasar de la versión de demostración a un uso real. Los comandos son
 | 1 | Hacer un **respaldo** de la base de datos de Render | Hoy, antes de tocar nada |
 | 2 | Resolver el **vencimiento de la base de datos gratuita** de Render | Antes del 24 de octubre de 2026 |
 | 3 | Dejar el servicio **siempre encendido** (si habrá SOS reales) | Antes de entregarla al condominio |
-| 4 | Preparar la base con el **condominio real** y deshabilitar las cuentas demo | Al empezar el piloto |
+| 4 | Vaciar los datos de demostración y crear el **condominio real** | Al empezar el piloto |
 | 5 | Rutina de respaldos | Semanal y antes de cada cambio grande |
 
 ---
@@ -53,9 +53,11 @@ Hay dos caminos:
 
 ### Opción A: subir de plan en Render (la más simple)
 
-En el panel de Render, abrir `habitasmart-db` y cambiar a un plan de pago (Basic). Todo sigue igual: misma URL, misma configuración. Los planes de pago incluyen respaldos diarios.
+En el panel de Render, abrir `habitasmart-db` y cambiar el tipo de instancia a un plan de pago (**Basic-256mb**). Todo sigue igual: misma URL, misma configuración.
 
-Costo aproximado (confirmar en el panel, los precios cambian): base Basic ~US$6 al mes más almacenamiento.
+- **¿Dura para siempre?** El vencimiento de 30 días es solo de la base **gratuita**. Una base de pago no vence: sigue existiendo **mientras se pague** la suscripción mensual (si el pago falla, Render la suspende). Tras el cambio debe desaparecer el aviso de vencimiento del panel: confirmarlo.
+- **Costo** (confirmar en el panel, Render cambió precios en agosto de 2026): base Basic-256mb **US$6** al mes + **US$0,30 por GB** de almacenamiento (se parte con 1 GB), más el servicio web Starter (**US$7**). Con el espacio de trabajo "Hobby" (sin costo) el total ronda **US$13,30 al mes**.
+- **Respaldos incluidos:** recuperación a un momento anterior (hasta **3 días** atrás con el espacio Hobby; 7 con el plan Pro de US$25 al mes) y respaldos manuales descargables, que Render guarda 7 días ([documentación](https://render.com/docs/postgresql-backups)). Es una red de seguridad corta: **no reemplaza los respaldos propios** de la sección 6.
 
 ### Opción B: base gratuita permanente en otro proveedor (por ejemplo Neon)
 
@@ -82,34 +84,46 @@ El servicio web gratuito de Render **se apaga tras 15 minutos sin visitas** y ta
 
 ## 4. Preparar la base para el condominio real
 
-Hoy la base de Render tiene los datos y las **cuentas de demostración** (`admin@`, `residente@`, `conserje@habitasmart.cl`), que comparten una contraseña pública. Con residentes reales hay dos caminos.
+Hoy la base de Render tiene datos de ejemplo y las **cuentas de demostración** (`admin@`, `residente@`, `conserje@habitasmart.cl`), que comparten una contraseña pública. Para el piloto conviene partir limpio. Se puede hacer **en la misma base**, sin crear otra.
 
-### Camino recomendado: base nueva y limpia
+### Camino recomendado: vaciar la demo y crear el condominio real
 
-1. Crear una base nueva (o vaciar la actual restaurando sobre otra), aplicar la estructura y crear el condominio con su primera administradora:
+1. **Respaldo** (sección 1). Lo que sigue no se puede deshacer.
+2. Con la `DATABASE_URL` de la base (como en la sección 1), ver qué se borraría (no borra nada todavía):
 
 ```powershell
-$env:DATABASE_URL = "URL_DE_LA_BASE_NUEVA"
-npm run prisma:migrate:deploy
+npm run vaciar-demo
+```
+
+3. Borrar el condominio de demostración y todo lo que cuelga de él (cuentas demo, reservas, multas, incidencias, accesos, documentos, notificaciones). Solo toca el condominio demo; si la base tuviera otros condominios, quedan intactos:
+
+```powershell
+npm run vaciar-demo -- --confirmar
+```
+
+4. Crear el condominio real con su primera cuenta de administración (no crea ningún dato de ejemplo y se niega a usar la contraseña demo):
+
+```powershell
 npm run crear-condominio -- --condominio "Condominio Los Robles" --comuna "Ñuñoa" --direccion "Av. Grecia 1234" --nombre "María" --apellido "Soto" --email admin@correo.cl --password "una-clave-segura"
 ```
 
-El comando se niega a usar la contraseña de las cuentas de demostración. No crea ningún dato de ejemplo.
-
-2. Entrar a la aplicación con esa cuenta y, desde **Condominio**, agregar torres, departamentos y espacios comunes; desde **Residentes**, crear las cuentas de residentes y conserjes.
+5. Entrar a la aplicación con esa cuenta y, desde **Condominio**, agregar torres, departamentos y espacios comunes; desde **Residentes**, crear las cuentas de residentes y conserjes.
    - Cada cuenta nueva sale con una **contraseña temporal** (el botón *Generar* arma una fácil de dictar). La persona **debe elegir la suya al entrar por primera vez**.
    - Si alguien olvida su contraseña: **Residentes → Restablecer clave**. Se define otra temporal y tendrá que cambiarla al entrar.
 
-### Si se conserva la base actual
+### Alternativa: conservar los datos de ejemplo
 
-Deshabilitar las cuentas de demostración (reversible, efecto inmediato):
+Deshabilitar solo las cuentas demo (reversible, efecto inmediato) y crear la cuenta de administración real desde la aplicación (Residentes → Nuevo usuario → rol Administrador):
 
 ```powershell
-$env:DATABASE_URL = "URL_DE_LA_BASE"
 npm run deshabilitar-demo
 ```
 
-Y crear la cuenta de administración real desde la aplicación (Residentes → Nuevo usuario → rol Administrador). Los datos de ejemplo (reservas, multas, comunicados de demostración) quedan en la base; algunos no se pueden eliminar desde la aplicación, por eso se recomienda la base limpia.
+Los datos de ejemplo (reservas, multas, comunicados) quedan en la base y algunos no se pueden eliminar desde la aplicación; por eso se recomienda el camino anterior.
+
+### Alternativa: base de datos nueva
+
+Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:migrate:deploy` y usar `npm run crear-condominio` como en el paso 4. Hay que apuntar `DATABASE_URL` del servicio a la base nueva.
 
 ## 5. Variables de entorno en Render
 
