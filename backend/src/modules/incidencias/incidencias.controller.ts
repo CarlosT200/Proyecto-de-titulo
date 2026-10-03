@@ -8,6 +8,8 @@ import {
 } from "./incidencias.schema";
 import * as service from "./incidencias.service";
 import { ForbiddenError } from "../../lib/errors";
+import { auditar } from "../auditoria/auditoria.service";
+import { ESTADO_INCIDENCIA_LABEL } from "../../lib/etiquetas";
 
 const FOTO_EVIDENCIA_LADO = 640;
 
@@ -52,6 +54,18 @@ export async function actualizarIncidenciaController(req: Request, res: Response
     req.params.id,
     req.auth!.sub,
     data
+  );
+  const cambios = [
+    data.estado && `estado: ${ESTADO_INCIDENCIA_LABEL[data.estado]}`,
+    data.prioridad && `prioridad: ${data.prioridad.toLowerCase()}`,
+    data.categoria && `categoría: ${data.categoria}`,
+  ].filter(Boolean);
+  await auditar(
+    req,
+    "ACTUALIZAR",
+    "Incidencia",
+    `Actualizó la incidencia "${incidencia.titulo}"${cambios.length ? ` (${cambios.join(", ")})` : ""}.`,
+    incidencia.id
   );
   res.json(incidencia);
 }

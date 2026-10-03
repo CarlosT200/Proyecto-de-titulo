@@ -186,6 +186,18 @@ export interface Notificacion {
   entidadId?: string | null;
 }
 
+export type AccionAuditoria = "CREAR" | "ACTUALIZAR" | "ELIMINAR" | "CANCELAR";
+
+export interface RegistroAuditoria {
+  id: string;
+  accion: AccionAuditoria;
+  entidad: string;
+  entidadId: string | null;
+  descripcion: string;
+  createdAt: string;
+  usuario: { id: string; nombre: string; apellido: string; rol: string } | null;
+}
+
 export interface Indicadores {
   incidencias: { pendientes: number; resueltas: number; porEstado: Record<EstadoIncidencia, number> };
   reservas: { proximas: number };

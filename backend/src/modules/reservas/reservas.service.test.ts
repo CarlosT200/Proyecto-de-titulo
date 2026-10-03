@@ -17,16 +17,36 @@ const findReserva = prisma.reserva.findFirst as unknown as Mock;
 const updateReserva = prisma.reserva.update as unknown as Mock;
 const transaccion = prisma.$transaction as unknown as Mock;
 
+const llamadas: string[] = [];
+
+function crearTx(reservasExistentes: { horaInicio: string; horaFin: string }[] = []) {
+  return {
+    $executeRaw: vi.fn().mockImplementation(async () => {
+      llamadas.push("candado");
+      return 0;
+    }),
+    reserva: {
+      findMany: vi.fn().mockImplementation(async () => {
+        llamadas.push("consulta");
+        return reservasExistentes;
+      }),
+      create: vi.fn().mockImplementation(async () => {
+        llamadas.push("creacion");
+        return { id: "reserva-1" };
+      }),
+    },
+  };
+}
+
 const ESPACIO = { id: "espacio-1", nombre: "Quincho", horarioInicio: "08:00", horarioFin: "23:59" };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  llamadas.length = 0;
   vi.useFakeTimers();
   findEspacio.mockResolvedValue(ESPACIO);
   // la transaccion ejecuta el callback con un "tx" sin reservas previas
-  transaccion.mockImplementation(async (fn: (tx: unknown) => unknown) =>
-    fn({ reserva: { findMany: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: "reserva-1" }) } })
-  );
+  transaccion.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(crearTx()));
 });
 
 afterEach(() => {
@@ -60,6 +80,33 @@ describe("crearReserva: no se reserva en el pasado", () => {
     vi.setSystemTime(new Date("2026-10-04T01:30:00.000Z")); // 22:30 del 3 de octubre en Chile
     await expect(
       crearReserva("condo-1", "u-1", { espacioComunId: "espacio-1", fecha: "2026-10-03", horaInicio: "23:00", horaFin: "23:30" })
+    ).resolves.toEqual({ id: "reserva-1" });
+  });
+});
+
+// RNF-10: no puede haber dos reservas del mismo espacio y horario.
+describe("crearReserva: reservas duplicadas", () => {
+  beforeEach(() => {
+    vi.setSystemTime(new Date("2026-10-03T20:30:00.000Z"));
+  });
+
+  it("toma el candado del espacio y dia ANTES de revisar si el horario esta libre", async () => {
+    await crearReserva("condo-1", "u-1", { espacioComunId: "espacio-1", fecha: "2026-10-10", horaInicio: "10:00", horaFin: "11:00" });
+    expect(llamadas).toEqual(["candado", "consulta", "creacion"]);
+  });
+
+  it("rechaza un horario que se superpone con una reserva confirmada", async () => {
+    transaccion.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(crearTx([{ horaInicio: "10:30", horaFin: "11:30" }])));
+    await expect(
+      crearReserva("condo-1", "u-1", { espacioComunId: "espacio-1", fecha: "2026-10-10", horaInicio: "10:00", horaFin: "11:00" })
+    ).rejects.toThrow(/ya se encuentra reservado/);
+    expect(llamadas).not.toContain("creacion");
+  });
+
+  it("acepta horarios contiguos (uno termina cuando empieza el otro)", async () => {
+    transaccion.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(crearTx([{ horaInicio: "09:00", horaFin: "10:00" }])));
+    await expect(
+      crearReserva("condo-1", "u-1", { espacioComunId: "espacio-1", fecha: "2026-10-10", horaInicio: "10:00", horaFin: "11:00" })
     ).resolves.toEqual({ id: "reserva-1" });
   });
 });

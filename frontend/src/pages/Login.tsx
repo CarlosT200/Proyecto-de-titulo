@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
@@ -20,7 +20,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
-import { mensajeError } from "../api/client";
+import { api, mensajeError } from "../api/client";
 import { Button } from "../components/ui";
 import { SkylineBackground } from "../components/SkylineBackground";
 import { PieDePagina } from "../components/PieDePagina";
@@ -66,6 +66,14 @@ export default function Login() {
   // de iniciar sesion vuelve a ese QR en vez de caer en el inicio.
   const volverA = (location.state as { volverA?: string } | null)?.volverA;
   const destino = volverA?.startsWith("/acceso/") ? volverA : "/";
+  // El servidor decide si se muestran las cuentas de demostracion (ocultas en produccion).
+  const [cuentasDemo, setCuentasDemo] = useState(false);
+  useEffect(() => {
+    api
+      .get<{ cuentasDemo: boolean }>("/config")
+      .then((r) => setCuentasDemo(r.data.cuentasDemo))
+      .catch(() => setCuentasDemo(false));
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verPassword, setVerPassword] = useState(false);
@@ -205,7 +213,7 @@ export default function Login() {
                   </div>
                   <div>
                     <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Contrasena
+                      Contraseña
                     </label>
                     <div className="relative">
                       <LockKey size={20} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -248,10 +256,11 @@ export default function Login() {
                   </Button>
                 </form>
 
+                {cuentasDemo && (
                 <div className="mt-7">
                   <div className="flex items-center gap-3 text-xs font-medium text-slate-400">
                     <span className="h-px flex-1 bg-slate-200" />
-                    Probar con una cuenta de demostracion
+                    Probar con una cuenta de demostración
                     <span className="h-px flex-1 bg-slate-200" />
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-2">
@@ -268,8 +277,9 @@ export default function Login() {
                       </button>
                     ))}
                   </div>
-                  <p className="mt-2 text-center text-[11px] text-slate-400">Contrasena de todas: {PASSWORD_DEMO}</p>
+                  <p className="mt-2 text-center text-[11px] text-slate-400">Contraseña de todas: {PASSWORD_DEMO}</p>
                 </div>
+                )}
               </div>
             </motion.div>
           </div>

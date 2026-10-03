@@ -24,6 +24,12 @@ export const env = {
   // abrirlo, no solo el escaner propio de la app.
   appUrl: process.env.APP_URL ?? `http://localhost:${port}`,
   isProd: process.env.NODE_ENV === "production",
+  // Botones de "entrar con una cuenta de demostracion" en el login. Las cuentas demo comparten una
+  // contraseña publica, asi que en produccion quedan ocultas salvo que se active a proposito
+  // (MOSTRAR_CUENTAS_DEMO=true, util para una defensa o una demostracion). En desarrollo se ven.
+  mostrarCuentasDemo: process.env.MOSTRAR_CUENTAS_DEMO
+    ? process.env.MOSTRAR_CUENTAS_DEMO === "true"
+    : process.env.NODE_ENV !== "production",
   // Web Push: si faltan, el modulo push queda deshabilitado en silencio (ver
   // push.service.ts) en vez de tumbar el servidor -- es una funcionalidad
   // adicional (notificaciones aunque la app este cerrada), no el nucleo de

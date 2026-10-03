@@ -56,6 +56,13 @@ export async function crearReserva(
   }
 
   return prisma.$transaction(async (tx) => {
+    // RNF-10: la revision de conflicto y la creacion tienen que ocurrir sin que otra solicitud se
+    // cuele en el medio. Una transaccion normal no basta (cada una ve la tabla sin las reservas
+    // todavia no confirmadas de las otras), asi que 8 solicitudes simultaneas para el mismo horario
+    // quedaban las 8 confirmadas. El candado de aviso se toma por espacio y dia y se libera solo al
+    // terminar la transaccion: las solicitudes para ese espacio y dia se atienden de a una.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`reserva:${data.espacioComunId}:${data.fecha}`}))`;
+
     const existentes = await tx.reserva.findMany({
       where: {
         espacioComunId: data.espacioComunId,
@@ -128,5 +135,6 @@ export async function cancelarReserva(
   return prisma.reserva.update({
     where: { id: reservaId },
     data: { estado: EstadoReserva.CANCELADA },
+    include: { espacioComun: { select: { nombre: true } } },
   });
 }

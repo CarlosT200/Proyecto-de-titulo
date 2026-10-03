@@ -108,6 +108,7 @@ model Condominio {
   documentos    Documento[]
   accesos       AccesoLog[]
   alertasSos    AlertaSos[]
+  auditorias    Auditoria[]
 
   @@map("condominios")
 }
@@ -177,6 +178,7 @@ model Usuario {
   notificaciones       Notificacion[]
   alertasSos           AlertaSos[]
   pushSubscriptions    PushSubscription[]
+  auditorias           Auditoria[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -486,4 +488,28 @@ model AlertaSos {
 
   @@index([condominioId, createdAt])
   @@map("alertas_sos")
+}
+
+// ------------------------------
+// Trazabilidad de acciones administrativas (RNF-06)
+// ------------------------------
+
+// Quien hizo que y cuando. No guarda copia de los datos: solo una descripcion legible, de modo que
+// tambien deja rastro de lo que se elimino (comunicados, multas, documentos). Si se borra la
+// cuenta de quien actuo, el registro se conserva con usuarioId vacio.
+model Auditoria {
+  id           String   @id @default(uuid())
+  condominioId String
+  usuarioId    String?
+  accion       String // CREAR | ACTUALIZAR | ELIMINAR | CANCELAR
+  entidad      String // Comunicado, Multa, Documento, Usuario...
+  entidadId    String?
+  descripcion  String
+  createdAt    DateTime @default(now())
+
+  condominio Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  usuario    Usuario?   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([condominioId, createdAt])
+  @@map("auditoria")
 }

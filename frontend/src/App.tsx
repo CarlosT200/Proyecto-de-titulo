@@ -4,6 +4,7 @@ import {
   Buildings,
   CalendarBlank,
   ChartBar,
+  ClipboardText,
   ClockCounterClockwise,
   FileText,
   House,
@@ -39,6 +40,7 @@ const AdminEncomiendas = lazy(() => import("./pages/admin/AdminEncomiendas"));
 const AdminComunicados = lazy(() => import("./pages/admin/AdminComunicados"));
 const AdminDocumentos = lazy(() => import("./pages/admin/AdminDocumentos"));
 const AdminAccesos = lazy(() => import("./pages/admin/AdminAccesos"));
+const AdminAuditoria = lazy(() => import("./pages/admin/AdminAuditoria"));
 
 const ResidenteInicio = lazy(() => import("./pages/residente/ResidenteInicio"));
 const ResidenteReservas = lazy(() => import("./pages/residente/ResidenteReservas"));
@@ -73,6 +75,7 @@ const ADMIN_NAV: NavItem[] = [
   { to: "/comunicados", label: "Comunicados", icon: <Megaphone size={ICON_SIZE} /> },
   { to: "/documentos", label: "Documentos", icon: <FileText size={ICON_SIZE} /> },
   { to: "/accesos", label: "Accesos QR", icon: <QrCode size={ICON_SIZE} /> },
+  { to: "/auditoria", label: "Registro de actividad", icon: <ClipboardText size={ICON_SIZE} /> },
 ];
 
 const RESIDENTE_NAV: NavItem[] = [
@@ -109,6 +112,7 @@ function AdminApp() {
           <Route path="comunicados" element={<AdminComunicados />} />
           <Route path="documentos" element={<AdminDocumentos />} />
           <Route path="accesos" element={<AdminAccesos />} />
+          <Route path="auditoria" element={<AdminAuditoria />} />
           <Route path="perfil" element={<Perfil />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -11,3 +11,7 @@ coverage/
 uploads/
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
+
+# Respaldos de la base de datos (contienen datos personales)
+respaldos/
+backend/respaldos/

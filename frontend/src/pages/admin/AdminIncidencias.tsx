@@ -190,7 +190,7 @@ function DetalleIncidencia({
         <div className="space-y-5">
           <div>
             <p className="text-sm text-slate-700 dark:text-slate-300">{incidencia.descripcion}</p>
-            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Ubicacion reportada: {incidencia.ubicacion}</p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Ubicación reportada: {incidencia.ubicacion}</p>
             {incidencia.fotoUrl && (
               <img src={incidencia.fotoUrl} alt="Evidencia" className="mt-2 max-h-48 rounded-lg border border-slate-200 dark:border-slate-700" />
             )}
@@ -198,12 +198,23 @@ function DetalleIncidencia({
 
           {incidencia.sugerenciaIA && (
             <Alert tone="amber">
-              <p className="font-semibold">Sugerencia de IA (revisa y confirma antes de aplicar)</p>
+              <p className="font-semibold">Sugerencia automática (revisa y confirma antes de aplicar)</p>
               <p>
-                Categoria: {incidencia.sugerenciaIA.categoria} · Prioridad: {PRIORIDAD_LABEL[incidencia.sugerenciaIA.prioridad] ?? incidencia.sugerenciaIA.prioridad} · Ubicacion
+                Categoría: {incidencia.sugerenciaIA.categoria} · Prioridad:{" "}
+                {PRIORIDAD_LABEL[incidencia.sugerenciaIA.prioridad] ?? incidencia.sugerenciaIA.prioridad} · Ubicación
                 detectada: {incidencia.sugerenciaIA.ubicacionDetectada ?? "no detectada"} · Confianza:{" "}
                 {incidencia.sugerenciaIA.confianza}
               </p>
+              <button
+                type="button"
+                className="mt-2 text-sm font-semibold underline underline-offset-2 max-sm:min-h-11"
+                onClick={() => {
+                  setCategoria(incidencia.sugerenciaIA!.categoria);
+                  setPrioridad(incidencia.sugerenciaIA!.prioridad);
+                }}
+              >
+                Usar esta sugerencia en el formulario
+              </button>
             </Alert>
           )}
 
@@ -234,7 +245,7 @@ function DetalleIncidencia({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="campo-incidencias-3">Categoría</Label>
-                <Input id="campo-incidencias-3" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Ej: Filtracion" />
+                <Input id="campo-incidencias-3" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Ej: Filtración" />
               </div>
               <div>
                 <Label htmlFor="campo-incidencias-4">Responsable</Label>

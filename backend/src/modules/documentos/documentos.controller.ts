@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { crearDocumentoSchema } from "./documentos.schema";
 import * as service from "./documentos.service";
 import { AppError } from "../../lib/errors";
+import { auditar } from "../auditoria/auditoria.service";
 
 export async function crearDocumentoController(req: Request, res: Response) {
   const data = crearDocumentoSchema.parse(req.body);
@@ -13,6 +14,7 @@ export async function crearDocumentoController(req: Request, res: Response) {
     ...data,
     archivoUrl,
   });
+  await auditar(req, "CREAR", "Documento", `Publicó el documento "${documento.titulo}".`, documento.id);
   res.status(201).json(documento);
 }
 
@@ -21,6 +23,7 @@ export async function listarDocumentosController(req: Request, res: Response) {
 }
 
 export async function eliminarDocumentoController(req: Request, res: Response) {
-  await service.eliminarDocumento(req.auth!.condominioId, req.params.id);
+  const eliminado = await service.eliminarDocumento(req.auth!.condominioId, req.params.id);
+  await auditar(req, "ELIMINAR", "Documento", `Eliminó el documento "${eliminado.titulo}".`, req.params.id);
   res.status(204).send();
 }

@@ -78,6 +78,8 @@ export async function actualizarMulta(
 }
 
 export async function eliminarMulta(condominioId: string, multaId: string) {
-  const { count } = await prisma.multa.deleteMany({ where: { id: multaId, condominioId } });
-  if (count === 0) throw new NotFoundError("Multa no encontrada.");
+  const multa = await prisma.multa.findFirst({ where: { id: multaId, condominioId }, select: { motivo: true } });
+  if (!multa) throw new NotFoundError("Multa no encontrada.");
+  await prisma.multa.deleteMany({ where: { id: multaId, condominioId } });
+  return multa;
 }

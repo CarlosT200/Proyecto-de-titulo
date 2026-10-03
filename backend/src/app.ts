@@ -21,6 +21,7 @@ import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import notificacionesRoutes from "./modules/notificaciones/notificaciones.routes";
 import sosRoutes from "./modules/sos/sos.routes";
 import pushRoutes from "./modules/push/push.routes";
+import auditoriaRoutes from "./modules/auditoria/auditoria.routes";
 
 export const app = express();
 
@@ -32,6 +33,9 @@ app.use(morgan(env.isProd ? "combined" : "dev"));
 app.use("/uploads", express.static(UPLOADS_DIR));
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// Configuracion publica que necesita la pantalla de login antes de que haya sesion.
+app.get("/api/config", (_req, res) => res.json({ cuentasDemo: env.mostrarCuentasDemo }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/usuarios", usuariosRoutes);
@@ -47,6 +51,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/sos", sosRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/auditoria", auditoriaRoutes);
 
 // Sirve el frontend ya compilado desde el mismo proceso/puerto: un solo servidor que
 // levantar, sin depender de que el servidor de desarrollo de Vite siga vivo por separado.

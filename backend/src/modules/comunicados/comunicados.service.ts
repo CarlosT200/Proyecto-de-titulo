@@ -44,6 +44,11 @@ export async function listarComunicados(condominioId: string) {
 }
 
 export async function eliminarComunicado(condominioId: string, comunicadoId: string) {
-  const { count } = await prisma.comunicado.deleteMany({ where: { id: comunicadoId, condominioId } });
-  if (count === 0) throw new NotFoundError("Comunicado no encontrado.");
+  const comunicado = await prisma.comunicado.findFirst({
+    where: { id: comunicadoId, condominioId },
+    select: { titulo: true },
+  });
+  if (!comunicado) throw new NotFoundError("Comunicado no encontrado.");
+  await prisma.comunicado.deleteMany({ where: { id: comunicadoId, condominioId } });
+  return comunicado;
 }

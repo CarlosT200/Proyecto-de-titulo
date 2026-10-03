@@ -24,6 +24,10 @@ services:
         sync: false
       - key: APP_URL
         value: https://habitasmart.onrender.com
+      # Botones de cuentas de demostracion en el login. Oculto por defecto en produccion; poner
+      # "true" en el dashboard solo para una demostracion (sync: false = el dashboard manda).
+      - key: MOSTRAR_CUENTAS_DEMO
+        sync: false
       # Web Push (notificaciones del sistema, incluida la alerta SOS, aunque
       # la app este cerrada). No se pueden generar con generateValue: true
       # (necesitan ser un par de claves EC validas, no un string random) --

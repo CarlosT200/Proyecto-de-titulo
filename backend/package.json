@@ -12,6 +12,10 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "respaldo": "ts-node scripts/respaldo.ts",
+    "restaurar": "ts-node scripts/restaurar.ts",
+    "crear-condominio": "ts-node scripts/crear-condominio.ts",
+    "deshabilitar-demo": "ts-node scripts/deshabilitar-demo.ts",
     "test": "vitest run"
   },
   "prisma": {

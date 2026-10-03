@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Rol } from "@prisma/client";
 import { crearReservaSchema, disponibilidadQuerySchema } from "./reservas.schema";
 import * as reservasService from "./reservas.service";
+import { auditar } from "../auditoria/auditoria.service";
 
 export async function disponibilidadController(req: Request, res: Response) {
   const { espacioComunId, fecha } = disponibilidadQuerySchema.parse(req.query);
@@ -30,5 +31,10 @@ export async function cancelarReservaController(req: Request, res: Response) {
     rolEsAdmin,
     req.params.id
   );
+  // Solo se deja rastro cuando la cancelacion la hace la administracion sobre la reserva de otra persona
+  if (rolEsAdmin && reserva.usuarioId !== req.auth!.sub) {
+    const fecha = reserva.fecha.toISOString().slice(0, 10);
+    await auditar(req, "CANCELAR", "Reserva", `Canceló una reserva de "${reserva.espacioComun.nombre}" del ${fecha}.`, reserva.id);
+  }
   res.json(reserva);
 }

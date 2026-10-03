@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
 import { crearEncomiendaSchema, listarEncomiendasQuerySchema } from "./encomiendas.schema";
 import * as service from "./encomiendas.service";
+import { auditar } from "../auditoria/auditoria.service";
 
 export async function crearEncomiendaController(req: Request, res: Response) {
   const data = crearEncomiendaSchema.parse(req.body);
   const encomienda = await service.crearEncomienda(req.auth!.condominioId, req.auth!.sub, data);
+  const remitente = data.remitente ? ` de ${data.remitente}` : "";
+  await auditar(req, "CREAR", "Encomienda", `Registró una encomienda${remitente}.`, encomienda.id);
   res.status(201).json(encomienda);
 }
 
@@ -18,5 +21,7 @@ export async function listarEncomiendasController(req: Request, res: Response) {
 }
 
 export async function marcarRetiradaController(req: Request, res: Response) {
-  res.json(await service.marcarRetirada(req.auth!.condominioId, req.params.id));
+  const encomienda = await service.marcarRetirada(req.auth!.condominioId, req.params.id);
+  await auditar(req, "ACTUALIZAR", "Encomienda", "Marcó una encomienda como retirada.", encomienda.id);
+  res.json(encomienda);
 }

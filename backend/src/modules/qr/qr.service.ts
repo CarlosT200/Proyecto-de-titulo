@@ -190,6 +190,8 @@ export async function validarQr(
         usuario: {
           select: {
             id: true,
+            condominioId: true,
+            activo: true,
             nombre: true,
             apellido: true,
             departamento: { include: { torre: true } },
@@ -217,6 +219,13 @@ export async function validarQr(
     return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Código QR no reconocido.");
   }
 
+  // Un conserje solo valida QR de su propio condominio: el token firmado es valido en cualquier
+  // lugar, asi que hay que comprobar a quien pertenece.
+  const condominioDelQr = registro.usuario?.condominioId ?? registro.visita?.condominioId;
+  if (condominioDelQr !== condominioId) {
+    return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Código QR no reconocido.");
+  }
+
   if (registro.revocado) {
     return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El código QR fue revocado.");
   }
@@ -233,7 +242,12 @@ export async function validarQr(
     if (!registro.usuario) {
       return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "Residente asociado no encontrado.");
     }
-    await prisma.qrToken.update({ where: { id: registro.id }, data: { usosRealizados: { increment: 1 } } });
+    if (!registro.usuario.activo) {
+      return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "La cuenta del residente está deshabilitada.");
+    }
+    if (!(await consumirUso(registro.id, registro.usosMaximos))) {
+      return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El código QR ya fue utilizado.");
+    }
     return registrarResultado(
       condominioId,
       validadoPorId,
@@ -254,7 +268,9 @@ export async function validarQr(
     return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "La visita está fuera del período autorizado.");
   }
 
-  await prisma.qrToken.update({ where: { id: registro.id }, data: { usosRealizados: { increment: 1 } } });
+  if (!(await consumirUso(registro.id, registro.usosMaximos))) {
+    return registrarResultado(condominioId, validadoPorId, registro.id, ResultadoAcceso.RECHAZADO, "El código QR ya fue utilizado.");
+  }
   if (visita.soloUnUso) {
     await prisma.visita.update({ where: { id: visita.id }, data: { estado: EstadoVisita.USADA } });
   }
@@ -267,6 +283,23 @@ export async function validarQr(
     "Acceso de visita autorizado.",
     { visita: { nombreVisita: visita.nombreVisita, residente: visita.residente } }
   );
+}
+
+// Reclama un uso del QR en una sola operacion atomica. Antes se leia "usosRealizados", se comparaba
+// en memoria y despues se incrementaba: con varios escaneos simultaneos (o un QR compartido) todos
+// leian 0 y todos pasaban, asi que un QR de "un solo uso" entraba varias veces. Con updateMany la
+// base de datos aplica la condicion y el incremento juntos; solo un escaneo obtiene count = 1.
+// "revocado: false" tambien cierra la carrera contra una revocacion que llega al mismo tiempo.
+async function consumirUso(qrTokenId: string, usosMaximos: number | null): Promise<boolean> {
+  const { count } = await prisma.qrToken.updateMany({
+    where: {
+      id: qrTokenId,
+      revocado: false,
+      ...(usosMaximos !== null ? { usosRealizados: { lt: usosMaximos } } : {}),
+    },
+    data: { usosRealizados: { increment: 1 } },
+  });
+  return count === 1;
 }
 
 async function registrarResultado(

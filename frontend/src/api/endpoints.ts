@@ -9,6 +9,7 @@ import type {
   EspacioComun,
   Incidencia,
   Indicadores,
+  RegistroAuditoria,
   Multa,
   Notificacion,
   Reserva,
@@ -191,6 +192,12 @@ export const documentosApi = {
 // --- Dashboard (HU-24) ---
 export const dashboardApi = {
   indicadores: () => api.get<Indicadores>("/dashboard").then((r) => r.data),
+};
+
+// --- Registro de actividad (RNF-06) ---
+export const auditoriaApi = {
+  listar: (entidad?: string) =>
+    api.get<RegistroAuditoria[]>("/auditoria", { params: entidad ? { entidad } : {} }).then((r) => r.data),
 };
 
 // --- Notificaciones ---

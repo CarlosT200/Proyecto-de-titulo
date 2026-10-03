@@ -19,6 +19,11 @@ export async function listarDocumentos(condominioId: string) {
 }
 
 export async function eliminarDocumento(condominioId: string, documentoId: string) {
-  const { count } = await prisma.documento.deleteMany({ where: { id: documentoId, condominioId } });
-  if (count === 0) throw new NotFoundError("Documento no encontrado.");
+  const documento = await prisma.documento.findFirst({
+    where: { id: documentoId, condominioId },
+    select: { titulo: true },
+  });
+  if (!documento) throw new NotFoundError("Documento no encontrado.");
+  await prisma.documento.deleteMany({ where: { id: documentoId, condominioId } });
+  return documento;
 }
