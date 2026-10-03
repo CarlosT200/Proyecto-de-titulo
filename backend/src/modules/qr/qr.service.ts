@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import QRCode from "qrcode";
 import sharp from "sharp";
 import { EstadoVisita, ResultadoAcceso, TipoQrToken } from "@prisma/client";
@@ -52,12 +53,11 @@ export async function generarQrResidente(condominioId: string, usuarioId: string
   });
 
   const expiraEn = new Date(Date.now() + VIGENCIA_QR_RESIDENTE_HORAS * 60 * 60 * 1000);
-  const registro = await prisma.qrToken.create({
-    data: { tipo: TipoQrToken.RESIDENTE, usuarioId, expiraEn, token: "" },
+  const id = randomUUID();
+  const token = signQrToken(id, "RESIDENTE", expiraEn);
+  await prisma.qrToken.create({
+    data: { id, tipo: TipoQrToken.RESIDENTE, usuarioId, expiraEn, token },
   });
-
-  const token = signQrToken(registro.id, "RESIDENTE", expiraEn);
-  await prisma.qrToken.update({ where: { id: registro.id }, data: { token } });
 
   return { qrDataUrl: await generarImagenQr(token), expiraEn };
 }
@@ -111,18 +111,18 @@ export async function generarQrVisita(condominioId: string, residenteId: string,
     throw new ConflictError("Ya existe un código QR generado para esta visita.");
   }
 
-  const registro = await prisma.qrToken.create({
+  const id = randomUUID();
+  const token = signQrToken(id, "VISITA", visita.periodoFin);
+  await prisma.qrToken.create({
     data: {
+      id,
       tipo: TipoQrToken.VISITA,
       visitaId: visita.id,
       expiraEn: visita.periodoFin,
       usosMaximos: visita.soloUnUso ? 1 : null,
-      token: "",
+      token,
     },
   });
-
-  const token = signQrToken(registro.id, "VISITA", visita.periodoFin);
-  await prisma.qrToken.update({ where: { id: registro.id }, data: { token } });
 
   return { qrDataUrl: await generarImagenQr(token), expiraEn: visita.periodoFin };
 }
