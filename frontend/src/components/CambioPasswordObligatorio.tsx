@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { Link } from "react-router-dom";
 import { LockKey, SignOut } from "@phosphor-icons/react";
 import { authApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
@@ -50,6 +51,13 @@ export function CambioPasswordObligatorio() {
         <p className="mt-2 text-center text-sm text-slate-500 dark:text-slate-400">
           {usuario ? `Hola, ${usuario.nombre}. ` : ""}Entraste con una contraseña temporal que te entregó la administración. Por tu
           seguridad, elige una propia antes de continuar.
+        </p>
+        <p className="mt-2 text-center text-xs text-slate-400 dark:text-slate-500">
+          Antes de seguir, revisa el{" "}
+          <Link to="/privacidad" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
+            aviso de privacidad
+          </Link>
+          : explica qué datos tuyos usa HabitaSmart y cómo ejercer tus derechos.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-3">

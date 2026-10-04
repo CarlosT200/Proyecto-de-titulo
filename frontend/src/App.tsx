@@ -28,6 +28,7 @@ import Login from "./pages/Login";
 // cuando se navega a ella; el componente se reusa igual si aparece en mas de
 // un rol (AlertasSos, Perfil) porque import() cachea por modulo.
 const AccesoQR = lazy(() => import("./pages/AccesoQR"));
+const Privacidad = lazy(() => import("./pages/Privacidad"));
 const AlertasSos = lazy(() => import("./pages/AlertasSos"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -173,6 +174,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/acceso/:token" element={<AccesoQR />} />
+        <Route path="/privacidad" element={<Privacidad />} />
         <Route
           path="/*"
           element={

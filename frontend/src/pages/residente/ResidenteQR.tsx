@@ -299,6 +299,9 @@ function FormularioVisita({ onCreado }: { onCreado: () => void }) {
         <input type="checkbox" checked={soloUnUso} onChange={(e) => setSoloUnUso(e.target.checked)} />
         Autorización de un solo uso
       </label>
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        Avísale a tu visita que registras su nombre para su ingreso al condominio.
+      </p>
       {error && <Alert tone="red">{error}</Alert>}
       <Button type="submit" className="w-full" loading={cargando}>
         Registrar visita

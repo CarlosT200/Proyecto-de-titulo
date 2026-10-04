@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { BellRinging, Camera, Export as IconoCompartir, LockKey, Pencil, UserCircle } from "@phosphor-icons/react";
+import { Link } from "react-router-dom";
+import { BellRinging, Camera, Export as IconoCompartir, LockKey, Pencil, ShieldCheck, UserCircle } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { authApi } from "../api/endpoints";
@@ -231,7 +232,7 @@ export default function Perfil() {
       <Card className="h-fit">
         <CardHeader
           title="Notificaciones"
-          subtitle="Recíbelas como notificación del sistema, aunque no tengas HabitaSmart abierto. Se desactivan en este dispositivo al cerrar sesión."
+          subtitle="Recíbelas como notificación del sistema, aunque no tengas HabitaSmart abierto. Solo se activan si tú lo autorizas, guardan un identificador de este navegador y se desactivan en este dispositivo al cerrar sesión."
         />
         <div className="flex items-center justify-between gap-4 p-5">
           <div className="flex items-center gap-3">
@@ -277,6 +278,18 @@ export default function Perfil() {
               {push.habilitado ? "Desactivar" : "Activar"}
             </Button>
           )}
+        </div>
+      </Card>
+
+      <Card className="h-fit">
+        <CardHeader title="Privacidad" subtitle="Qué datos tuyos usa HabitaSmart y cómo pedir acceso, corrección o eliminación." />
+        <div className="p-5">
+          <Link
+            to="/privacidad"
+            className="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:underline max-sm:min-h-11 dark:text-brand-400"
+          >
+            <ShieldCheck size={18} /> Ver aviso de privacidad
+          </Link>
         </div>
       </Card>
     </div>
