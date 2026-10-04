@@ -216,12 +216,15 @@ export function StatCard({
   );
 
   const className = clsx(
-    "group relative block overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-sm transition-shadow hover:shadow-xl hover:shadow-slate-300/40 dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20",
+    "group relative block h-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-sm transition-shadow hover:shadow-xl hover:shadow-slate-300/40 dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20",
     to && "hover:border-brand-300 dark:hover:border-brand-500/50"
   );
 
   return (
+    // h-full (aqui y en la tarjeta): en una grilla todas quedan del mismo alto aunque una etiqueta
+    // ocupe dos lineas.
     <motion.div
+      className="h-full"
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: false, amount: 0.3 }}

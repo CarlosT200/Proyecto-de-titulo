@@ -105,9 +105,9 @@ export const TIPO_EMERGENCIA_LABEL: Record<string, string> = {
 
 export const TIPO_COMUNICADO_LABEL: Record<string, string> = {
   CORTE_AGUA: "Corte de agua",
-  CORTE_ELECTRICO: "Corte electrico",
-  MANTENCION: "Mantencion",
-  REUNION: "Reunion",
+  CORTE_ELECTRICO: "Corte eléctrico",
+  MANTENCION: "Mantención",
+  REUNION: "Reunión",
   EMERGENCIA: "Emergencia",
   CAMBIO_HORARIO: "Cambio de horario",
   GENERAL: "General",

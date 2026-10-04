@@ -80,7 +80,7 @@ export default function AdminEncomiendas() {
           <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="tabla-movil w-full text-left text-sm">
               <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Residente</th>
@@ -93,15 +93,15 @@ export default function AdminEncomiendas() {
               <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
                 {filtradas.map((enc, i) => (
                   <motion.tr key={enc.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                    <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
+                    <td data-label="Residente" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
                       {enc.usuario ? `${enc.usuario.nombre} ${enc.usuario.apellido}` : "—"}
                     </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{enc.remitente ?? "—"}</td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFechaHora(enc.fechaRecepcion)}</td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                    <td data-label="Remitente" className="px-5 py-3 text-slate-500 dark:text-slate-400">{enc.remitente ?? "—"}</td>
+                    <td data-label="Recepción" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFechaHora(enc.fechaRecepcion)}</td>
+                    <td data-label="Retiro" className="px-5 py-3 text-slate-500 dark:text-slate-400">
                       {enc.fechaRetiro ? formatFechaHora(enc.fechaRetiro) : "—"}
                     </td>
-                    <td className="px-5 py-3">
+                    <td data-label="Estado" className="px-5 py-3">
                       <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
                     </td>
                   </motion.tr>

@@ -78,7 +78,7 @@ export default function AdminIncidencias() {
           <EmptyState title="Sin resultados" description="Ninguna incidencia coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="tabla-movil w-full text-left text-sm">
               <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Título</th>
@@ -97,18 +97,18 @@ export default function AdminIncidencias() {
                     className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
                     onClick={() => setSeleccionadaId(inc.id)}
                   >
-                    <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{inc.titulo}</td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                    <td data-label="Título" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{inc.titulo}</td>
+                    <td data-label="Residente" className="px-5 py-3 text-slate-500 dark:text-slate-400">
                       {inc.usuario ? `${inc.usuario.nombre} ${inc.usuario.apellido}` : "—"}
                     </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{inc.ubicacion}</td>
-                    <td className="px-5 py-3">
+                    <td data-label="Ubicación" className="px-5 py-3 text-slate-500 dark:text-slate-400">{inc.ubicacion}</td>
+                    <td data-label="Prioridad" className="px-5 py-3">
                       {inc.prioridad ? <Badge tone={PRIORIDAD_TONO[inc.prioridad]}>{PRIORIDAD_LABEL[inc.prioridad]}</Badge> : "—"}
                     </td>
-                    <td className="px-5 py-3">
+                    <td data-label="Estado" className="px-5 py-3">
                       <Badge tone={ESTADO_INCIDENCIA_TONO[inc.estado]}>{ESTADO_INCIDENCIA_LABEL[inc.estado]}</Badge>
                     </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFechaHora(inc.createdAt)}</td>
+                    <td data-label="Reportada" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFechaHora(inc.createdAt)}</td>
                   </motion.tr>
                 ))}
               </tbody>
