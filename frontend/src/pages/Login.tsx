@@ -26,8 +26,8 @@ import { SkylineBackground } from "../components/SkylineBackground";
 import { PieDePagina } from "../components/PieDePagina";
 
 const CARACTERISTICAS: { icon: PhosphorIcon; titulo: string; texto: string; tono: string }[] = [
-  { icon: QrCode, titulo: "Acceso con QR", texto: "Credencial digital e invitados", tono: "from-brand-500 to-brand-700" },
-  { icon: Siren, titulo: "Boton SOS", texto: "Ayuda inmediata 24/7", tono: "from-red-500 to-rose-600" },
+  { icon: QrCode, titulo: "Acceso con QR", texto: "Credencial y visitas", tono: "from-brand-500 to-brand-700" },
+  { icon: Siren, titulo: "Botón SOS", texto: "Ayuda inmediata 24/7", tono: "from-red-500 to-rose-600" },
   { icon: Package, titulo: "Encomiendas", texto: "Aviso apenas llegan", tono: "from-violet-500 to-purple-700" },
   { icon: CalendarCheck, titulo: "Reservas", texto: "Quincho, salas y más", tono: "from-emerald-400 to-emerald-600" },
 ];
@@ -119,8 +119,11 @@ export default function Login() {
             initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="hidden text-white lg:block"
+            className="relative isolate hidden text-white lg:block"
           >
+            {/* Velo oscuro difuso detras del texto: sin el, las ventanas iluminadas del fondo
+                quedan justo detras de algunas palabras y parecen resaltadas. */}
+            <div aria-hidden className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 rounded-[3rem] bg-slate-950/75 blur-3xl" />
             <Wordmark claro />
             <h1 className="mt-8 font-display text-5xl font-bold leading-[1.1] tracking-tight [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]">
               Tu condominio,
@@ -129,7 +132,7 @@ export default function Login() {
                 en la palma de tu mano.
               </span>
             </h1>
-            <p className="mt-4 max-w-md text-base text-white/80">
+            <p className="mt-4 max-w-md text-base text-white/85 [text-shadow:0_1px_12px_rgba(0,0,0,0.7)]">
               Comunicados, reservas, encomiendas, multas y control de acceso por QR. Todo en un solo lugar, para
               residentes, conserjería y administración.
             </p>
@@ -159,7 +162,7 @@ export default function Login() {
               ))}
             </div>
 
-            <div className="mt-8 flex items-center gap-2 text-sm text-white/75">
+            <div className="mt-8 flex items-center gap-2 text-sm text-white/80 [text-shadow:0_1px_12px_rgba(0,0,0,0.7)]">
               <ShieldCheck size={18} weight="fill" className="text-accent-300" />
               Acceso seguro por roles y trazabilidad completa
             </div>

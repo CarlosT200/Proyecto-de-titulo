@@ -58,3 +58,42 @@ h3,
     animation-iteration-count: infinite !important;
   }
 }
+
+/* Tablas en celular: en vez de una tabla que se desplaza hacia el lado (y deja ocultos el rol, el
+   estado y los botones), cada fila se muestra como una tarjeta con "Etiqueta  valor" por linea.
+   La etiqueta sale del atributo data-label de cada celda; la primera celda es el titulo. */
+@media (max-width: 639px) {
+  .tabla-movil thead {
+    @apply sr-only;
+  }
+  .tabla-movil,
+  .tabla-movil tbody,
+  .tabla-movil tr,
+  .tabla-movil td {
+    display: block;
+    width: 100%;
+  }
+  .tabla-movil tr {
+    @apply px-4 py-3;
+  }
+  .tabla-movil td {
+    @apply flex items-center justify-between gap-4 px-0 py-1 text-right;
+  }
+  .tabla-movil td::before {
+    content: attr(data-label);
+    @apply shrink-0 text-left text-xs font-medium uppercase text-slate-400 dark:text-slate-500;
+  }
+  .tabla-movil td:first-child {
+    @apply pb-2 text-left text-base;
+  }
+  .tabla-movil td:first-child::before,
+  .tabla-movil td:not([data-label])::before {
+    content: none;
+  }
+  .tabla-movil td:not([data-label]) {
+    @apply justify-end pt-2;
+  }
+  .tabla-movil td:empty {
+    display: none;
+  }
+}

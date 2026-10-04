@@ -42,7 +42,7 @@ export default function AdminReservas() {
           <EmptyState title="Sin resultados" description="Ninguna reserva coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="tabla-movil w-full text-left text-sm">
               <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Espacio</th>
@@ -59,15 +59,15 @@ export default function AdminReservas() {
                   const estado = finalizada ? "FINALIZADA" : r.estado;
                   return (
                     <motion.tr key={r.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                      <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{r.espacioComun.nombre}</td>
-                      <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                      <td data-label="Espacio" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">{r.espacioComun.nombre}</td>
+                      <td data-label="Residente" className="px-5 py-3 text-slate-500 dark:text-slate-400">
                         {r.usuario ? `${r.usuario.nombre} ${r.usuario.apellido}` : "—"}
                       </td>
-                      <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFecha(r.fecha)}</td>
-                      <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                      <td data-label="Fecha" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFecha(r.fecha)}</td>
+                      <td data-label="Horario" className="px-5 py-3 text-slate-500 dark:text-slate-400">
                         {r.horaInicio} - {r.horaFin}
                       </td>
-                      <td className="px-5 py-3">
+                      <td data-label="Estado" className="px-5 py-3">
                         <Badge tone={ESTADO_RESERVA_TONO[estado]}>{ESTADO_RESERVA_LABEL[estado]}</Badge>
                       </td>
                       <td className="px-5 py-3 text-right">

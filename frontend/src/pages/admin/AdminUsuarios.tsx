@@ -71,7 +71,7 @@ export default function AdminUsuarios() {
           <EmptyState title="Sin resultados" description="Ningún usuario coincide con la búsqueda." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="tabla-movil w-full text-left text-sm">
               <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Nombre</th>
@@ -85,17 +85,17 @@ export default function AdminUsuarios() {
               <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
                 {filtrados.map((u, i) => (
                   <motion.tr key={u.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                    <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
+                    <td data-label="Nombre" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
                       {u.nombre} {u.apellido}
                     </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{u.email}</td>
-                    <td className="px-5 py-3">
+                    <td data-label="Correo" className="px-5 py-3 text-slate-500 dark:text-slate-400">{u.email}</td>
+                    <td data-label="Rol" className="px-5 py-3">
                       <Badge tone="blue">{ROL_LABEL[u.rol]}</Badge>
                     </td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
+                    <td data-label="Unidad" className="px-5 py-3 text-slate-500 dark:text-slate-400">
                       {u.departamento ? `${u.departamento.torre?.nombre ?? ""} ${u.departamento.numero}` : "—"}
                     </td>
-                    <td className="px-5 py-3">
+                    <td data-label="Estado" className="px-5 py-3">
                       <Badge tone={u.activo ? "green" : "slate"}>{u.activo ? "Activo" : "Deshabilitado"}</Badge>
                     </td>
                     <td className="px-5 py-3 text-right">

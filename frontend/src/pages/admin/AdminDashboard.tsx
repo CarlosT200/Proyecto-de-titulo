@@ -46,7 +46,7 @@ const LABEL_MULTA: Record<string, string> = {
 
 const LABEL_INCIDENCIA: Record<string, string> = {
   REPORTADA: "Reportada",
-  EN_REVISION: "En revision",
+  EN_REVISION: "En revisión",
   EN_PROCESO: "En proceso",
   RESUELTA: "Resuelta",
 };
