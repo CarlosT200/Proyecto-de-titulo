@@ -235,21 +235,33 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               <List size={22} weight="bold" />
             </button>
             {/* Logo en el header cuando el menu lateral no esta a la vista (celular, o
-                escritorio con el menu oculto) -- si no, la marca desaparece por completo. */}
+                escritorio con el menu oculto) -- si no, la marca desaparece por completo.
+                En celular va solo el icono: el nombre no cabe junto a los botones. */}
             <Link
               to="/"
-              className={clsx("hidden items-center gap-2 sm:flex", sidebarAbierto && "lg:hidden")}
+              aria-label="HabitaSmart, ir al inicio"
+              className={clsx("flex items-center gap-2", sidebarAbierto && "lg:hidden")}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md shadow-brand-600/30">
                 <Buildings size={17} weight="fill" />
               </span>
-              <span className="font-display text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+              <span className="hidden font-display text-sm font-bold tracking-tight text-slate-900 sm:inline dark:text-white">
                 Habita<span className="text-brand-600 dark:text-brand-400">Smart</span>
               </span>
             </Link>
           </div>
           <div className="flex items-center gap-1 min-[360px]:gap-2 sm:gap-4">
-            <div className="flex items-center gap-0.5 rounded-full border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
+            {/* Celular: un solo boton que alterna el tema (el selector doble ocupa casi un tercio del ancho). */}
+            <button
+              type="button"
+              onClick={() => setTema(tema === "oscuro" ? "claro" : "oscuro")}
+              aria-label={tema === "oscuro" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              title={tema === "oscuro" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              className="flex h-11 w-11 max-[359px]:h-10 max-[359px]:w-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 sm:hidden dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              {tema === "oscuro" ? <Moon size={20} weight="fill" className="text-brand-300" /> : <Sun size={20} weight="fill" className="text-amber-500" />}
+            </button>
+            <div className="hidden items-center gap-0.5 rounded-full border border-slate-200 bg-slate-100 p-1 sm:flex dark:border-slate-700 dark:bg-slate-800">
               <button
                 type="button"
                 onClick={() => setTema("claro")}
