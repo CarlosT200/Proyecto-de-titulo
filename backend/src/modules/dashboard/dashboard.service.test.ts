@@ -9,6 +9,7 @@ vi.mock("../../lib/prisma", () => ({
     encomienda: { count: vi.fn() },
     alertaSos: { count: vi.fn(), findMany: vi.fn() },
     accesoLog: { findMany: vi.fn(), groupBy: vi.fn() },
+    cobroGastoComun: { aggregate: vi.fn(), groupBy: vi.fn() },
   },
 }));
 
@@ -29,6 +30,8 @@ beforeEach(() => {
   p.alertaSos.findMany.mockResolvedValue([]);
   p.accesoLog.findMany.mockResolvedValue([]);
   p.accesoLog.groupBy.mockResolvedValue([]);
+  p.cobroGastoComun.aggregate.mockResolvedValue({ _sum: { montoTotal: null, montoPagado: null } });
+  p.cobroGastoComun.groupBy.mockResolvedValue([]);
 });
 
 describe("filtroReservasProximas", () => {
@@ -85,6 +88,8 @@ describe("obtenerIndicadores: requiere atención", () => {
         { resultado: ResultadoAcceso.AUTORIZADO, _count: { _all: 6 } },
         { resultado: ResultadoAcceso.RECHAZADO, _count: { _all: 2 } },
       ]); // hoy
+    p.cobroGastoComun.aggregate.mockResolvedValue({ _sum: { montoTotal: 300000, montoPagado: 50000 } });
+    p.cobroGastoComun.groupBy.mockResolvedValue([{ departamentoId: "d-1" }, { departamentoId: "d-2" }]);
 
     const ahora = new Date("2026-10-04T18:00:00.000Z");
     const r = await obtenerIndicadores("condo-1", ahora);
@@ -95,6 +100,14 @@ describe("obtenerIndicadores: requiere atención", () => {
       incidenciasSinRevisar: 3,
       multasApeladas: 1,
       encomiendasAtrasadas: 4,
+      unidadesMorosas: 2,
+    });
+    expect(r.gastosComunes).toEqual({ deudaVencida: 250000, unidadesMorosas: 2 });
+    // vencido = sin pagar y con vencimiento anterior a hoy en Chile
+    expect(p.cobroGastoComun.aggregate.mock.calls[0][0].where).toEqual({
+      condominioId: "condo-1",
+      pagado: false,
+      periodo: { fechaVencimiento: { lt: new Date("2026-10-04T00:00:00.000Z") } },
     });
     expect(r.accesos.hoyAutorizados).toBe(6);
     expect(r.accesos.hoyRechazados).toBe(2);

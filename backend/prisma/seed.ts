@@ -3,6 +3,8 @@ import {
   EstadoIncidencia,
   EstadoMulta,
   EstadoVisita,
+  MedioPago,
+  MetodoProrrateo,
   PrioridadIncidencia,
   PrismaClient,
   ResultadoAcceso,
@@ -11,6 +13,7 @@ import {
   TipoQrToken,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { recargoFondoReserva, repartirMonto } from "../src/lib/gastosComunes";
 
 const prisma = new PrismaClient();
 
@@ -109,6 +112,13 @@ async function main() {
       conserjeId: conserje.id,
       passwordHash: passwordDemo,
     });
+  }
+
+  // Gastos comunes de ejemplo (dos meses), aparte, para que tambien se agreguen a una base que ya
+  // tenia los demas datos de demostracion.
+  const yaTieneGastosComunes = (await prisma.periodoGastoComun.count({ where: { condominioId: condominio.id } })) > 0;
+  if (!yaTieneGastosComunes) {
+    await crearGastosComunesDemo(condominio.id, admin.id);
   }
 
   console.log("Seed completado. Usuarios de prueba (password: Habita2026!):");
@@ -399,6 +409,93 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
       { condominioId, usuarioId: adminId, accion: "ACTUALIZAR", entidad: "Incidencia", descripcion: "Cambió la incidencia \"Filtración en el baño\" a En proceso.", createdAt: dia(-1, 12) },
     ],
   });
+}
+
+// Dos meses: el anterior al pasado ya vencio (una unidad quedo debiendo) y el pasado vence en unos dias.
+async function crearGastosComunesDemo(condominioId: string, adminId: string) {
+  const departamentos = await prisma.departamento.findMany({
+    where: { condominioId },
+    select: { id: true, numero: true, torre: { select: { nombre: true } } },
+  });
+  if (departamentos.length === 0) return;
+
+  const hoy = new Date();
+  const meses = [
+    {
+      atras: 2,
+      vence: fecha(-20),
+      partidas: [
+        { concepto: "Remuneraciones de conserjería y aseo", monto: 1_850_000 },
+        { concepto: "Agua y electricidad de áreas comunes", monto: 420_000 },
+        { concepto: "Mantención de ascensores", monto: 260_000 },
+        { concepto: "Jardinería", monto: 180_000 },
+        { concepto: "Seguro del edificio", monto: 140_000 },
+      ],
+    },
+    {
+      atras: 1,
+      vence: fecha(5),
+      partidas: [
+        { concepto: "Remuneraciones de conserjería y aseo", monto: 1_850_000 },
+        { concepto: "Agua y electricidad de áreas comunes", monto: 465_000 },
+        { concepto: "Mantención de ascensores", monto: 260_000 },
+        { concepto: "Reparación de la bomba de agua", monto: 310_000 },
+        { concepto: "Seguro del edificio", monto: 140_000 },
+      ],
+    },
+  ];
+
+  for (const m of meses) {
+    const referencia = new Date(hoy.getFullYear(), hoy.getMonth() - m.atras, 1);
+    const totalGastos = m.partidas.reduce((s, x) => s + x.monto, 0);
+    const gasto = repartirMonto(totalGastos, departamentos.map(() => 1));
+    const periodo = await prisma.periodoGastoComun.create({
+      data: {
+        condominioId,
+        anio: referencia.getFullYear(),
+        mes: referencia.getMonth() + 1,
+        fechaVencimiento: m.vence,
+        metodoProrrateo: MetodoProrrateo.PARTES_IGUALES,
+        porcentajeFondoReserva: 5,
+        totalGastos,
+        instruccionesPago:
+          "Transferencia a la cuenta corriente de la comunidad, indicando tu número de departamento en el comentario. También puedes pagar en efectivo en la administración, de lunes a viernes de 9:00 a 18:00.",
+        creadoPorId: adminId,
+        partidas: { createMany: { data: m.partidas.map((x, orden) => ({ ...x, orden })) } },
+      },
+    });
+
+    for (const [i, d] of departamentos.entries()) {
+      const fondo = recargoFondoReserva(gasto[i], 5);
+      const total = gasto[i] + fondo;
+      // Mes antiguo: todos pagaron menos el 201. Mes reciente: solo el 102 pagó.
+      const pagado = m.atras === 2 ? d.numero !== "201" : d.numero === "102";
+      const cobro = await prisma.cobroGastoComun.create({
+        data: {
+          condominioId,
+          periodoId: periodo.id,
+          departamentoId: d.id,
+          montoGastoComun: gasto[i],
+          montoFondoReserva: fondo,
+          montoTotal: total,
+          montoPagado: pagado ? total : 0,
+          pagado,
+        },
+      });
+      if (pagado) {
+        await prisma.pagoGastoComun.create({
+          data: {
+            cobroId: cobro.id,
+            monto: total,
+            fechaPago: m.atras === 2 ? fecha(-24) : fecha(-1),
+            medio: d.numero === "102" ? MedioPago.EFECTIVO : MedioPago.TRANSFERENCIA,
+            referencia: d.numero === "102" ? null : `TR-${d.numero}-${referencia.getMonth() + 1}`,
+            registradoPorId: adminId,
+          },
+        });
+      }
+    }
+  }
 }
 
 main()

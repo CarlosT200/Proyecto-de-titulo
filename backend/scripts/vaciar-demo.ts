@@ -46,6 +46,26 @@ function pasos(condominioId: string): Paso[] {
     { tabla: "Comunicados", contar: () => prisma.comunicado.count({ where: c }), borrar: () => prisma.comunicado.deleteMany({ where: c }) },
     { tabla: "Documentos", contar: () => prisma.documento.count({ where: c }), borrar: () => prisma.documento.deleteMany({ where: c }) },
     { tabla: "Alertas SOS", contar: () => prisma.alertaSos.count({ where: c }), borrar: () => prisma.alertaSos.deleteMany({ where: c }) },
+    {
+      tabla: "Pagos de gastos comunes",
+      contar: () => prisma.pagoGastoComun.count({ where: { cobro: c } }),
+      borrar: () => prisma.pagoGastoComun.deleteMany({ where: { cobro: c } }),
+    },
+    {
+      tabla: "Cobros de gastos comunes",
+      contar: () => prisma.cobroGastoComun.count({ where: c }),
+      borrar: () => prisma.cobroGastoComun.deleteMany({ where: c }),
+    },
+    {
+      tabla: "Detalle de gastos comunes",
+      contar: () => prisma.partidaGastoComun.count({ where: { periodo: c } }),
+      borrar: () => prisma.partidaGastoComun.deleteMany({ where: { periodo: c } }),
+    },
+    {
+      tabla: "Meses de gastos comunes",
+      contar: () => prisma.periodoGastoComun.count({ where: c }),
+      borrar: () => prisma.periodoGastoComun.deleteMany({ where: c }),
+    },
     { tabla: "Registro de actividad", contar: () => prisma.auditoria.count({ where: c }), borrar: () => prisma.auditoria.deleteMany({ where: c }) },
     { tabla: "Notificaciones", contar: () => prisma.notificacion.count({ where: deUsuario }), borrar: () => prisma.notificacion.deleteMany({ where: deUsuario }) },
     {

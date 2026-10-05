@@ -23,6 +23,7 @@ import notificacionesRoutes from "./modules/notificaciones/notificaciones.routes
 import sosRoutes from "./modules/sos/sos.routes";
 import pushRoutes from "./modules/push/push.routes";
 import auditoriaRoutes from "./modules/auditoria/auditoria.routes";
+import gastosComunesRoutes from "./modules/gastos-comunes/gastos-comunes.routes";
 
 export const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/notificaciones", notificacionesRoutes);
 app.use("/api/sos", sosRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/auditoria", auditoriaRoutes);
+app.use("/api/gastos-comunes", gastosComunesRoutes);
 
 // Sirve el frontend ya compilado desde el mismo proceso/puerto: un solo servidor que
 // levantar, sin depender de que el servidor de desarrollo de Vite siga vivo por separado.

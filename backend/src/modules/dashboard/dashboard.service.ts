@@ -10,6 +10,7 @@ import {
 import { prisma } from "../../lib/prisma";
 import { ahoraEnChile, inicioDelDiaEnChile } from "../../lib/fechas";
 import { ENCOMIENDA_ATRASADA_HORAS, HORA_MS } from "../../lib/umbrales";
+import { hoyEnChile } from "../../lib/gastosComunes";
 import { listarAccesos } from "../qr/qr.service";
 import { listarAlertasActivas } from "../sos/sos.service";
 
@@ -46,6 +47,7 @@ function limiteEncomiendaAtrasada(instante: Date): Date {
 // HU-24: indicadores del condominio para la administracion, con lo que requiere atencion primero.
 export async function obtenerIndicadores(condominioId: string, instante: Date = new Date()) {
   const inicioHoy = inicioDelDiaEnChile(instante);
+  const cobrosVencidos = { condominioId, pagado: false, periodo: { fechaVencimiento: { lt: hoyEnChile(instante) } } };
   const [
     incidenciasPendientes,
     incidenciasResueltas,
@@ -61,6 +63,8 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
     accesosRecientes,
     accesosPorResultado,
     accesosHoyPorResultado,
+    deudaVencida,
+    unidadesMorosas,
   ] = await Promise.all([
     prisma.incidencia.count({ where: { condominioId, estado: { in: ESTADOS_ABIERTOS } } }),
     prisma.incidencia.count({ where: { condominioId, estado: EstadoIncidencia.RESUELTA } }),
@@ -102,6 +106,8 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
       where: { condominioId, createdAt: { gte: inicioHoy } },
       _count: { _all: true },
     }),
+    prisma.cobroGastoComun.aggregate({ where: cobrosVencidos, _sum: { montoTotal: true, montoPagado: true } }),
+    prisma.cobroGastoComun.groupBy({ by: ["departamentoId"], where: cobrosVencidos }),
   ]);
 
   const multasPorEstadoMap = Object.fromEntries(
@@ -126,6 +132,7 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
       incidenciasSinRevisar,
       multasApeladas: multasPorEstadoMap.APELADA,
       encomiendasAtrasadas,
+      unidadesMorosas: unidadesMorosas.length,
     },
     incidencias: {
       pendientes: incidenciasPendientes,
@@ -137,6 +144,10 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
     multas: multasPorEstadoMap,
     encomiendas: { pendientesDeRetiro: encomiendasPendientes, atrasadas: encomiendasAtrasadas },
     sos: { activas: sosActivas },
+    gastosComunes: {
+      deudaVencida: (deudaVencida._sum.montoTotal ?? 0) - (deudaVencida._sum.montoPagado ?? 0),
+      unidadesMorosas: unidadesMorosas.length,
+    },
     accesos: {
       recientes: accesosRecientes,
       autorizadosUltimos10: accesosRecientes.filter((a) => a.resultado === ResultadoAcceso.AUTORIZADO).length,

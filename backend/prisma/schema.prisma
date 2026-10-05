@@ -90,6 +90,20 @@ enum EstadoAlertaSos {
   ATENDIDA
 }
 
+// Como se reparte el gasto del mes entre las unidades.
+enum MetodoProrrateo {
+  PARTES_IGUALES
+  ALICUOTA
+}
+
+enum MedioPago {
+  TRANSFERENCIA
+  EFECTIVO
+  TARJETA
+  CHEQUE
+  OTRO
+}
+
 // ------------------------------
 // Estructura del condominio
 // ------------------------------
@@ -102,19 +116,21 @@ model Condominio {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  torres        Torre[]
-  departamentos Departamento[]
-  usuarios      Usuario[]
-  espaciosComunes EspacioComun[]
-  multas        Multa[]
-  incidencias   Incidencia[]
-  encomiendas   Encomienda[]
-  comunicados   Comunicado[]
-  visitas       Visita[]
-  documentos    Documento[]
-  accesos       AccesoLog[]
-  alertasSos    AlertaSos[]
-  auditorias    Auditoria[]
+  torres             Torre[]
+  departamentos      Departamento[]
+  usuarios           Usuario[]
+  espaciosComunes    EspacioComun[]
+  multas             Multa[]
+  incidencias        Incidencia[]
+  encomiendas        Encomienda[]
+  comunicados        Comunicado[]
+  visitas            Visita[]
+  documentos         Documento[]
+  accesos            AccesoLog[]
+  alertasSos         AlertaSos[]
+  auditorias         Auditoria[]
+  periodosGastoComun PeriodoGastoComun[]
+  cobrosGastoComun   CobroGastoComun[]
 
   @@map("condominios")
 }
@@ -133,14 +149,18 @@ model Torre {
 }
 
 model Departamento {
-  id           String  @id @default(uuid())
+  id           String   @id @default(uuid())
   condominioId String
   torreId      String?
   numero       String
+  // Porcentaje de los gastos comunes que paga la unidad (prorrateo). Opcional: solo se usa si el
+  // cobro del mes se reparte "según alícuota".
+  alicuota     Decimal? @db.Decimal(7, 4)
 
-  condominio Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
-  torre      Torre?     @relation(fields: [torreId], references: [id], onDelete: SetNull)
-  residentes Usuario[]
+  condominio       Condominio        @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  torre            Torre?            @relation(fields: [torreId], references: [id], onDelete: SetNull)
+  residentes       Usuario[]
+  cobrosGastoComun CobroGastoComun[]
 
   createdAt DateTime @default(now())
 
@@ -153,44 +173,47 @@ model Departamento {
 // ------------------------------
 
 model Usuario {
-  id             String  @id @default(uuid())
-  condominioId   String
-  rol            Rol
-  email          String  @unique
-  passwordHash   String
-  nombre         String
-  apellido       String
-  telefono       String?
-  departamentoId String?
-  activo         Boolean @default(true)
-  fotoUrl        String?
+  id                  String    @id @default(uuid())
+  condominioId        String
+  rol                 Rol
+  email               String    @unique
+  passwordHash        String
+  nombre              String
+  apellido            String
+  telefono            String?
+  departamentoId      String?
+  activo              Boolean   @default(true)
+  fotoUrl             String?
   // true mientras la persona usa la contraseña temporal que le dio la administracion
-  debeCambiarPassword Boolean @default(false)
+  debeCambiarPassword Boolean   @default(false)
   // Cuando se cambio o restablecio la contraseña por ultima vez: las sesiones iniciadas antes ya no valen
-  passwordCambiadaEn DateTime?
+  passwordCambiadaEn  DateTime?
 
   condominio   Condominio    @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   departamento Departamento? @relation(fields: [departamentoId], references: [id], onDelete: SetNull)
 
-  reservas             Reserva[]
-  multas               Multa[]              @relation("MultaResidente")
-  multasRegistradas    Multa[]              @relation("MultaRegistradaPor")
-  incidenciasReportadas Incidencia[]        @relation("IncidenciaReportante")
-  incidenciasAsignadas Incidencia[]         @relation("IncidenciaResponsable")
-  incidenciaHistorial  IncidenciaHistorial[]
-  encomiendasRecibidas Encomienda[]         @relation("EncomiendaResidente")
-  encomiendasRegistradas Encomienda[]       @relation("EncomiendaRegistradaPor")
-  encomiendasCerradas  Encomienda[]         @relation("EncomiendaCerradaPor")
-  comunicadosPublicados Comunicado[]
-  visitasRegistradas   Visita[]
-  qrTokens             QrToken[]
-  documentosSubidos    Documento[]
-  accesosValidados     AccesoLog[]
-  notificaciones       Notificacion[]
-  alertasSos           AlertaSos[]          @relation("AlertaSosResidente")
-  alertasAtendidas     AlertaSos[]          @relation("AlertaSosAtendidaPor")
-  pushSubscriptions    PushSubscription[]
-  auditorias           Auditoria[]
+  reservas                   Reserva[]
+  multas                     Multa[]               @relation("MultaResidente")
+  multasRegistradas          Multa[]               @relation("MultaRegistradaPor")
+  incidenciasReportadas      Incidencia[]          @relation("IncidenciaReportante")
+  incidenciasAsignadas       Incidencia[]          @relation("IncidenciaResponsable")
+  incidenciaHistorial        IncidenciaHistorial[]
+  encomiendasRecibidas       Encomienda[]          @relation("EncomiendaResidente")
+  encomiendasRegistradas     Encomienda[]          @relation("EncomiendaRegistradaPor")
+  encomiendasCerradas        Encomienda[]          @relation("EncomiendaCerradaPor")
+  comunicadosPublicados      Comunicado[]
+  visitasRegistradas         Visita[]
+  qrTokens                   QrToken[]
+  documentosSubidos          Documento[]
+  accesosValidados           AccesoLog[]
+  notificaciones             Notificacion[]
+  alertasSos                 AlertaSos[]           @relation("AlertaSosResidente")
+  alertasAtendidas           AlertaSos[]           @relation("AlertaSosAtendidaPor")
+  pushSubscriptions          PushSubscription[]
+  auditorias                 Auditoria[]
+  periodosGastoComunCreados  PeriodoGastoComun[]   @relation("PeriodoGastoComunCreadoPor")
+  pagosGastoComunRegistrados PagoGastoComun[]      @relation("PagoGastoComunRegistradoPor")
+  pagosGastoComunAnulados    PagoGastoComun[]      @relation("PagoGastoComunAnuladoPor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -244,15 +267,15 @@ model Reserva {
 // ------------------------------
 
 model Multa {
-  id                String      @id @default(uuid())
-  condominioId      String
-  usuarioId         String
-  registradaPorId   String
-  motivo            String
-  fecha             DateTime    @db.Date
-  monto             Int
-  estado            EstadoMulta @default(PENDIENTE)
-  observaciones     String?
+  id              String      @id @default(uuid())
+  condominioId    String
+  usuarioId       String
+  registradaPorId String
+  motivo          String
+  fecha           DateTime    @db.Date
+  monto           Int
+  estado          EstadoMulta @default(PENDIENTE)
+  observaciones   String?
 
   condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   usuario       Usuario    @relation("MultaResidente", fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -270,18 +293,18 @@ model Multa {
 // ------------------------------
 
 model Incidencia {
-  id             String              @id @default(uuid())
-  condominioId   String
-  usuarioId      String
-  titulo         String
-  descripcion    String
-  ubicacion      String
-  fotoUrl        String?
-  categoria      String?
-  prioridad      PrioridadIncidencia?
-  estado         EstadoIncidencia    @default(REPORTADA)
-  responsableId  String?
-  sugerenciaIA   Json?
+  id            String               @id @default(uuid())
+  condominioId  String
+  usuarioId     String
+  titulo        String
+  descripcion   String
+  ubicacion     String
+  fotoUrl       String?
+  categoria     String?
+  prioridad     PrioridadIncidencia?
+  estado        EstadoIncidencia     @default(REPORTADA)
+  responsableId String?
+  sugerenciaIA  Json?
 
   condominio  Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   usuario     Usuario    @relation("IncidenciaReportante", fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -297,7 +320,7 @@ model Incidencia {
 }
 
 model IncidenciaHistorial {
-  id             String   @id @default(uuid())
+  id             String  @id @default(uuid())
   incidenciaId   String
   estadoAnterior String?
   estadoNuevo    String
@@ -370,16 +393,16 @@ model Comunicado {
 // ------------------------------
 
 model Visita {
-  id             String       @id @default(uuid())
-  condominioId   String
-  residenteId    String
-  nombreVisita   String
-  fecha          DateTime     @db.Date
-  periodoInicio  DateTime
-  periodoFin     DateTime
-  observaciones  String?
-  soloUnUso      Boolean      @default(false)
-  estado         EstadoVisita @default(VIGENTE)
+  id            String       @id @default(uuid())
+  condominioId  String
+  residenteId   String
+  nombreVisita  String
+  fecha         DateTime     @db.Date
+  periodoInicio DateTime
+  periodoFin    DateTime
+  observaciones String?
+  soloUnUso     Boolean      @default(false)
+  estado        EstadoVisita @default(VIGENTE)
 
   condominio Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   residente  Usuario    @relation(fields: [residenteId], references: [id], onDelete: Cascade)
@@ -412,12 +435,12 @@ model QrToken {
 }
 
 model AccesoLog {
-  id             String          @id @default(uuid())
-  condominioId   String
-  qrTokenId      String?
-  validadoPorId  String
-  resultado      ResultadoAcceso
-  motivo         String?
+  id            String          @id @default(uuid())
+  condominioId  String
+  qrTokenId     String?
+  validadoPorId String
+  resultado     ResultadoAcceso
+  motivo        String?
 
   condominio  Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   qrToken     QrToken?   @relation(fields: [qrTokenId], references: [id])
@@ -434,12 +457,12 @@ model AccesoLog {
 // ------------------------------
 
 model Documento {
-  id            String  @id @default(uuid())
-  condominioId  String
-  subidoPorId   String
-  titulo        String
-  categoria     String?
-  archivoUrl    String
+  id           String  @id @default(uuid())
+  condominioId String
+  subidoPorId  String
+  titulo       String
+  categoria    String?
+  archivoUrl   String
 
   condominio Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   subidoPor  Usuario    @relation(fields: [subidoPorId], references: [id])
@@ -454,14 +477,14 @@ model Documento {
 // ------------------------------
 
 model Notificacion {
-  id           String   @id @default(uuid())
-  usuarioId    String
-  tipo         String
-  titulo       String
-  mensaje      String
-  entidadTipo  String?
-  entidadId    String?
-  leida        Boolean  @default(false)
+  id          String  @id @default(uuid())
+  usuarioId   String
+  tipo        String
+  titulo      String
+  mensaje     String
+  entidadTipo String?
+  entidadId   String?
+  leida       Boolean @default(false)
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
@@ -479,9 +502,9 @@ model Notificacion {
 // critico para la alerta SOS, que antes dependia de que el conserje
 // tuviera la app abierta y el polling de 30s la alcanzara a mostrar.
 model PushSubscription {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   usuarioId String
-  endpoint  String   @unique
+  endpoint  String @unique
   p256dh    String
   auth      String
 
@@ -540,4 +563,97 @@ model Auditoria {
 
   @@index([condominioId, createdAt])
   @@map("auditoria")
+}
+
+// ------------------------------
+// Gastos comunes
+// ------------------------------
+
+// El cobro de un mes: el detalle de lo que se gastó (partidas) y cómo se reparte. Al emitirlo se
+// crea un cobro por cada unidad. Solo se puede eliminar mientras ninguna unidad tenga pagos.
+model PeriodoGastoComun {
+  id                     String          @id @default(uuid())
+  condominioId           String
+  anio                   Int
+  mes                    Int // 1 a 12
+  fechaVencimiento       DateTime        @db.Date
+  metodoProrrateo        MetodoProrrateo
+  // Recargo para el fondo común de reserva, en porcentaje sobre el gasto común de cada unidad
+  porcentajeFondoReserva Int
+  totalGastos            Int // suma de las partidas
+  instruccionesPago      String?
+  creadoPorId            String
+
+  condominio Condominio          @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  creadoPor  Usuario             @relation("PeriodoGastoComunCreadoPor", fields: [creadoPorId], references: [id])
+  partidas   PartidaGastoComun[]
+  cobros     CobroGastoComun[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([condominioId, anio, mes])
+  @@map("periodos_gasto_comun")
+}
+
+model PartidaGastoComun {
+  id        String @id @default(uuid())
+  periodoId String
+  concepto  String
+  monto     Int
+  orden     Int
+
+  periodo PeriodoGastoComun @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+
+  @@index([periodoId])
+  @@map("partidas_gasto_comun")
+}
+
+// Lo que debe pagar una unidad en un mes. montoPagado y pagado se actualizan en la misma sentencia
+// que registra o anula un pago, para que dos registros simultáneos no puedan pagar de más.
+model CobroGastoComun {
+  id                String  @id @default(uuid())
+  condominioId      String
+  periodoId         String
+  departamentoId    String
+  montoGastoComun   Int
+  montoFondoReserva Int
+  montoTotal        Int
+  montoPagado       Int     @default(0)
+  pagado            Boolean @default(false)
+
+  condominio   Condominio        @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  periodo      PeriodoGastoComun @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  departamento Departamento      @relation(fields: [departamentoId], references: [id])
+  pagos        PagoGastoComun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([periodoId, departamentoId])
+  @@index([condominioId, pagado])
+  @@index([departamentoId])
+  @@map("cobros_gasto_comun")
+}
+
+// Un pago no se borra: si se registró por error se anula con un motivo y queda a la vista.
+model PagoGastoComun {
+  id              String    @id @default(uuid())
+  cobroId         String
+  monto           Int
+  fechaPago       DateTime  @db.Date
+  medio           MedioPago
+  referencia      String?
+  registradoPorId String
+  anuladoEn       DateTime?
+  motivoAnulacion String?
+  anuladoPorId    String?
+
+  cobro         CobroGastoComun @relation(fields: [cobroId], references: [id], onDelete: Cascade)
+  registradoPor Usuario         @relation("PagoGastoComunRegistradoPor", fields: [registradoPorId], references: [id])
+  anuladoPor    Usuario?        @relation("PagoGastoComunAnuladoPor", fields: [anuladoPorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([cobroId])
+  @@map("pagos_gasto_comun")
 }

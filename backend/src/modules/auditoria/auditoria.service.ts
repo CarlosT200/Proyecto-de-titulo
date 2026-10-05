@@ -14,6 +14,7 @@ export const ENTIDADES_AUDITADAS = [
   "Condominio",
   "Encomienda",
   "AlertaSos",
+  "GastoComun",
 ] as const;
 
 interface RegistroAuditoria {
