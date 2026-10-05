@@ -67,6 +67,28 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
     else setMenuMovilAbierto(true);
   }
   const panelRef = useRef<HTMLDivElement>(null);
+  const cerrarMenuRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuMovilAbierto) return;
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuMovilAbierto(false);
+    };
+    document.addEventListener("keydown", alTeclear);
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    // un instante despues: mientras empieza la transicion de visibility el boton aun no es enfocable
+    const enfoque = window.setTimeout(() => cerrarMenuRef.current?.focus(), 30);
+    return () => {
+      window.clearTimeout(enfoque);
+      document.removeEventListener("keydown", alTeclear);
+      document.body.style.overflow = overflowPrevio;
+    };
+  }, [menuMovilAbierto]);
+
+  useEffect(() => {
+    if (esEscritorio) setMenuMovilAbierto(false);
+  }, [esEscritorio]);
 
   useEffect(() => {
     if (!panelAbierto) return;
@@ -137,9 +159,9 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
       {/* Fondo ambiental: brillos de marca difusos (mismo lenguaje que la credencial y el
           login). Estatico a proposito -- animar blur de este tamaño cuesta en celulares. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-brand-400/20 blur-3xl dark:bg-brand-600/20" />
-        <div className="absolute -right-40 top-1/4 h-[28rem] w-[28rem] rounded-full bg-accent-400/15 blur-3xl dark:bg-accent-600/10" />
-        <div className="absolute -bottom-40 left-1/3 h-[26rem] w-[26rem] rounded-full bg-violet-400/10 blur-3xl dark:bg-violet-600/10" />
+        <div className="absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-[radial-gradient(closest-side,rgb(96_165_250/0.3),transparent)] dark:bg-[radial-gradient(closest-side,rgb(37_99_235/0.3),transparent)]" />
+        <div className="absolute -right-40 top-1/4 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(closest-side,rgb(251_146_60/0.22),transparent)] dark:bg-[radial-gradient(closest-side,rgb(234_88_12/0.16),transparent)]" />
+        <div className="absolute -bottom-40 left-1/3 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(closest-side,rgb(167_139_250/0.15),transparent)] dark:bg-[radial-gradient(closest-side,rgb(124_58_237/0.15),transparent)]" />
         <div
           className="absolute inset-0 opacity-[0.35] dark:opacity-[0.25]"
           style={{
@@ -169,40 +191,39 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
         </div>
       </motion.aside>
 
-      {/* Sidebar movil */}
-      <AnimatePresence>
-        {menuMovilAbierto && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-slate-900/50 dark:bg-black/60"
-              onClick={() => setMenuMovilAbierto(false)}
-            />
-            <motion.aside
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
-              className="relative flex h-full w-64 flex-col bg-white shadow-xl dark:bg-slate-900"
-            >
-              <button
-                className="absolute right-3 top-3 rounded-lg p-1.5 max-sm:p-3 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-800"
-                onClick={() => setMenuMovilAbierto(false)}
-                aria-label="Cerrar menú"
-              >
-                <X size={18} />
-              </button>
-              <SidebarContent nav={nav} usuario={usuario} onNavigate={() => setMenuMovilAbierto(false)} />
-            </motion.aside>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Sidebar movil: siempre montado y animado solo con CSS (transform/opacity).
+          "invisible" al cerrar: sus links no quedan tabulables y no recibe toques. */}
+      <div
+        className={clsx("fixed inset-0 z-40 transition-[visibility] duration-200 lg:hidden", !menuMovilAbierto && "invisible")}
+        aria-hidden={!menuMovilAbierto}
+      >
+        <div
+          onClick={() => setMenuMovilAbierto(false)}
+          className={clsx(
+            "absolute inset-0 bg-slate-900/50 transition-opacity duration-200 dark:bg-black/60",
+            menuMovilAbierto ? "opacity-100" : "opacity-0"
+          )}
+        />
+        <aside
+          className={clsx(
+            "relative flex h-full w-64 flex-col bg-white shadow-xl transition-transform duration-200 ease-out will-change-transform dark:bg-slate-900",
+            menuMovilAbierto ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <button
+            ref={cerrarMenuRef}
+            className="absolute right-3 top-3 rounded-lg p-1.5 max-sm:p-3 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-800"
+            onClick={() => setMenuMovilAbierto(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
+          <SidebarContent nav={nav} usuario={usuario} onNavigate={() => setMenuMovilAbierto(false)} animarPildora={false} />
+        </aside>
+      </div>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur-xl lg:px-8 dark:border-white/[0.06] dark:bg-slate-900/80">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/95 px-4 py-3 lg:bg-white/80 lg:px-8 lg:backdrop-blur-xl dark:border-white/[0.06] dark:bg-slate-900/95 dark:lg:bg-slate-900/80">
           <div className="flex items-center gap-2">
             <button
               className="flex h-10 w-10 max-sm:h-11 max-sm:w-11 max-[359px]:h-10 max-[359px]:w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -422,10 +443,12 @@ function SidebarContent({
   nav,
   usuario,
   onNavigate,
+  animarPildora = true,
 }: {
   nav: NavItem[];
   usuario: ReturnType<typeof useAuth>["usuario"];
   onNavigate?: () => void;
+  animarPildora?: boolean;
 }) {
   return (
     <>
@@ -463,11 +486,15 @@ function SidebarContent({
                 {isActive && (
                   // Oscuro a la izquierda (donde va el texto) para que el blanco
                   // mantenga contraste AA; el degrade aclara hacia la derecha.
-                  <motion.div
-                    layoutId="nav-active-pill"
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 shadow-lg shadow-brand-600/30"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                  />
+                  (animarPildora ? (
+                    <motion.div
+                      layoutId="nav-active-pill"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 shadow-lg shadow-brand-600/30"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 shadow-lg shadow-brand-600/30" />
+                  ))
                 )}
                 <span className="relative z-10">{item.icon}</span>
                 <span className="relative z-10">{item.label}</span>
