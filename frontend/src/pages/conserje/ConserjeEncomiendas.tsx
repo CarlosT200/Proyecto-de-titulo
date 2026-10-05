@@ -1,37 +1,22 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Package } from "@phosphor-icons/react";
 import { encomiendasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Package } from "@phosphor-icons/react";
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  CardHeader,
-  EmptyState,
-  Input,
-  Label,
-  PageHeader,
-  SearchInput,
-  Select,
-  Spinner,
-  staggerFade,
-} from "../../components/ui";
-import { formatFechaHora } from "../../lib/format";
-import { fechaEnRango } from "../../lib/filters";
-import { ESTADO_ENCOMIENDA_LABEL, ESTADO_ENCOMIENDA_TONO } from "../../lib/badges";
+import { Alert, Button, Card, CardHeader, Input, Label, PageHeader, Select, Textarea } from "../../components/ui";
+import { ListaEncomiendas } from "../../components/Encomiendas";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
-import type { EstadoEncomienda } from "../../types";
 
-// Empresas de courier/encomiendas mas conocidas en Chile. "OTRO" habilita un
-// campo de texto libre para remitentes que no esten en la lista.
+// Empresas de despacho mas conocidas en Chile. "OTRO" habilita un campo de texto libre para
+// remitentes que no esten en la lista.
 const EMPRESAS_ENCOMIENDA = [
   "Correos de Chile",
   "Chilexpress",
   "Starken",
   "Blue Express",
+  "Mercado Libre",
   "DHL",
   "FedEx",
   "UPS",
@@ -40,37 +25,69 @@ const EMPRESAS_ENCOMIENDA = [
   "Turbus Cargo",
 ];
 
-const ESTADOS: EstadoEncomienda[] = ["NOTIFICADA", "RETIRADA"];
-
 export default function ConserjeEncomiendas() {
   const toast = useToast();
+  const [params, setParams] = useSearchParams();
   const { data, cargando, error, recargar } = useAsync(() => encomiendasApi.listarTodas(), []);
-  const { data: residentes } = useAsync(() => usuariosApi.listar({ rol: "RESIDENTE" }), []);
+  const { data: residentes } = useAsync(() => usuariosApi.listar({ rol: "RESIDENTE", activo: true }), []);
 
   const [usuarioId, setUsuarioId] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [otroRemitente, setOtroRemitente] = useState("");
+  const [numeroSeguimiento, setNumeroSeguimiento] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
+  const [observaciones, setObservaciones] = useState("");
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const residenteRef = useRef<HTMLSelectElement>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<EstadoEncomienda | "">("");
-  const [fechaDesde, setFechaDesde] = useState("");
-  const [fechaHasta, setFechaHasta] = useState("");
+  // Desde el inicio ("Registrar encomienda") se llega con ?registrar=1: el foco va directo al formulario.
+  useEffect(() => {
+    if (params.get("registrar") !== "1") return;
+    residenteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    residenteRef.current?.focus({ preventScroll: true });
+    setParams(
+      (actuales) => {
+        const siguientes = new URLSearchParams(actuales);
+        siguientes.delete("registrar");
+        return siguientes;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const esOtro = empresa === "OTRO";
-  const remitente = esOtro ? otroRemitente : empresa;
+  const remitente = (esOtro ? otroRemitente : empresa).trim();
+
+  function limpiarFormulario() {
+    setUsuarioId("");
+    setEmpresa("");
+    setOtroRemitente("");
+    setNumeroSeguimiento("");
+    setUbicacion("");
+    setObservaciones("");
+    if (fotoRef.current) fotoRef.current.value = "";
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
     setEnviando(true);
     try {
-      await encomiendasApi.crear({ usuarioId, remitente: remitente || undefined });
-      setUsuarioId("");
-      setEmpresa("");
-      setOtroRemitente("");
-      toast.success("Encomienda registrada y residente notificado.");
+      const datos = new FormData();
+      datos.append("usuarioId", usuarioId);
+      if (remitente) datos.append("remitente", remitente);
+      if (numeroSeguimiento.trim()) datos.append("numeroSeguimiento", numeroSeguimiento.trim());
+      if (ubicacion.trim()) datos.append("ubicacion", ubicacion.trim());
+      if (observaciones.trim()) datos.append("observaciones", observaciones.trim());
+      const foto = fotoRef.current?.files?.[0];
+      if (foto) datos.append("foto", foto);
+
+      await encomiendasApi.crear(datos);
+      limpiarFormulario();
+      toast.success("Encomienda registrada. El residente ya fue notificado.");
       recargar();
     } catch (err) {
       setFormError(mensajeError(err));
@@ -79,59 +96,102 @@ export default function ConserjeEncomiendas() {
     }
   }
 
-  const filtradas = (data ?? []).filter((enc) => {
-    const texto = `${enc.usuario?.nombre ?? ""} ${enc.usuario?.apellido ?? ""} ${enc.remitente ?? ""}`.toLowerCase();
-    const coincideTexto = !busqueda || texto.includes(busqueda.toLowerCase());
-    const coincideEstado = !filtroEstado || enc.estado === filtroEstado;
-    const coincideFecha = fechaEnRango(enc.fechaRecepcion, fechaDesde, fechaHasta);
-    return coincideTexto && coincideEstado && coincideFecha;
-  });
-
-  const hayFiltrosActivos = busqueda || filtroEstado || fechaDesde || fechaHasta;
-
   return (
     <div className="space-y-6">
-      <PageHeader icon={Package} title="Encomiendas" subtitle="Registro de recepción y retiro." />
+      <PageHeader icon={Package} title="Encomiendas" subtitle="Registra lo que llega y entrégalo a cada residente." />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="h-fit">
-          <CardHeader title="Registrar encomienda" />
+          <CardHeader title="Registrar encomienda" subtitle="El residente recibe un aviso al instante." />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
-              <Label htmlFor="campo-encomiendas-1">Residente</Label>
-              <Select id="campo-encomiendas-1" required value={usuarioId} onChange={(e) => setUsuarioId(e.target.value)}>
+              <Label htmlFor="campo-encomiendas-residente">Residente</Label>
+              <Select
+                ref={residenteRef}
+                id="campo-encomiendas-residente"
+                required
+                value={usuarioId}
+                onChange={(e) => setUsuarioId(e.target.value)}
+              >
                 <option value="">Selecciona un residente</option>
                 {residentes?.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.nombre} {r.apellido}
-                    {r.departamento ? ` (${r.departamento.torre?.nombre ?? ""} ${r.departamento.numero})` : ""}
+                    {r.departamento ? ` (${[r.departamento.torre?.nombre, r.departamento.numero].filter(Boolean).join(" ")})` : ""}
                   </option>
                 ))}
               </Select>
             </div>
             <div>
-              <Label htmlFor="campo-encomiendas-2">Remitente / empresa (opcional)</Label>
-              <Select id="campo-encomiendas-2" value={empresa} onChange={(e) => setEmpresa(e.target.value)}>
+              <Label htmlFor="campo-encomiendas-empresa">Remitente o empresa (opcional)</Label>
+              <Select id="campo-encomiendas-empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)}>
                 <option value="">Sin especificar</option>
                 {EMPRESAS_ENCOMIENDA.map((nombre) => (
                   <option key={nombre} value={nombre}>
                     {nombre}
                   </option>
                 ))}
-                <option value="OTRO">Otro...</option>
+                <option value="OTRO">Otro…</option>
               </Select>
             </div>
             {esOtro && (
               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-                <Label htmlFor="campo-encomiendas-3">Especifica el remitente</Label>
-                <Input id="campo-encomiendas-3"
+                <Label htmlFor="campo-encomiendas-otro">Especifica el remitente</Label>
+                <Input
+                  id="campo-encomiendas-otro"
                   autoFocus
+                  required
+                  maxLength={80}
                   value={otroRemitente}
                   onChange={(e) => setOtroRemitente(e.target.value)}
-                  placeholder="Ej: Amazon, tienda local, particular..."
+                  placeholder="Ej: Amazon, tienda del barrio, particular…"
                 />
               </motion.div>
             )}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <div>
+                <Label htmlFor="campo-encomiendas-seguimiento">N° de seguimiento (opcional)</Label>
+                <Input
+                  id="campo-encomiendas-seguimiento"
+                  maxLength={60}
+                  value={numeroSeguimiento}
+                  onChange={(e) => setNumeroSeguimiento(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <Label htmlFor="campo-encomiendas-ubicacion">Dónde quedó guardada (opcional)</Label>
+                <Input
+                  id="campo-encomiendas-ubicacion"
+                  maxLength={60}
+                  value={ubicacion}
+                  onChange={(e) => setUbicacion(e.target.value)}
+                  placeholder="Ej: Estante B"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="campo-encomiendas-observaciones">Observaciones (opcional)</Label>
+              <Textarea
+                id="campo-encomiendas-observaciones"
+                rows={2}
+                maxLength={500}
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                placeholder="Ej: Caja grande, llegó con la esquina dañada."
+              />
+            </div>
+            <div>
+              <Label htmlFor="campo-encomiendas-foto">Foto (opcional)</Label>
+              <input
+                id="campo-encomiendas-foto"
+                ref={fotoRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="block w-full text-sm text-slate-600 file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:text-slate-300 dark:file:bg-brand-500/15 dark:file:text-brand-200"
+              />
+            </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>
               Registrar y notificar
@@ -139,105 +199,9 @@ export default function ConserjeEncomiendas() {
           </form>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader title="Historial de encomiendas" subtitle="Busca por residente, remitente, estado o fecha" />
-
-          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 dark:border-slate-700/60 p-5">
-            <div className="w-full sm:max-w-[16rem]">
-              <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por residente o remitente..." />
-            </div>
-            <div className="w-full sm:w-40">
-              <Label htmlFor="campo-encomiendas-4">Estado</Label>
-              <Select id="campo-encomiendas-4" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoEncomienda | "")}>
-                <option value="">Todos</option>
-                {ESTADOS.map((estado) => (
-                  <option key={estado} value={estado}>
-                    {ESTADO_ENCOMIENDA_LABEL[estado]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="w-full sm:w-36">
-              <Label htmlFor="campo-encomiendas-5">Desde</Label>
-              <Input id="campo-encomiendas-5" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
-            </div>
-            <div className="w-full sm:w-36">
-              <Label htmlFor="campo-encomiendas-6">Hasta</Label>
-              <Input id="campo-encomiendas-6" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
-            </div>
-            {hayFiltrosActivos && (
-              <button
-                type="button"
-                onClick={() => {
-                  setBusqueda("");
-                  setFiltroEstado("");
-                  setFechaDesde("");
-                  setFechaHasta("");
-                }}
-                className="text-xs text-brand-600 hover:underline max-sm:min-h-11"
-              >
-                Limpiar filtros
-              </button>
-            )}
-          </div>
-
-          {cargando ? (
-            <Spinner />
-          ) : error ? (
-            <Alert tone="red">{error}</Alert>
-          ) : !data?.length ? (
-            <EmptyState icon={Package} title="Aún no hay encomiendas registradas" />
-          ) : !filtradas.length ? (
-            <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="tabla-movil w-full text-left text-sm">
-                <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
-                  <tr>
-                    <th className="px-5 py-3">Residente</th>
-                    <th className="px-5 py-3">Remitente</th>
-                    <th className="px-5 py-3">Recepción</th>
-                    <th className="px-5 py-3">Retiro</th>
-                    <th className="px-5 py-3">Estado</th>
-                    <th className="px-5 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                  {filtradas.map((enc, i) => (
-                    <motion.tr key={enc.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                      <td data-label="Residente" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
-                        {enc.usuario ? `${enc.usuario.nombre} ${enc.usuario.apellido}` : "—"}
-                      </td>
-                      <td data-label="Remitente" className="px-5 py-3 text-slate-500 dark:text-slate-400">{enc.remitente ?? "—"}</td>
-                      <td data-label="Recepción" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFechaHora(enc.fechaRecepcion)}</td>
-                      <td data-label="Retiro" className="px-5 py-3 text-slate-500 dark:text-slate-400">
-                        {enc.fechaRetiro ? formatFechaHora(enc.fechaRetiro) : "—"}
-                      </td>
-                      <td data-label="Estado" className="px-5 py-3">
-                        <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        {enc.estado !== "RETIRADA" && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={async () => {
-                              await encomiendasApi.marcarRetirada(enc.id);
-                              toast.success("Encomienda marcada como retirada.");
-                              recargar();
-                            }}
-                          >
-                            Marcar retirada
-                          </Button>
-                        )}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+        <div className="xl:col-span-2">
+          <ListaEncomiendas data={data} cargando={cargando} error={error} puedeGestionar onActualizada={recargar} />
+        </div>
       </div>
     </div>
   );

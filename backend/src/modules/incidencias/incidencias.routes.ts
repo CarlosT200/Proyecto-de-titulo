@@ -17,7 +17,7 @@ router.post(
 );
 router.get("/mias", requireRole(Rol.RESIDENTE), asyncHandler(controller.misIncidenciasController));
 router.get("/", requireRole(Rol.ADMIN), asyncHandler(controller.listarIncidenciasController));
-router.get("/:id", asyncHandler(controller.obtenerIncidenciaController));
+router.get("/:id", requireRole(Rol.ADMIN, Rol.RESIDENTE), asyncHandler(controller.obtenerIncidenciaController));
 router.patch("/:id", requireRole(Rol.ADMIN), asyncHandler(controller.actualizarIncidenciaController));
 
 export default router;

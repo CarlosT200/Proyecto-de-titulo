@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ahoraEnChile, esFechaCalendario, fechaCalendario } from "./fechas";
+import { ahoraEnChile, esFechaCalendario, fechaCalendario, horaEnChile, inicioDelDiaEnChile } from "./fechas";
 
 describe("esFechaCalendario", () => {
   it("acepta fechas reales, incluido el 29 de febrero de un año bisiesto", () => {
@@ -46,5 +46,31 @@ describe("ahoraEnChile", () => {
 
   it("devuelve la hora en formato de 24 horas con ceros a la izquierda", () => {
     expect(ahoraEnChile(new Date("2026-10-03T12:05:00.000Z")).hora).toBe("09:05");
+  });
+});
+
+describe("inicioDelDiaEnChile", () => {
+  it("en horario de verano (UTC-3) el dia empieza a las 03:00 UTC", () => {
+    expect(inicioDelDiaEnChile(new Date("2026-10-04T15:00:00.000Z")).toISOString()).toBe("2026-10-04T03:00:00.000Z");
+  });
+
+  it("a las 22:30 de Chile (ya es manana en UTC) sigue siendo el mismo dia de Chile", () => {
+    // 2026-10-05 01:30 UTC = 2026-10-04 22:30 en Chile
+    expect(inicioDelDiaEnChile(new Date("2026-10-05T01:30:00.000Z")).toISOString()).toBe("2026-10-04T03:00:00.000Z");
+  });
+
+  it("en horario de invierno (UTC-4) el dia empieza a las 04:00 UTC", () => {
+    expect(inicioDelDiaEnChile(new Date("2026-07-15T12:00:00.000Z")).toISOString()).toBe("2026-07-15T04:00:00.000Z");
+  });
+
+  it("el instante calculado corresponde a las 00:00 en Chile", () => {
+    const inicio = inicioDelDiaEnChile(new Date("2026-12-24T20:00:00.000Z"));
+    expect(ahoraEnChile(inicio)).toEqual({ fecha: "2026-12-24", hora: "00:00" });
+  });
+});
+
+describe("horaEnChile", () => {
+  it("muestra la hora de Chile y no la del servidor", () => {
+    expect(horaEnChile(new Date("2026-10-04T21:43:00.000Z"))).toBe("18:43");
   });
 });

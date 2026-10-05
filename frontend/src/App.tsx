@@ -51,6 +51,7 @@ const ResidenteComunicados = lazy(() => import("./pages/residente/ResidenteComun
 const ResidenteQR = lazy(() => import("./pages/residente/ResidenteQR"));
 const ResidenteDocumentos = lazy(() => import("./pages/residente/ResidenteDocumentos"));
 
+const ConserjeInicio = lazy(() => import("./pages/conserje/ConserjeInicio"));
 const ConserjeEncomiendas = lazy(() => import("./pages/conserje/ConserjeEncomiendas"));
 const ConserjeValidarQR = lazy(() => import("./pages/conserje/ConserjeValidarQR"));
 const ConserjeAccesos = lazy(() => import("./pages/conserje/ConserjeAccesos"));
@@ -90,7 +91,8 @@ const RESIDENTE_NAV: NavItem[] = [
 ];
 
 const CONSERJE_NAV: NavItem[] = [
-  { to: "/", label: "Encomiendas", icon: <Package size={ICON_SIZE} /> },
+  { to: "/", label: "Inicio", icon: <House size={ICON_SIZE} /> },
+  { to: "/encomiendas", label: "Encomiendas", icon: <Package size={ICON_SIZE} /> },
   { to: "/alertas-sos", label: "Alertas SOS", icon: <Siren size={ICON_SIZE} /> },
   { to: "/validar", label: "Validar QR", icon: <QrCode size={ICON_SIZE} /> },
   { to: "/accesos", label: "Historial de accesos", icon: <ClockCounterClockwise size={ICON_SIZE} /> },
@@ -147,7 +149,8 @@ function ConserjeApp() {
     <AppLayout nav={CONSERJE_NAV}>
       <Suspense fallback={<PaginaCargando />}>
         <Routes>
-          <Route index element={<ConserjeEncomiendas />} />
+          <Route index element={<ConserjeInicio />} />
+          <Route path="encomiendas" element={<ConserjeEncomiendas />} />
           <Route path="alertas-sos" element={<AlertasSos />} />
           <Route path="validar" element={<ConserjeValidarQR />} />
           <Route path="accesos" element={<ConserjeAccesos />} />

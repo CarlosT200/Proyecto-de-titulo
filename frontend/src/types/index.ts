@@ -99,6 +99,8 @@ export interface Incidencia {
   descripcion: string;
   ubicacion: string;
   fotoUrl?: string | null;
+  tieneFoto?: boolean;
+  usuarioId?: string;
   categoria?: string | null;
   prioridad?: PrioridadIncidencia | null;
   estado: EstadoIncidencia;
@@ -108,18 +110,35 @@ export interface Incidencia {
   sugerenciaIA?: SugerenciaIA | null;
   historial?: IncidenciaHistorialItem[];
   createdAt: string;
+  updatedAt?: string;
 }
 
-export type EstadoEncomienda = "NOTIFICADA" | "RETIRADA";
+export type EstadoEncomienda = "NOTIFICADA" | "RETIRADA" | "DEVUELTA";
+
+export interface PersonaBreve {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
 
 export interface Encomienda {
   id: string;
   usuarioId: string;
-  usuario?: Usuario;
+  usuario?: PersonaBreve & { departamento: { numero: string; torre: { nombre: string } | null } | null };
+  registradaPor?: PersonaBreve;
+  cerradaPor?: PersonaBreve | null;
   remitente?: string | null;
+  numeroSeguimiento?: string | null;
+  ubicacion?: string | null;
+  observaciones?: string | null;
   estado: EstadoEncomienda;
   fechaRecepcion: string;
   fechaRetiro?: string | null;
+  retiradaPor?: string | null;
+  fechaDevolucion?: string | null;
+  motivoDevolucion?: string | null;
+  tieneFoto: boolean;
+  fotoUrl?: string | null;
 }
 
 export type TipoComunicado =
@@ -162,10 +181,15 @@ export interface Documento {
 }
 
 export type TipoEmergenciaSos = "CARABINEROS" | "BOMBEROS" | "AMBULANCIA";
+export type EstadoAlertaSos = "ACTIVA" | "ATENDIDA";
 
 export interface AlertaSos {
   id: string;
   tipo: TipoEmergenciaSos;
+  estado: EstadoAlertaSos;
+  atendidaEn?: string | null;
+  observacion?: string | null;
+  atendidaPor?: (PersonaBreve & { rol: Rol }) | null;
   createdAt: string;
   usuario: {
     id: string;
@@ -199,14 +223,29 @@ export interface RegistroAuditoria {
 }
 
 export interface Indicadores {
-  incidencias: { pendientes: number; resueltas: number; porEstado: Record<EstadoIncidencia, number> };
+  atencion: {
+    sosActivas: number;
+    incidenciasUrgentes: number;
+    incidenciasSinRevisar: number;
+    multasApeladas: number;
+    encomiendasAtrasadas: number;
+  };
+  incidencias: {
+    pendientes: number;
+    resueltas: number;
+    porEstado: Record<EstadoIncidencia, number>;
+    promedioHorasResolucion: number | null;
+  };
   reservas: { proximas: number };
   multas: Record<EstadoMulta, number>;
-  encomiendas: { pendientesDeRetiro: number };
+  encomiendas: { pendientesDeRetiro: number; atrasadas: number };
+  sos: { activas: number };
   accesos: {
     recientes: { id: string; resultado: "AUTORIZADO" | "RECHAZADO"; motivo: string; createdAt: string; validadoPor: { nombre: string; apellido: string } }[];
     autorizadosUltimos10: number;
     totalAutorizados: number;
     totalRechazados: number;
+    hoyAutorizados: number;
+    hoyRechazados: number;
   };
 }

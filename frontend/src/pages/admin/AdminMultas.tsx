@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Plus, Trash, Warning } from "@phosphor-icons/react";
 import { multasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
+import { useFiltroUrl } from "../../hooks/useFiltroUrl";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea, staggerFade } from "../../components/ui";
 import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
 import { ESTADO_MULTA_LABEL, ESTADO_MULTA_TONO } from "../../lib/badges";
@@ -20,7 +21,7 @@ export default function AdminMultas() {
   const { data: residentes } = useAsync(() => usuariosApi.listar({ rol: "RESIDENTE" }), []);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<EstadoMulta | "">("");
+  const [filtroEstado, setFiltroEstado] = useFiltroUrl("estado", ESTADOS);
 
   const filtradas = (data ?? []).filter((m) => {
     const texto = `${m.motivo} ${m.usuario?.nombre ?? ""} ${m.usuario?.apellido ?? ""}`.toLowerCase();

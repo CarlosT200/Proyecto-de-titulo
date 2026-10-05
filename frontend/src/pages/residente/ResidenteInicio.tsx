@@ -27,7 +27,7 @@ export default function ResidenteInicio() {
 
   const multasPendientes = multas?.filter((m) => m.estado === "PENDIENTE").length ?? 0;
   const incidenciasAbiertas = incidencias?.filter((i) => i.estado !== "RESUELTA").length ?? 0;
-  const encomiendasPorRetirar = encomiendas?.filter((e) => e.estado !== "RETIRADA").length ?? 0;
+  const encomiendasPorRetirar = encomiendas?.filter((e) => e.estado === "NOTIFICADA").length ?? 0;
 
   const cargando = cargandoMultas || cargandoIncidencias || cargandoEncomiendas || cargandoComunicados;
 

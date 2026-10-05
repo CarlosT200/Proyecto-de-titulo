@@ -43,11 +43,24 @@ export const PRIORIDAD_LABEL: Record<string, string> = {
 export const ESTADO_ENCOMIENDA_TONO: Record<string, Tono> = {
   NOTIFICADA: "amber",
   RETIRADA: "green",
+  DEVUELTA: "slate",
 };
 
+// "Notificada" es el estado interno: para las personas es una encomienda por retirar.
 export const ESTADO_ENCOMIENDA_LABEL: Record<string, string> = {
-  NOTIFICADA: "Notificada",
+  NOTIFICADA: "Por retirar",
   RETIRADA: "Retirada",
+  DEVUELTA: "Devuelta",
+};
+
+export const ESTADO_ALERTA_SOS_TONO: Record<string, Tono> = {
+  ACTIVA: "red",
+  ATENDIDA: "green",
+};
+
+export const ESTADO_ALERTA_SOS_LABEL: Record<string, string> = {
+  ACTIVA: "Activa",
+  ATENDIDA: "Atendida",
 };
 
 export const ESTADO_VISITA_TONO: Record<string, Tono> = {

@@ -25,5 +25,6 @@ const sosLimiter = rateLimit({
 
 router.post("/", requireRole(Rol.RESIDENTE), sosLimiter, asyncHandler(controller.crearAlertaController));
 router.get("/", requireRole(Rol.ADMIN, Rol.CONSERJE), asyncHandler(controller.listarAlertasController));
+router.patch("/:id/atender", requireRole(Rol.ADMIN, Rol.CONSERJE), asyncHandler(controller.atenderAlertaController));
 
 export default router;

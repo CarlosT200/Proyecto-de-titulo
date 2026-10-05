@@ -1,5 +1,18 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Buildings, CheckCircle, Clock, Megaphone, Package, QrCode, Siren, Warning } from "@phosphor-icons/react";
+import {
+  Buildings,
+  CalendarCheck,
+  CheckCircle,
+  Gavel,
+  Hourglass,
+  Megaphone,
+  Package,
+  QrCode,
+  Siren,
+  Warning,
+  Wrench,
+} from "@phosphor-icons/react";
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useAuth } from "../../context/AuthContext";
@@ -15,9 +28,11 @@ import {
   HorizontalBarChart,
   Meter,
 } from "../../components/ui";
-import { BotonHero, HeroBanner, saludoSegunHora } from "../../components/Inicio";
+import { BotonHero, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
 import { formatFechaHora } from "../../lib/format";
 import { RESULTADO_ACCESO_LABEL } from "../../lib/badges";
+import { duracionLegible } from "../../lib/tiempo";
+import { ENCOMIENDA_ATRASADA_HORAS } from "../../lib/umbrales";
 
 // Paleta de estado (dataviz skill): good/warning/serious reservados para semantica
 // de sanciones; nunca reutilizados como color de serie generico.
@@ -53,11 +68,22 @@ const LABEL_INCIDENCIA: Record<string, string> = {
 
 export default function AdminDashboard() {
   const { usuario } = useAuth();
-  const { data, cargando, error } = useAsync(() => dashboardApi.indicadores(), []);
+  const { data, cargando, error, setData } = useAsync(() => dashboardApi.indicadores(), []);
 
-  if (cargando) return <Spinner />;
-  if (error) return <Alert tone="red">{error}</Alert>;
+  // Se actualiza solo cada 30 segundos (sin parpadear) para que "Requiere atención" este al dia.
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      dashboardApi.indicadores().then(setData).catch(() => {});
+    }, 30000);
+    return () => clearInterval(intervalo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (cargando && !data) return <Spinner />;
+  if (error && !data) return <Alert tone="red">{error}</Alert>;
   if (!data) return null;
+
+  const promedio = data.incidencias.promedioHorasResolucion;
 
   const totalAccesos = data.accesos.totalAutorizados + data.accesos.totalRechazados;
 
@@ -85,12 +111,65 @@ export default function AdminDashboard() {
         </div>
       </HeroBanner>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-        <StatCard icon={Warning} label="Incidencias pendientes" value={data.incidencias.pendientes} tone="amber" index={0} />
-        <StatCard icon={CheckCircle} label="Incidencias resueltas" value={data.incidencias.resueltas} tone="green" index={1} />
-        <StatCard icon={Clock} label="Reservas próximas" value={data.reservas.proximas} tone="brand" index={2} />
-        <StatCard icon={Package} label="Encomiendas por retirar" value={data.encomiendas.pendientesDeRetiro} tone="purple" index={3} />
-        <StatCard icon={QrCode} label="Accesos autorizados (últ. 10)" value={data.accesos.autorizadosUltimos10} tone="green" index={4} />
+      <RequiereAtencion
+        items={[
+          {
+            cantidad: data.atencion.sosActivas,
+            singular: "alerta SOS activa",
+            plural: "alertas SOS activas",
+            to: "/alertas-sos?estado=ACTIVA",
+            tono: "red",
+            icono: Siren,
+          },
+          {
+            cantidad: data.atencion.incidenciasUrgentes,
+            singular: "incidencia urgente sin resolver",
+            plural: "incidencias urgentes sin resolver",
+            to: "/incidencias?estado=ABIERTAS&prioridad=ALTA",
+            tono: "red",
+            icono: Wrench,
+          },
+          {
+            cantidad: data.atencion.incidenciasSinRevisar,
+            singular: "incidencia nueva sin revisar",
+            plural: "incidencias nuevas sin revisar",
+            to: "/incidencias?estado=REPORTADA",
+            tono: "amber",
+            icono: Wrench,
+          },
+          {
+            cantidad: data.atencion.multasApeladas,
+            singular: "multa apelada por resolver",
+            plural: "multas apeladas por resolver",
+            to: "/multas?estado=APELADA",
+            tono: "amber",
+            icono: Gavel,
+          },
+          {
+            cantidad: data.atencion.encomiendasAtrasadas,
+            singular: `encomienda sin retirar hace más de ${ENCOMIENDA_ATRASADA_HORAS} horas`,
+            plural: `encomiendas sin retirar hace más de ${ENCOMIENDA_ATRASADA_HORAS} horas`,
+            to: "/encomiendas?estado=ATRASADA",
+            tono: "amber",
+            icono: Package,
+          },
+        ]}
+      />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-6">
+        <StatCard to="/incidencias?estado=ABIERTAS" icon={Warning} label="Incidencias abiertas" value={data.incidencias.pendientes} tone="amber" index={0} />
+        <StatCard to="/incidencias?estado=RESUELTA" icon={CheckCircle} label="Incidencias resueltas" value={data.incidencias.resueltas} tone="green" index={1} />
+        <StatCard
+          icon={Hourglass}
+          label="Tiempo promedio de resolución"
+          value={0}
+          valorTexto={promedio === null ? "Sin datos" : duracionLegible(promedio)}
+          tone="slate"
+          index={2}
+        />
+        <StatCard to="/reservas" icon={CalendarCheck} label="Reservas próximas" value={data.reservas.proximas} tone="brand" index={3} />
+        <StatCard to="/encomiendas?estado=NOTIFICADA" icon={Package} label="Encomiendas por retirar" value={data.encomiendas.pendientesDeRetiro} tone="purple" index={4} />
+        <StatCard to="/accesos?periodo=hoy" icon={QrCode} label="Accesos de hoy" value={data.accesos.hoyAutorizados + data.accesos.hoyRechazados} tone="green" index={5} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

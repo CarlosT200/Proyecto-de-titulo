@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Rol } from "@prisma/client";
-import sharp from "sharp";
 import {
   crearIncidenciaSchema,
   actualizarIncidenciaSchema,
@@ -10,6 +9,8 @@ import * as service from "./incidencias.service";
 import { ForbiddenError } from "../../lib/errors";
 import { auditar } from "../auditoria/auditoria.service";
 import { ESTADO_INCIDENCIA_LABEL } from "../../lib/etiquetas";
+import { etiquetaCategoria } from "../../lib/categorias";
+import { fotoComoDataUri } from "../../lib/imagenes";
 
 const FOTO_EVIDENCIA_LADO = 640;
 
@@ -17,11 +18,7 @@ export async function crearIncidenciaController(req: Request, res: Response) {
   const data = crearIncidenciaSchema.parse(req.body);
   let fotoUrl: string | undefined;
   if (req.file) {
-    const recortada = await sharp(req.file.buffer)
-      .resize(FOTO_EVIDENCIA_LADO, FOTO_EVIDENCIA_LADO, { fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 82 })
-      .toBuffer();
-    fotoUrl = `data:image/jpeg;base64,${recortada.toString("base64")}`;
+    fotoUrl = await fotoComoDataUri(req.file.buffer, { lado: FOTO_EVIDENCIA_LADO, ajuste: "inside" });
   }
   const incidencia = await service.crearIncidencia(req.auth!.condominioId, req.auth!.sub, {
     ...data,
@@ -58,7 +55,7 @@ export async function actualizarIncidenciaController(req: Request, res: Response
   const cambios = [
     data.estado && `estado: ${ESTADO_INCIDENCIA_LABEL[data.estado]}`,
     data.prioridad && `prioridad: ${data.prioridad.toLowerCase()}`,
-    data.categoria && `categoría: ${data.categoria}`,
+    data.categoria && `categoría: ${etiquetaCategoria(data.categoria)}`,
   ].filter(Boolean);
   await auditar(
     req,

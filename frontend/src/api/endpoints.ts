@@ -130,12 +130,18 @@ export const incidenciasApi = {
 
 // --- Encomiendas (HU-12 a HU-14) ---
 export const encomiendasApi = {
-  crear: (data: { usuarioId: string; remitente?: string }) =>
-    api.post<Encomienda>("/encomiendas", data).then((r) => r.data),
+  // multipart: puede llevar una foto
+  crear: (data: FormData) =>
+    api.post<Encomienda>("/encomiendas", data, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   mias: () => api.get<Encomienda[]>("/encomiendas/mias").then((r) => r.data),
   listarTodas: (params?: { estado?: string }) =>
     api.get<Encomienda[]>("/encomiendas", { params }).then((r) => r.data),
-  marcarRetirada: (id: string) => api.patch<Encomienda>(`/encomiendas/${id}/retirar`).then((r) => r.data),
+  // detalle con la foto
+  obtener: (id: string) => api.get<Encomienda>(`/encomiendas/${id}`).then((r) => r.data),
+  entregar: (id: string, retiradaPor?: string) =>
+    api.patch<Encomienda>(`/encomiendas/${id}/retirar`, { retiradaPor }).then((r) => r.data),
+  devolver: (id: string, motivo: string) =>
+    api.patch<Encomienda>(`/encomiendas/${id}/devolver`, { motivo }).then((r) => r.data),
 };
 
 // --- Comunicados (HU-15, HU-16) ---
@@ -198,7 +204,14 @@ export const documentosApi = {
 // --- Dashboard (HU-24) ---
 export const dashboardApi = {
   indicadores: () => api.get<Indicadores>("/dashboard").then((r) => r.data),
+  conserjeria: () => api.get<PanelConserjeria>("/dashboard/conserjeria").then((r) => r.data),
 };
+
+export interface PanelConserjeria {
+  encomiendas: { pendientes: number; atrasadas: number };
+  sos: { activas: number; alertas: AlertaSos[] };
+  accesos: { hoyAutorizados: number; hoyRechazados: number; recientes: AccesoLog[] };
+}
 
 // --- Registro de actividad (RNF-06) ---
 export const auditoriaApi = {
@@ -219,6 +232,8 @@ export const notificacionesApi = {
 export const sosApi = {
   crear: (tipo: TipoEmergenciaSos) => api.post<AlertaSos>("/sos", { tipo }).then((r) => r.data),
   listar: () => api.get<AlertaSos[]>("/sos").then((r) => r.data),
+  atender: (id: string, observacion?: string) =>
+    api.patch<AlertaSos>(`/sos/${id}/atender`, { observacion }).then((r) => r.data),
 };
 
 // --- Web Push ---

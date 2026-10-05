@@ -271,7 +271,7 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
       titulo: "Filtración en el baño",
       descripcion: "Gotea agua desde el techo del baño, parece venir del departamento de arriba.",
       ubicacion: "Torre A, depto 101",
-      categoria: "Filtración",
+      categoria: "AGUA",
       prioridad: PrioridadIncidencia.ALTA,
       estado: EstadoIncidencia.EN_PROCESO,
       creada: -3,
@@ -281,7 +281,7 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
       titulo: "Luz del pasillo quemada",
       descripcion: "La luz del pasillo del piso 1 no enciende desde ayer.",
       ubicacion: "Torre A, piso 1",
-      categoria: "Eléctrico",
+      categoria: "ELECTRICIDAD",
       prioridad: PrioridadIncidencia.MEDIA,
       estado: EstadoIncidencia.REPORTADA,
       creada: -1,
@@ -291,7 +291,7 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
       titulo: "Ascensor hace ruido",
       descripcion: "El ascensor de la Torre B hace un ruido fuerte al llegar al piso 2.",
       ubicacion: "Torre B, ascensor",
-      categoria: "Ascensor",
+      categoria: "ASCENSOR",
       prioridad: PrioridadIncidencia.MEDIA,
       estado: EstadoIncidencia.EN_REVISION,
       creada: -2,
@@ -301,7 +301,7 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
       titulo: "Basura acumulada en la sala de reciclaje",
       descripcion: "Los contenedores están llenos y hay mal olor.",
       ubicacion: "Subterráneo",
-      categoria: "Limpieza",
+      categoria: "LIMPIEZA",
       prioridad: PrioridadIncidencia.BAJA,
       estado: EstadoIncidencia.RESUELTA,
       creada: -9,
@@ -334,9 +334,9 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
 
   await prisma.encomienda.createMany({
     data: [
-      { condominioId, usuarioId: residenteId, registradaPorId: conserjeId, remitente: "Chilexpress", fechaRecepcion: dia(0, 9, 30) },
-      { condominioId, usuarioId: residenteId, registradaPorId: conserjeId, remitente: "Mercado Libre", fechaRecepcion: dia(-1, 16) },
-      { condominioId, usuarioId: valentina.id, registradaPorId: conserjeId, remitente: "Starken", fechaRecepcion: dia(-1, 11) },
+      { condominioId, usuarioId: residenteId, registradaPorId: conserjeId, remitente: "Chilexpress", numeroSeguimiento: "CX-48213", ubicacion: "Estante A", fechaRecepcion: dia(0, 9, 30) },
+      { condominioId, usuarioId: residenteId, registradaPorId: conserjeId, remitente: "Mercado Libre", ubicacion: "Estante B", fechaRecepcion: dia(-1, 16) },
+      { condominioId, usuarioId: valentina.id, registradaPorId: conserjeId, remitente: "Starken", ubicacion: "Bodega", observaciones: "Caja grande.", fechaRecepcion: dia(-3, 11) },
       {
         condominioId,
         usuarioId: matias.id,
@@ -345,6 +345,8 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
         estado: EstadoEncomienda.RETIRADA,
         fechaRecepcion: dia(-4, 10),
         fechaRetiro: dia(-3, 19),
+        retiradaPor: "Matías Fuentes",
+        cerradaPorId: conserjeId,
       },
     ],
   });
@@ -392,9 +394,9 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
 
   await prisma.auditoria.createMany({
     data: [
-      { condominioId, usuarioId: adminId, accion: "CREAR", entidad: "Comunicado", descripcion: "Publicó el comunicado \"Corte de agua programado\"", createdAt: dia(-1, 9) },
-      { condominioId, usuarioId: adminId, accion: "CREAR", entidad: "Multa", descripcion: "Registró una multa a Roberto Residente por $25.000", createdAt: dia(-4, 13) },
-      { condominioId, usuarioId: adminId, accion: "ACTUALIZAR", entidad: "Incidencia", descripcion: "Cambió la incidencia \"Filtración en el baño\" a En proceso", createdAt: dia(-1, 12) },
+      { condominioId, usuarioId: adminId, accion: "CREAR", entidad: "Comunicado", descripcion: "Publicó el comunicado \"Corte de agua programado\".", createdAt: dia(-1, 9) },
+      { condominioId, usuarioId: adminId, accion: "CREAR", entidad: "Multa", descripcion: "Registró una multa a Roberto Residente por $25.000.", createdAt: dia(-4, 13) },
+      { condominioId, usuarioId: adminId, accion: "ACTUALIZAR", entidad: "Incidencia", descripcion: "Cambió la incidencia \"Filtración en el baño\" a En proceso.", createdAt: dia(-1, 12) },
     ],
   });
 }

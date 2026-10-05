@@ -68,7 +68,7 @@ describe("crearAlerta (SOS)", () => {
     expect(notificarMasivo).toHaveBeenCalledWith(
       ["admin-1"],
       expect.objectContaining({
-        mensaje: "Roberto Residente (Torre A 101) activo una alerta de Ambulancia.",
+        mensaje: "Roberto Residente (Torre A 101) activó una alerta de Ambulancia.",
       })
     );
   });

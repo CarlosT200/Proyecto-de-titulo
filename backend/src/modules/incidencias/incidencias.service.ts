@@ -1,17 +1,35 @@
-import { EstadoIncidencia, Prisma, PrioridadIncidencia } from "@prisma/client";
+import { EstadoIncidencia, Prisma, PrioridadIncidencia, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { NotFoundError } from "../../lib/errors";
 import { sugerirClasificacion } from "./clasificador-ia";
-import { crearNotificacion } from "../notificaciones/notificaciones.service";
+import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { ESTADO_INCIDENCIA_LABEL } from "../../lib/etiquetas";
+import type { CategoriaIncidencia } from "../../lib/categorias";
+
+function recortar(texto: string, largo: number): string {
+  return texto.length > largo ? `${texto.slice(0, largo - 1).trimEnd()}…` : texto;
+}
 
 // HU-08: reportar incidencia.
+//
+// Clasificacion inicial (HU-25, RNF-14): la categoria es la que eligio el residente o, si no eligio,
+// la que propone el clasificador; la prioridad es ALTA si el residente la marco como urgente y si no
+// la que propone el clasificador. La administracion puede cambiar ambas en cualquier momento. La
+// sugerencia original se guarda aparte (sugerenciaIA) para poder compararla.
 export async function crearIncidencia(
   condominioId: string,
   usuarioId: string,
-  data: { titulo: string; descripcion: string; ubicacion: string; fotoUrl?: string }
+  data: {
+    titulo: string;
+    descripcion: string;
+    ubicacion: string;
+    fotoUrl?: string;
+    categoria?: CategoriaIncidencia;
+    urgente?: boolean;
+  }
 ) {
   const sugerencia = sugerirClasificacion(data.titulo, data.descripcion, data.ubicacion);
+  const prioridad = data.urgente ? PrioridadIncidencia.ALTA : sugerencia.prioridad;
 
   const incidencia = await prisma.incidencia.create({
     data: {
@@ -21,7 +39,8 @@ export async function crearIncidencia(
       descripcion: data.descripcion,
       ubicacion: data.ubicacion,
       fotoUrl: data.fotoUrl,
-      // HU-25: la sugerencia se guarda de inmediato, pero no vincula al administrador (RNF-14).
+      categoria: data.categoria ?? sugerencia.categoria,
+      prioridad,
       sugerenciaIA: sugerencia as unknown as Prisma.InputJsonValue,
       historial: {
         create: {
@@ -34,7 +53,32 @@ export async function crearIncidencia(
     include: { historial: true },
   });
 
-  return incidencia;
+  // Las urgentes avisan de inmediato a la administracion (las demas se ven en el panel).
+  if (prioridad === PrioridadIncidencia.ALTA) {
+    const [residente, administradores] = await Promise.all([
+      prisma.usuario.findUnique({
+        where: { id: usuarioId },
+        select: { nombre: true, apellido: true, departamento: { select: { numero: true, torre: { select: { nombre: true } } } } },
+      }),
+      prisma.usuario.findMany({ where: { condominioId, rol: Rol.ADMIN, activo: true }, select: { id: true } }),
+    ]);
+    const unidad = residente?.departamento
+      ? ` (${[residente.departamento.torre?.nombre, residente.departamento.numero].filter(Boolean).join(" ")})`
+      : "";
+    await crearNotificacionesMasivas(
+      administradores.map((a) => a.id),
+      {
+        tipo: "INCIDENCIA",
+        titulo: "Incidencia urgente",
+        mensaje: `${residente ? `${residente.nombre} ${residente.apellido}${unidad}` : "Un residente"} reportó: "${recortar(data.titulo, 80)}".`,
+        entidadTipo: "Incidencia",
+        entidadId: incidencia.id,
+      }
+    );
+  }
+
+  const { fotoUrl: _foto, ...sinFotoCreada } = incidencia;
+  return sinFotoCreada;
 }
 
 // HU-09: consultar estado (residente, solo sus incidencias).
@@ -93,7 +137,7 @@ export async function actualizarIncidencia(
   data: {
     estado?: EstadoIncidencia;
     prioridad?: PrioridadIncidencia;
-    categoria?: string;
+    categoria?: CategoriaIncidencia;
     responsableId?: string | null;
     observacion?: string;
   }
@@ -125,12 +169,23 @@ export async function actualizarIncidencia(
     },
   });
 
+  // El residente se entera de los cambios de estado y de los comentarios de la administracion.
+  const comentario = data.observacion ? ` Comentario: "${recortar(data.observacion, 140)}"` : "";
   if (cambiaEstado && data.estado) {
     await crearNotificacion({
       usuarioId: incidencia.usuarioId,
       tipo: "INCIDENCIA",
       titulo: "Actualización de tu incidencia",
-      mensaje: `Tu incidencia "${incidencia.titulo}" cambió de estado a "${ESTADO_INCIDENCIA_LABEL[data.estado]}".`,
+      mensaje: `Tu incidencia "${incidencia.titulo}" cambió de estado a "${ESTADO_INCIDENCIA_LABEL[data.estado]}".${comentario}`,
+      entidadTipo: "Incidencia",
+      entidadId: incidencia.id,
+    });
+  } else if (data.observacion) {
+    await crearNotificacion({
+      usuarioId: incidencia.usuarioId,
+      tipo: "INCIDENCIA",
+      titulo: "Nuevo comentario en tu incidencia",
+      mensaje: `La administración comentó tu incidencia "${incidencia.titulo}": "${recortar(data.observacion, 140)}"`,
       entidadTipo: "Incidencia",
       entidadId: incidencia.id,
     });

@@ -44,7 +44,7 @@ export function mensajeError(error: unknown, fallback = "Ocurrió un error. Inte
     // Sin respuesta del servidor (backend caido, sin conexion, etc.): nunca debe confundirse
     // con un error de negocio como "credenciales incorrectas".
     if (!error.response) {
-      return "No se pudo conectar con el servidor. Verifica que este en linea e intenta nuevamente.";
+      return "No se pudo conectar con el servidor. Revisa tu conexión a internet e intenta nuevamente.";
     }
     const data = error.response.data as { error?: string; detalles?: { campo: string; mensaje: string }[] };
     if (data?.detalles?.length) {

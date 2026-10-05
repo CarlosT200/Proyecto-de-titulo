@@ -136,7 +136,10 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
     }
     setPanelAbierto(false);
     const ruta = n.entidadTipo ? RUTA_POR_ENTIDAD[n.entidadTipo] : undefined;
-    if (ruta) navigate(ruta);
+    if (!ruta) return;
+    // Incidencias y encomiendas abren su detalle directamente (?ver=<id>).
+    const conDetalle = n.entidadId && (n.entidadTipo === "Incidencia" || n.entidadTipo === "Encomienda");
+    navigate(conDetalle ? `${ruta}?ver=${encodeURIComponent(n.entidadId!)}` : ruta);
   }
 
   function eliminarNotificacion(id: string) {

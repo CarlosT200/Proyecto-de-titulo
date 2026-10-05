@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
-import { Buildings, Icon as PhosphorIcon } from "@phosphor-icons/react";
+import { Buildings, CaretRight, CheckCircle, Icon as PhosphorIcon, WarningCircle } from "@phosphor-icons/react";
 import { STAT_TONES } from "./ui";
 
 export function saludoSegunHora(fecha = new Date()): string {
@@ -143,5 +143,75 @@ export function AccesoRapido({
         {descripcion && <p className="relative text-xs text-slate-500 dark:text-slate-400">{descripcion}</p>}
       </Link>
     </motion.div>
+  );
+}
+
+export interface ItemAtencion {
+  cantidad: number;
+  singular: string;
+  plural: string;
+  to: string;
+  tono: "red" | "amber";
+  icono: PhosphorIcon;
+}
+
+const TONO_ATENCION = {
+  red: { icono: "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300", numero: "text-red-600 dark:text-red-300" },
+  amber: { icono: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300", numero: "text-amber-600 dark:text-amber-300" },
+} as const;
+
+// "Requiere atención": solo lo que hay que resolver ahora (los items en cero no se muestran).
+// Cada fila lleva a la lista ya filtrada.
+export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
+  const pendientes = items.filter((i) => i.cantidad > 0);
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      aria-labelledby="titulo-requiere-atencion"
+      className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm shadow-slate-200/50 dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20"
+    >
+      <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
+        <WarningCircle size={20} weight="fill" className={pendientes.length ? "text-accent-500" : "text-emerald-500"} aria-hidden />
+        <h2 id="titulo-requiere-atencion" className="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Requiere atención
+        </h2>
+      </div>
+      {pendientes.length === 0 ? (
+        <p className="flex items-center gap-2 px-5 py-4 text-sm text-emerald-700 dark:text-emerald-300">
+          <CheckCircle size={18} weight="fill" aria-hidden /> Todo en orden: no hay pendientes urgentes.
+        </p>
+      ) : (
+        <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+          {pendientes.map((item) => {
+            const tono = TONO_ATENCION[item.tono];
+            const Icono = item.icono;
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  className="group flex min-h-[56px] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                >
+                  <span className={clsx("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", tono.icono)}>
+                    <Icono size={18} weight="fill" aria-hidden />
+                  </span>
+                  <span className="flex-1 text-sm text-slate-700 dark:text-slate-200">
+                    <span className={clsx("font-display text-lg font-bold", tono.numero)}>{item.cantidad}</span>{" "}
+                    {item.cantidad === 1 ? item.singular : item.plural}
+                  </span>
+                  <CaretRight
+                    size={16}
+                    weight="bold"
+                    className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </motion.section>
   );
 }

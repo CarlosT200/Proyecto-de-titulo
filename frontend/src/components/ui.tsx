@@ -1,4 +1,17 @@
-import { ButtonHTMLAttributes, InputHTMLAttributes, LabelHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes, useEffect, useId, useRef, useState } from "react";
+import {
+  ButtonHTMLAttributes,
+  forwardRef,
+  InputHTMLAttributes,
+  LabelHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "framer-motion";
 import clsx from "clsx";
@@ -183,6 +196,7 @@ export function StatCard({
   tone = "brand",
   index = 0,
   to,
+  valorTexto,
 }: {
   icon: PhosphorIcon;
   label: string;
@@ -190,6 +204,8 @@ export function StatCard({
   tone?: keyof typeof STAT_TONES;
   index?: number;
   to?: string;
+  /** Si se indica, se muestra en vez del numero (ej. "1,5 días"). */
+  valorTexto?: string;
 }) {
   const colors = STAT_TONES[tone];
   const contenido = (
@@ -209,7 +225,7 @@ export function StatCard({
         )}
       </div>
       <p className="relative mt-4 font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-        <AnimatedNumber value={value} />
+        {valorTexto ?? <AnimatedNumber value={value} />}
       </p>
       <p className="relative mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
     </>
@@ -317,21 +333,30 @@ export function Label(props: LabelHTMLAttributes<HTMLLabelElement>) {
 const CAMPO_CLASES =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 sm:text-sm transition-shadow focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500";
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={clsx(CAMPO_CLASES, className)} {...props} />;
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
+  { className, ...props },
+  ref
+) {
+  return <input ref={ref} className={clsx(CAMPO_CLASES, className)} {...props} />;
+});
 
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={clsx(CAMPO_CLASES, className)} {...props} />;
-}
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea(
+  { className, ...props },
+  ref
+) {
+  return <textarea ref={ref} className={clsx(CAMPO_CLASES, className)} {...props} />;
+});
 
-export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select(
+  { className, children, ...props },
+  ref
+) {
   return (
-    <select className={clsx(CAMPO_CLASES, className)} {...props}>
+    <select ref={ref} className={clsx(CAMPO_CLASES, className)} {...props}>
       {children}
     </select>
   );
-}
+});
 
 const BADGE_TONES: Record<string, string> = {
   slate: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
@@ -447,7 +472,9 @@ export function Modal({
     };
   }, [open]);
 
-  return (
+  // Se dibuja directo en <body>: si quedara dentro de una tarjeta con blur o animacion, "fixed"
+  // se mediria contra esa tarjeta y el modal podria quedar fuera de la pantalla.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -475,7 +502,7 @@ export function Modal({
               <h3 id={tituloId} className="font-display text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+                className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 max-sm:-mr-2 max-sm:p-3 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                 aria-label="Cerrar"
               >
                 <X size={18} />
@@ -485,6 +512,7 @@ export function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

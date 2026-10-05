@@ -49,6 +49,7 @@ enum PrioridadIncidencia {
 enum EstadoEncomienda {
   NOTIFICADA
   RETIRADA
+  DEVUELTA // no se retiro y se devolvio al remitente o a la empresa de despacho
 }
 
 enum TipoComunicado {
@@ -82,6 +83,11 @@ enum TipoEmergenciaSos {
   CARABINEROS
   BOMBEROS
   AMBULANCIA
+}
+
+enum EstadoAlertaSos {
+  ACTIVA
+  ATENDIDA
 }
 
 // ------------------------------
@@ -174,13 +180,15 @@ model Usuario {
   incidenciaHistorial  IncidenciaHistorial[]
   encomiendasRecibidas Encomienda[]         @relation("EncomiendaResidente")
   encomiendasRegistradas Encomienda[]       @relation("EncomiendaRegistradaPor")
+  encomiendasCerradas  Encomienda[]         @relation("EncomiendaCerradaPor")
   comunicadosPublicados Comunicado[]
   visitasRegistradas   Visita[]
   qrTokens             QrToken[]
   documentosSubidos    Documento[]
   accesosValidados     AccesoLog[]
   notificaciones       Notificacion[]
-  alertasSos           AlertaSos[]
+  alertasSos           AlertaSos[]          @relation("AlertaSosResidente")
+  alertasAtendidas     AlertaSos[]          @relation("AlertaSosAtendidaPor")
   pushSubscriptions    PushSubscription[]
   auditorias           Auditoria[]
 
@@ -314,15 +322,25 @@ model Encomienda {
   usuarioId         String
   registradaPorId   String
   remitente         String?
+  numeroSeguimiento String?
+  ubicacion         String? // donde quedo guardada en conserjeria (ej. "Estante B")
+  fotoUrl           String? // base64, igual que las fotos de incidencias
+  observaciones     String?
   estado            EstadoEncomienda @default(NOTIFICADA)
   fechaRecepcion    DateTime         @default(now())
   fechaRetiro       DateTime?
+  retiradaPor       String? // nombre de quien la retiro (puede ser un familiar)
+  fechaDevolucion   DateTime?
+  motivoDevolucion  String?
+  cerradaPorId      String? // quien la entrego o la devolvio
 
   condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   usuario       Usuario    @relation("EncomiendaResidente", fields: [usuarioId], references: [id], onDelete: Cascade)
   registradaPor Usuario    @relation("EncomiendaRegistradaPor", fields: [registradaPorId], references: [id])
+  cerradaPor    Usuario?   @relation("EncomiendaCerradaPor", fields: [cerradaPorId], references: [id], onDelete: SetNull)
 
   @@index([condominioId, usuarioId, estado])
+  @@index([condominioId, estado, fechaRecepcion])
   @@map("encomiendas")
 }
 
@@ -480,17 +498,23 @@ model PushSubscription {
 // ------------------------------
 
 model AlertaSos {
-  id           String            @id @default(uuid())
-  condominioId String
-  usuarioId    String
-  tipo         TipoEmergenciaSos
+  id            String            @id @default(uuid())
+  condominioId  String
+  usuarioId     String
+  tipo          TipoEmergenciaSos
+  estado        EstadoAlertaSos   @default(ACTIVA)
+  atendidaPorId String?
+  atendidaEn    DateTime?
+  observacion   String? // que se hizo al atenderla
 
-  condominio Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
-  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  condominio  Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  usuario     Usuario    @relation("AlertaSosResidente", fields: [usuarioId], references: [id], onDelete: Cascade)
+  atendidaPor Usuario?   @relation("AlertaSosAtendidaPor", fields: [atendidaPorId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@index([condominioId, createdAt])
+  @@index([condominioId, estado])
   @@map("alertas_sos")
 }
 

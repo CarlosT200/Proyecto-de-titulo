@@ -328,7 +328,7 @@ const PERSONA_SELECT = {
 // vivo del escaneo y en el historial. Sin esto, el historial solo mostraba
 // el texto fijo "Acceso de residente/visita autorizado" sin decir quien ni
 // a que unidad -- no quedaba trazabilidad util para el conserje/admin.
-export async function listarAccesos(condominioId: string) {
+export async function listarAccesos(condominioId: string, cantidad = 100) {
   const logs = await prisma.accesoLog.findMany({
     where: { condominioId },
     include: {
@@ -343,7 +343,7 @@ export async function listarAccesos(condominioId: string) {
       },
     },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: cantidad,
   });
 
   return logs.map(({ qrToken, ...log }) => {
