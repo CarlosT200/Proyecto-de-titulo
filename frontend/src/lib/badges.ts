@@ -125,3 +125,28 @@ export const TIPO_COMUNICADO_LABEL: Record<string, string> = {
   CAMBIO_HORARIO: "Cambio de horario",
   GENERAL: "General",
 };
+
+export const ESTADO_COBRO_LABEL: Record<string, string> = {
+  PENDIENTE: "Por pagar",
+  VENCIDO: "Vencido",
+  PAGADO: "Pagado",
+};
+
+export const ESTADO_COBRO_TONO: Record<string, Tono> = {
+  PENDIENTE: "amber",
+  VENCIDO: "red",
+  PAGADO: "green",
+};
+
+export const MEDIO_PAGO_LABEL: Record<string, string> = {
+  TRANSFERENCIA: "Transferencia",
+  EFECTIVO: "Efectivo",
+  TARJETA: "Tarjeta",
+  CHEQUE: "Cheque",
+  OTRO: "Otro",
+};
+
+export const METODO_PRORRATEO_LABEL: Record<string, string> = {
+  PARTES_IGUALES: "Partes iguales",
+  ALICUOTA: "Según alícuota",
+};

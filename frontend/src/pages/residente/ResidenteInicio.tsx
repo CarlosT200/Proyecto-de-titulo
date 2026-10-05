@@ -7,15 +7,16 @@ import {
   MapPin,
   Megaphone,
   Package,
+  Wallet,
   Warning,
   Wrench,
 } from "@phosphor-icons/react";
 import { useAuth } from "../../context/AuthContext";
-import { comunicadosApi, encomiendasApi, incidenciasApi, multasApi } from "../../api/endpoints";
+import { comunicadosApi, encomiendasApi, gastosComunesApi, incidenciasApi, multasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Badge, Card, CardHeader, EmptyState, Spinner, StatCard, staggerFade } from "../../components/ui";
 import { AccesoRapido, ChipHero, HeroBanner, saludoSegunHora } from "../../components/Inicio";
-import { formatFechaHora } from "../../lib/format";
+import { formatFechaHora, formatMonto } from "../../lib/format";
 import { TIPO_COMUNICADO_LABEL } from "../../lib/badges";
 
 export default function ResidenteInicio() {
@@ -24,18 +25,21 @@ export default function ResidenteInicio() {
   const { data: incidencias, cargando: cargandoIncidencias } = useAsync(() => incidenciasApi.mias(), []);
   const { data: encomiendas, cargando: cargandoEncomiendas } = useAsync(() => encomiendasApi.mias(), []);
   const { data: comunicados, cargando: cargandoComunicados } = useAsync(() => comunicadosApi.listar(), []);
+  const { data: cuenta, cargando: cargandoCuenta } = useAsync(() => gastosComunesApi.miCuenta(), []);
 
   const multasPendientes = multas?.filter((m) => m.estado === "PENDIENTE").length ?? 0;
   const incidenciasAbiertas = incidencias?.filter((i) => i.estado !== "RESUELTA").length ?? 0;
   const encomiendasPorRetirar = encomiendas?.filter((e) => e.estado === "NOTIFICADA").length ?? 0;
+  const saldoGastoComun = cuenta?.saldoPendiente ?? 0;
+  const gastoComunVencido = cuenta?.deudaVencida ?? 0;
 
-  const cargando = cargandoMultas || cargandoIncidencias || cargandoEncomiendas || cargandoComunicados;
+  const cargando = cargandoMultas || cargandoIncidencias || cargandoEncomiendas || cargandoComunicados || cargandoCuenta;
 
   const unidad = usuario?.departamento
     ? `${usuario.departamento.torre?.nombre ?? ""} ${usuario.departamento.numero}`.trim()
     : null;
   const etiqueta = [unidad, usuario?.condominio?.nombre].filter(Boolean).join(" · ");
-  const todoAlDia = encomiendasPorRetirar === 0 && multasPendientes === 0;
+  const todoAlDia = encomiendasPorRetirar === 0 && multasPendientes === 0 && saldoGastoComun === 0;
 
   return (
     <div className="space-y-6">
@@ -56,6 +60,17 @@ export default function ResidenteInicio() {
               <ChipHero icon={Package} to="/encomiendas">
                 {encomiendasPorRetirar === 1 ? "1 encomienda por retirar" : `${encomiendasPorRetirar} encomiendas por retirar`}
               </ChipHero>
+            )}
+            {gastoComunVencido > 0 ? (
+              <ChipHero icon={Wallet} to="/gastos-comunes">
+                Gasto común vencido: {formatMonto(gastoComunVencido)}
+              </ChipHero>
+            ) : (
+              saldoGastoComun > 0 && (
+                <ChipHero icon={Wallet} to="/gastos-comunes">
+                  Gasto común por pagar: {formatMonto(saldoGastoComun)}
+                </ChipHero>
+              )
             )}
             {multasPendientes > 0 && (
               <ChipHero icon={Warning} to="/multas">
@@ -78,10 +93,19 @@ export default function ResidenteInicio() {
         <Spinner />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-            <StatCard to="/multas" icon={Warning} label="Multas pendientes" value={multasPendientes} tone="amber" index={0} />
-            <StatCard to="/incidencias" icon={Wrench} label="Incidencias abiertas" value={incidenciasAbiertas} tone="brand" index={1} />
-            <StatCard to="/encomiendas" icon={Package} label="Encomiendas por retirar" value={encomiendasPorRetirar} tone="purple" index={2} />
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard
+              to="/gastos-comunes"
+              icon={Wallet}
+              label="Gastos comunes por pagar"
+              value={0}
+              valorTexto={formatMonto(saldoGastoComun)}
+              tone={gastoComunVencido > 0 ? "red" : saldoGastoComun > 0 ? "brand" : "green"}
+              index={0}
+            />
+            <StatCard to="/multas" icon={Warning} label="Multas pendientes" value={multasPendientes} tone="amber" index={1} />
+            <StatCard to="/incidencias" icon={Wrench} label="Incidencias abiertas" value={incidenciasAbiertas} tone="brand" index={2} />
+            <StatCard to="/encomiendas" icon={Package} label="Encomiendas por retirar" value={encomiendasPorRetirar} tone="purple" index={3} />
           </div>
 
           <Card>

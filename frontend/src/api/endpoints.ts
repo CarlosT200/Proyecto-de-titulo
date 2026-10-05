@@ -1,5 +1,13 @@
 import { api } from "./client";
 import type {
+  AlicuotasGastoComun,
+  CobroGastoComunDetalle,
+  MedioPago,
+  MetodoProrrateo,
+  MiCuentaGastoComun,
+  PeriodoGastoComun,
+  PeriodoGastoComunDetalle,
+  UnidadMorosa,
   AlertaSos,
   Comunicado,
   Condominio,
@@ -242,4 +250,35 @@ export const pushApi = {
   suscribir: (suscripcion: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
     api.post("/push/suscribir", suscripcion),
   eliminar: (endpoint: string) => api.delete("/push/suscribir", { data: { endpoint } }),
+};
+
+// --- Gastos comunes ---
+export const gastosComunesApi = {
+  periodos: () => api.get<PeriodoGastoComun[]>("/gastos-comunes/periodos").then((r) => r.data),
+  periodo: (id: string) => api.get<PeriodoGastoComunDetalle>(`/gastos-comunes/periodos/${id}`).then((r) => r.data),
+  emitir: (data: {
+    anio: number;
+    mes: number;
+    fechaVencimiento: string;
+    metodoProrrateo: MetodoProrrateo;
+    porcentajeFondoReserva: number;
+    partidas: { concepto: string; monto: number }[];
+    instruccionesPago?: string;
+  }) =>
+    api
+      .post<{ id: string; nombre: string; unidades: number; totalCobrado: number }>("/gastos-comunes/periodos", data)
+      .then((r) => r.data),
+  eliminarPeriodo: (id: string) => api.delete(`/gastos-comunes/periodos/${id}`).then(() => undefined),
+  morosidad: () => api.get<UnidadMorosa[]>("/gastos-comunes/morosidad").then((r) => r.data),
+  cobro: (id: string) => api.get<CobroGastoComunDetalle>(`/gastos-comunes/cobros/${id}`).then((r) => r.data),
+  registrarPago: (cobroId: string, data: { monto: number; fechaPago: string; medio: MedioPago; referencia?: string }) =>
+    api
+      .post<{ unidad: string; periodo: string; saldo: number; pagado: boolean }>(`/gastos-comunes/cobros/${cobroId}/pagos`, data)
+      .then((r) => r.data),
+  anularPago: (pagoId: string, motivo: string) =>
+    api.patch(`/gastos-comunes/pagos/${pagoId}/anular`, { motivo }).then((r) => r.data),
+  alicuotas: () => api.get<AlicuotasGastoComun>("/gastos-comunes/alicuotas").then((r) => r.data),
+  guardarAlicuotas: (alicuotas: { departamentoId: string; alicuota: number | null }[]) =>
+    api.put<AlicuotasGastoComun>("/gastos-comunes/alicuotas", { alicuotas }).then((r) => r.data),
+  miCuenta: () => api.get<MiCuentaGastoComun>("/gastos-comunes/mi-cuenta").then((r) => r.data),
 };

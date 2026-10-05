@@ -36,6 +36,7 @@ const RUTA_POR_ENTIDAD: Record<string, string> = {
   Encomienda: "/encomiendas",
   Comunicado: "/comunicados",
   AlertaSos: "/alertas-sos",
+  CobroGastoComun: "/gastos-comunes",
 };
 
 export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNode }) {
@@ -137,8 +138,9 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
     setPanelAbierto(false);
     const ruta = n.entidadTipo ? RUTA_POR_ENTIDAD[n.entidadTipo] : undefined;
     if (!ruta) return;
-    // Incidencias y encomiendas abren su detalle directamente (?ver=<id>).
-    const conDetalle = n.entidadId && (n.entidadTipo === "Incidencia" || n.entidadTipo === "Encomienda");
+    // Incidencias, encomiendas y cobros de gastos comunes abren su detalle directamente (?ver=<id>).
+    const conDetalle =
+      n.entidadId && (n.entidadTipo === "Incidencia" || n.entidadTipo === "Encomienda" || n.entidadTipo === "CobroGastoComun");
     navigate(conDetalle ? `${ruta}?ver=${encodeURIComponent(n.entidadId!)}` : ruta);
   }
 

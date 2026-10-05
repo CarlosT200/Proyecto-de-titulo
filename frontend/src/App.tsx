@@ -13,6 +13,7 @@ import {
   QrCode,
   Siren,
   Users,
+  Wallet,
   Warning,
   Wrench,
 } from "@phosphor-icons/react";
@@ -36,6 +37,7 @@ const AdminUsuarios = lazy(() => import("./pages/admin/AdminUsuarios"));
 const AdminCondominio = lazy(() => import("./pages/admin/AdminCondominio"));
 const AdminReservas = lazy(() => import("./pages/admin/AdminReservas"));
 const AdminMultas = lazy(() => import("./pages/admin/AdminMultas"));
+const AdminGastosComunes = lazy(() => import("./pages/admin/AdminGastosComunes"));
 const AdminIncidencias = lazy(() => import("./pages/admin/AdminIncidencias"));
 const AdminEncomiendas = lazy(() => import("./pages/admin/AdminEncomiendas"));
 const AdminComunicados = lazy(() => import("./pages/admin/AdminComunicados"));
@@ -46,6 +48,7 @@ const AdminAuditoria = lazy(() => import("./pages/admin/AdminAuditoria"));
 const ResidenteInicio = lazy(() => import("./pages/residente/ResidenteInicio"));
 const ResidenteReservas = lazy(() => import("./pages/residente/ResidenteReservas"));
 const ResidenteMultas = lazy(() => import("./pages/residente/ResidenteMultas"));
+const ResidenteGastosComunes = lazy(() => import("./pages/residente/ResidenteGastosComunes"));
 const ResidenteIncidencias = lazy(() => import("./pages/residente/ResidenteIncidencias"));
 const ResidenteEncomiendas = lazy(() => import("./pages/residente/ResidenteEncomiendas"));
 const ResidenteComunicados = lazy(() => import("./pages/residente/ResidenteComunicados"));
@@ -70,6 +73,7 @@ const ADMIN_NAV: NavItem[] = [
   { to: "/alertas-sos", label: "Alertas SOS", icon: <Siren size={ICON_SIZE} /> },
   { to: "/residentes", label: "Residentes", icon: <Users size={ICON_SIZE} /> },
   { to: "/condominio", label: "Condominio", icon: <Buildings size={ICON_SIZE} /> },
+  { to: "/gastos-comunes", label: "Gastos comunes", icon: <Wallet size={ICON_SIZE} /> },
   { to: "/reservas", label: "Reservas", icon: <CalendarBlank size={ICON_SIZE} /> },
   { to: "/multas", label: "Multas", icon: <Warning size={ICON_SIZE} /> },
   { to: "/incidencias", label: "Incidencias", icon: <Wrench size={ICON_SIZE} /> },
@@ -82,6 +86,7 @@ const ADMIN_NAV: NavItem[] = [
 
 const RESIDENTE_NAV: NavItem[] = [
   { to: "/", label: "Inicio", icon: <House size={ICON_SIZE} /> },
+  { to: "/gastos-comunes", label: "Gastos comunes", icon: <Wallet size={ICON_SIZE} /> },
   { to: "/reservas", label: "Reservas", icon: <CalendarBlank size={ICON_SIZE} /> },
   { to: "/multas", label: "Mis multas", icon: <Warning size={ICON_SIZE} /> },
   { to: "/incidencias", label: "Incidencias", icon: <Wrench size={ICON_SIZE} /> },
@@ -108,6 +113,7 @@ function AdminApp() {
           <Route path="alertas-sos" element={<AlertasSos />} />
           <Route path="residentes" element={<AdminUsuarios />} />
           <Route path="condominio" element={<AdminCondominio />} />
+          <Route path="gastos-comunes" element={<AdminGastosComunes />} />
           <Route path="reservas" element={<AdminReservas />} />
           <Route path="multas" element={<AdminMultas />} />
           <Route path="incidencias" element={<AdminIncidencias />} />
@@ -132,6 +138,7 @@ function ResidenteApp() {
           <Route index element={<ResidenteInicio />} />
           <Route path="reservas" element={<ResidenteReservas />} />
           <Route path="multas" element={<ResidenteMultas />} />
+          <Route path="gastos-comunes" element={<ResidenteGastosComunes />} />
           <Route path="incidencias" element={<ResidenteIncidencias />} />
           <Route path="encomiendas" element={<ResidenteEncomiendas />} />
           <Route path="comunicados" element={<ResidenteComunicados />} />

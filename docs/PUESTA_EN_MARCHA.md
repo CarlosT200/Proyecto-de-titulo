@@ -146,6 +146,7 @@ Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:mi
 ## 7. Qué revisar antes de entregarla
 
 - [ ] Entrar con la cuenta de administración real y cargar torres, departamentos y espacios.
+- [ ] **Gastos comunes:** si el reglamento de copropiedad fija un porcentaje por unidad, cargarlo en *Gastos comunes → Alícuotas* (deben sumar 100 %); si no, repartir en partes iguales. Emitir el primer cobro, registrar un pago de prueba y anularlo para ver el flujo completo.
 - [ ] Crear una cuenta de residente, entrar con ella desde el celular y cambiar la contraseña temporal.
 - [ ] Generar un QR de visita y validarlo desde la cuenta de conserjería **con un celular real** (la cámara no se pudo probar en las pruebas automáticas).
 - [ ] Activar notificaciones en el iPhone (Safari → *Compartir* → *Agregar a inicio*, luego activarlas en **Mi perfil**) y probar una alerta SOS.
@@ -154,5 +155,6 @@ Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:mi
 
 ## 8. Pendiente fuera del código
 
-- **Datos personales (Ley N.º 21.719, vigente desde el 1 de diciembre de 2026):** el condominio tendrá datos de residentes y visitas. Falta un aviso de privacidad y definir quién es responsable de los datos; conviene revisarlo con alguien con conocimiento legal.
+- **Datos personales (Ley N.º 21.719, vigente desde el 1 de diciembre de 2026):** el aviso de privacidad ya está en la aplicación (`/privacidad`, enlazado desde el pie de página, el perfil y el primer ingreso). Falta que cada comunidad confirme los **plazos de conservación** que propone el aviso (la aplicación no borra datos automáticamente al cumplirse) y la forma de contacto para ejercer derechos; conviene revisarlo con alguien con conocimiento legal.
+- **Gastos comunes:** la aplicación calcula el cobro de cada unidad, registra pagos y muestra la deuda vencida, pero **no cobra intereses por atraso** ni recibe pagos en línea; los pagos los registra la administración con el comprobante. Si la comunidad aplica intereses según su reglamento, hay que calcularlos aparte por ahora.
 - **Documento del proyecto de título:** el clasificador de incidencias es un **motor de reglas** (reconoce palabras clave), no un modelo de inteligencia artificial. La pantalla ya lo llama "Sugerencia automática"; el informe debería describirlo igual para no sobrestimarlo.

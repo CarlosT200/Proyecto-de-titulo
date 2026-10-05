@@ -224,7 +224,12 @@ export function StatCard({
           />
         )}
       </div>
-      <p className="relative mt-4 font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+      <p
+        className="relative mt-4 whitespace-nowrap font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white"
+        // Un texto largo (ej. "$6.357.750") se achica segun el ancho de la tarjeta (unidades cqi): en
+        // celular, con dos tarjetas por fila, se cortaba.
+        style={valorTexto ? { fontSize: `min(1.875rem, ${(100 / (valorTexto.length * 0.62)).toFixed(1)}cqi)` } : undefined}
+      >
         {valorTexto ?? <AnimatedNumber value={value} />}
       </p>
       <p className="relative mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
@@ -232,7 +237,7 @@ export function StatCard({
   );
 
   const className = clsx(
-    "group relative block h-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-sm transition-shadow hover:shadow-xl hover:shadow-slate-300/40 dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20",
+    "group relative block h-full overflow-hidden rounded-2xl border [container-type:inline-size] border-slate-200/80 bg-white/90 p-5 shadow-sm shadow-slate-200/50 backdrop-blur-sm transition-shadow hover:shadow-xl hover:shadow-slate-300/40 dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20",
     to && "hover:border-brand-300 dark:hover:border-brand-500/50"
   );
 
@@ -461,7 +466,11 @@ export function Modal({
     // Foco al panel (no al primer input: en celular abriria el teclado sin pedirlo).
     const frame = requestAnimationFrame(() => panelRef.current?.focus());
     function alPresionarTecla(e: KeyboardEvent) {
-      if (e.key === "Escape") onCloseRef.current();
+      if (e.key !== "Escape") return;
+      // Con un modal abierto encima de otro, Escape cierra solo el de arriba (el ultimo en el DOM).
+      const dialogos = document.querySelectorAll('[role="dialog"]');
+      if (dialogos.length > 0 && dialogos[dialogos.length - 1] !== panelRef.current) return;
+      onCloseRef.current();
     }
     document.addEventListener("keydown", alPresionarTecla);
     return () => {

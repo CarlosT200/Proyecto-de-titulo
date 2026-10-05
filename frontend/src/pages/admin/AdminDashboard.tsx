@@ -10,6 +10,7 @@ import {
   Package,
   QrCode,
   Siren,
+  Wallet,
   Warning,
   Wrench,
 } from "@phosphor-icons/react";
@@ -152,6 +153,14 @@ export default function AdminDashboard() {
             to: "/encomiendas?estado=ATRASADA",
             tono: "amber",
             icono: Package,
+          },
+          {
+            cantidad: data.atencion.unidadesMorosas,
+            singular: "unidad con gastos comunes vencidos",
+            plural: "unidades con gastos comunes vencidos",
+            to: "/gastos-comunes?vista=atrasadas",
+            tono: "amber",
+            icono: Wallet,
           },
         ]}
       />

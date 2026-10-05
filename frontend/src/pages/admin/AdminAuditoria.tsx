@@ -17,6 +17,7 @@ const ENTIDADES: { valor: string; etiqueta: string }[] = [
   { valor: "Condominio", etiqueta: "Estructura del condominio" },
   { valor: "Encomienda", etiqueta: "Encomiendas" },
   { valor: "AlertaSos", etiqueta: "Alertas SOS" },
+  { valor: "GastoComun", etiqueta: "Gastos comunes" },
 ];
 
 const ACCION_LABEL: Record<AccionAuditoria, string> = {

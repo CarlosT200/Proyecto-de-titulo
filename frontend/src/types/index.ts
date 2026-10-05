@@ -229,6 +229,7 @@ export interface Indicadores {
     incidenciasSinRevisar: number;
     multasApeladas: number;
     encomiendasAtrasadas: number;
+    unidadesMorosas: number;
   };
   incidencias: {
     pendientes: number;
@@ -240,6 +241,7 @@ export interface Indicadores {
   multas: Record<EstadoMulta, number>;
   encomiendas: { pendientesDeRetiro: number; atrasadas: number };
   sos: { activas: number };
+  gastosComunes: { deudaVencida: number; unidadesMorosas: number };
   accesos: {
     recientes: { id: string; resultado: "AUTORIZADO" | "RECHAZADO"; motivo: string; createdAt: string; validadoPor: { nombre: string; apellido: string } }[];
     autorizadosUltimos10: number;
@@ -248,4 +250,136 @@ export interface Indicadores {
     hoyAutorizados: number;
     hoyRechazados: number;
   };
+}
+
+// --- Gastos comunes ---
+export type MetodoProrrateo = "PARTES_IGUALES" | "ALICUOTA";
+export type MedioPago = "TRANSFERENCIA" | "EFECTIVO" | "TARJETA" | "CHEQUE" | "OTRO";
+export type EstadoCobro = "PAGADO" | "PENDIENTE" | "VENCIDO";
+
+export interface PersonaBreve {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
+
+export interface UnidadGastoComun {
+  id: string;
+  numero: string;
+  torre: { nombre: string } | null;
+  // solo para la administracion
+  residentes?: PersonaBreve[];
+}
+
+export interface PartidaGastoComun {
+  id: string;
+  concepto: string;
+  monto: number;
+}
+
+export interface PeriodoGastoComun {
+  id: string;
+  anio: number;
+  mes: number;
+  fechaVencimiento: string;
+  metodoProrrateo: MetodoProrrateo;
+  porcentajeFondoReserva: number;
+  totalGastos: number;
+  instruccionesPago: string | null;
+  createdAt: string;
+  totalCobrado: number;
+  totalPagado: number;
+  unidades: number;
+  unidadesPagadas: number;
+  vencido: boolean;
+}
+
+export interface CobroGastoComunFila {
+  id: string;
+  departamento: UnidadGastoComun;
+  montoGastoComun: number;
+  montoFondoReserva: number;
+  montoTotal: number;
+  montoPagado: number;
+  saldo: number;
+  estado: EstadoCobro;
+}
+
+export interface PeriodoGastoComunDetalle {
+  id: string;
+  anio: number;
+  mes: number;
+  fechaVencimiento: string;
+  metodoProrrateo: MetodoProrrateo;
+  porcentajeFondoReserva: number;
+  totalGastos: number;
+  instruccionesPago: string | null;
+  partidas: PartidaGastoComun[];
+  cobros: CobroGastoComunFila[];
+  puedeEliminar: boolean;
+}
+
+export interface PagoGastoComun {
+  id: string;
+  monto: number;
+  fechaPago: string;
+  medio: MedioPago;
+  referencia: string | null;
+  anuladoEn: string | null;
+  motivoAnulacion: string | null;
+  createdAt: string;
+  // solo para la administracion
+  registradoPor?: { nombre: string; apellido: string };
+  anuladoPor?: { nombre: string; apellido: string } | null;
+}
+
+export interface CobroGastoComunDetalle {
+  id: string;
+  montoGastoComun: number;
+  montoFondoReserva: number;
+  montoTotal: number;
+  montoPagado: number;
+  saldo: number;
+  estado: EstadoCobro;
+  departamento: UnidadGastoComun;
+  periodo: {
+    id: string;
+    anio: number;
+    mes: number;
+    fechaVencimiento: string;
+    metodoProrrateo: MetodoProrrateo;
+    porcentajeFondoReserva: number;
+    totalGastos: number;
+    instruccionesPago: string | null;
+    partidas: PartidaGastoComun[];
+  };
+  pagos: PagoGastoComun[];
+}
+
+export interface UnidadMorosa {
+  departamento: UnidadGastoComun;
+  deuda: number;
+  cobros: { id: string; periodo: { id: string; anio: number; mes: number; fechaVencimiento: string }; saldo: number }[];
+}
+
+export interface MiCuentaGastoComun {
+  unidad: UnidadGastoComun | null;
+  saldoPendiente: number;
+  deudaVencida: number;
+  cobrosVencidos: number;
+  proximoVencimiento: string | null;
+  instruccionesPago: string | null;
+  cobros: {
+    id: string;
+    montoTotal: number;
+    montoPagado: number;
+    saldo: number;
+    estado: EstadoCobro;
+    periodo: { anio: number; mes: number; fechaVencimiento: string };
+  }[];
+}
+
+export interface AlicuotasGastoComun {
+  unidades: { id: string; numero: string; torre: { nombre: string } | null; alicuota: number | null }[];
+  suma: number;
 }

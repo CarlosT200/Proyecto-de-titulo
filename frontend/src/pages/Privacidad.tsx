@@ -49,6 +49,12 @@ const DATOS: [string, string, string, string][] = [
     "Los generas tú o la administración",
   ],
   [
+    "Gastos comunes",
+    "Monto mensual que corresponde a tu unidad, pagos registrados (monto, fecha, medio y número de comprobante) y saldo pendiente",
+    "Residentes, por unidad",
+    "Los registra la administración",
+  ],
+  [
     "Registro de acciones",
     "Qué acción administrativa hizo cada usuario y cuándo",
     "Administración y conserjería",
@@ -74,6 +80,11 @@ const FINALIDADES: [string, string, string][] = [
     "Vida en el condominio",
     "Administración de la copropiedad según la Ley N.º 21.442 y el reglamento de copropiedad",
   ],
+  [
+    "Cobrar los gastos comunes y llevar el estado de cuenta de cada unidad",
+    "Gastos comunes y unidad",
+    "Obligación de pagar los gastos comunes según la Ley N.º 21.442 y el reglamento de copropiedad",
+  ],
   ["Dejar constancia de quién hizo cada acción administrativa", "Registro de acciones", "Interés legítimo en la transparencia y seguridad de la gestión"],
   ["Mostrar tu teléfono y foto a la administración", "Contacto y perfil", "Tu consentimiento, al agregarlos"],
 ];
@@ -95,6 +106,7 @@ const PLAZOS: [string, string, string][] = [
   ["Suscripción push", "Hasta que desactives las notificaciones o el navegador la invalide", "Se elimina de inmediato"],
   ["Notificaciones", "Hasta que las borres, o 6 meses", "Se eliminan"],
   ["Multas y reservas", "5 años, por posibles reclamos o cobros", "Se eliminan"],
+  ["Gastos comunes y pagos", "5 años, por posibles reclamos o cobros", "Se eliminan"],
   ["Incidencias y sus fotos", "2 años desde su cierre", "Se eliminan"],
   ["Registro de acciones administrativas", "5 años", "Se elimina"],
 ];
