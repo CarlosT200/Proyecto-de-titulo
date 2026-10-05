@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Copy, Key, MagicWand, UserPlus, Users } from "@phosphor-icons/react";
 import { condominioApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, staggerFade } from "../../components/ui";
+import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, staggerFade } from "../../components/ui";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";

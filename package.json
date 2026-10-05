@@ -16,6 +16,7 @@
     "prisma:migrate": "npm run prisma:migrate --workspace backend",
     "prisma:seed": "npm run prisma:seed --workspace backend",
     "test:backend": "npm run test --workspace backend",
+    "lint": "npm run lint --workspace frontend",
     "serve": "npm run build --workspace frontend && npm run dev --workspace backend",
     "build": "npm run build --workspace frontend && npm run build --workspace backend",
     "start": "npm run prisma:migrate:deploy --workspace backend && npm run start --workspace backend"
