@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import {
+  ArrowClockwise,
   Buildings,
   CalendarCheck,
   CaretRight,
@@ -23,7 +24,7 @@ import {
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useAuth } from "../../context/AuthContext";
-import { Card, CardHeader, EmptyState, Spinner, Alert, Badge, staggerFade, HorizontalBarChart } from "../../components/ui";
+import { Button, Card, CardHeader, EmptyState, Spinner, Alert, Badge, staggerFade, HorizontalBarChart } from "../../components/ui";
 import { BotonHero, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
 import { formatFechaHora, formatMonto } from "../../lib/format";
 import { RESULTADO_ACCESO_LABEL } from "../../lib/badges";
@@ -96,8 +97,11 @@ function Cifra({
         )}
       </span>
       <span
+        // Un monto largo (ej. "$3.176.250") se achica segun el ancho de la celda (unidades cqi): a
+        // 320 px llegaba al borde.
+        style={typeof valor === "string" && valor.length > 6 ? { fontSize: `min(1.5rem, ${(100 / (valor.length * 0.62)).toFixed(1)}cqi)` } : undefined}
         className={clsx(
-          "mt-1.5 block font-display text-2xl font-bold tracking-tight",
+          "mt-1.5 block whitespace-nowrap font-display text-2xl font-bold tabular-nums tracking-tight",
           vacio
             ? "text-slate-500 dark:text-slate-400"
             : alerta
@@ -110,7 +114,7 @@ function Cifra({
       {detalle && <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{detalle}</span>}
     </>
   );
-  const clases = "block h-full bg-white px-4 py-4 dark:bg-slate-800 sm:px-5";
+  const clases = "block h-full bg-white px-4 py-4 [container-type:inline-size] dark:bg-slate-800 sm:px-5";
   return to ? (
     <Link
       to={to}
@@ -130,7 +134,7 @@ function Cifra({
 function GrupoCifras({ titulo, subtitulo, children }: { titulo: string; subtitulo?: string; children: ReactNode }) {
   return (
     <Card plana className="overflow-hidden">
-      <CardHeader title={titulo} subtitle={subtitulo} />
+      <CardHeader nivel={2} title={titulo} subtitle={subtitulo} />
       <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-4 xl:grid-cols-2 dark:bg-slate-700/60">{children}</div>
     </Card>
   );
@@ -152,7 +156,7 @@ function fechaDeHoy(): string {
 
 export default function AdminDashboard() {
   const { usuario } = useAuth();
-  const { data, cargando, error, setData } = useAsync(() => dashboardApi.indicadores(), []);
+  const { data, cargando, error, setData, recargar } = useAsync(() => dashboardApi.indicadores(), []);
 
   // Se actualiza solo cada 30 segundos (sin parpadear) para que "Requiere atención" este al dia.
   useEffect(() => {
@@ -164,7 +168,15 @@ export default function AdminDashboard() {
   }, []);
 
   if (cargando && !data) return <Spinner />;
-  if (error && !data) return <Alert tone="red">{error}</Alert>;
+  if (error && !data)
+    return (
+      <div className="space-y-3">
+        <Alert tone="red">{error}</Alert>
+        <Button variant="secondary" onClick={recargar}>
+          <ArrowClockwise size={16} aria-hidden /> Reintentar
+        </Button>
+      </div>
+    );
   if (!data) return null;
 
   const promedio = data.incidencias.promedioHorasResolucion;
@@ -178,11 +190,9 @@ export default function AdminDashboard() {
             <span className="inline-flex items-center gap-1.5">
               <Buildings size={14} weight="fill" aria-hidden /> {usuario?.condominio?.nombre ?? "Panel administrativo"}
             </span>
-            <span aria-hidden className="hidden sm:inline">
-              ·
-            </span>
-            {/* en celular la fecha va en su propia linea */}
-            <span className="basis-full sm:basis-auto">{fechaDeHoy()}</span>
+            {/* La fecha siempre en su propia linea: en una sola, con un nombre de condominio largo
+                (o a 1280 px con los botones al lado) se partia y el separador quedaba colgando. */}
+            <span className="basis-full">{fechaDeHoy()}</span>
           </>
         }
         titulo={`${saludoSegunHora()}, ${usuario?.nombre ?? ""}`}
@@ -332,7 +342,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card plana>
-          <CardHeader title="Multas por estado" />
+          <CardHeader nivel={2} title="Multas por estado" />
           {Object.values(data.multas).every((n) => n === 0) ? (
             <SinDatos icono={Gavel} texto="Aún no hay multas registradas." />
           ) : (
@@ -347,7 +357,7 @@ export default function AdminDashboard() {
         </Card>
 
         <Card plana>
-          <CardHeader title="Incidencias por estado" subtitle="Progreso de reportada a resuelta" />
+          <CardHeader nivel={2} title="Incidencias por estado" subtitle="Progreso de reportada a resuelta" />
           {Object.values(data.incidencias.porEstado).every((n) => n === 0) ? (
             <SinDatos icono={ChartBar} texto="Aún no hay incidencias reportadas." />
           ) : (
@@ -364,6 +374,7 @@ export default function AdminDashboard() {
 
       <Card plana>
         <CardHeader
+          nivel={2}
           title="Últimos accesos"
           subtitle="Validaciones de códigos QR en portería"
           action={
@@ -383,7 +394,7 @@ export default function AdminDashboard() {
               <motion.li key={a.id} {...staggerFade(i)} className="flex items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-700 dark:text-slate-200">{a.motivo}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
                     {formatFechaHora(a.createdAt)} · {a.validadoPor.nombre} {a.validadoPor.apellido}
                   </p>
                 </div>

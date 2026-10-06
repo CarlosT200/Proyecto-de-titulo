@@ -104,11 +104,23 @@ export function Card({ className, children, plana = false }: { className?: strin
   );
 }
 
-export function CardHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
+export function CardHeader({
+  title,
+  subtitle,
+  action,
+  nivel = 3,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+  /** Nivel del titulo para lectores de pantalla (el aspecto es el mismo). */
+  nivel?: 2 | 3;
+}) {
+  const Titulo = nivel === 2 ? "h2" : "h3";
   return (
     <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
+        <Titulo className="font-display text-sm font-semibold text-slate-900 dark:text-white">{title}</Titulo>
         {subtitle && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {action}

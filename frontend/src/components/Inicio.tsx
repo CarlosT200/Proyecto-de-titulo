@@ -204,7 +204,7 @@ export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       aria-labelledby="titulo-requiere-atencion"
-      className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-sm shadow-slate-200/50 dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20"
+      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 dark:border-white/[0.06] dark:bg-slate-800 dark:shadow-none"
     >
       <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
         <WarningCircle size={20} weight="fill" className={pendientes.length ? "text-accent-500" : "text-emerald-500"} aria-hidden />
