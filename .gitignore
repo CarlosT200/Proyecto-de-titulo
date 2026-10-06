@@ -15,3 +15,8 @@ backend/prisma/dev.db-journal
 # Respaldos de la base de datos (contienen datos personales)
 respaldos/
 backend/respaldos/
+
+# Skills de diseño instaladas localmente (npx skills add); no se suben al repositorio
+.claude/skills/
+.agents/
+skills-lock.json
