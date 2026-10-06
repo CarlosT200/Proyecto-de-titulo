@@ -29,22 +29,23 @@ import { RESULTADO_ACCESO_LABEL } from "../../lib/badges";
 import { duracionLegible } from "../../lib/tiempo";
 import { ENCOMIENDA_ATRASADA_HORAS } from "../../lib/umbrales";
 
-// Paleta de estado (dataviz skill): good/warning/serious reservados para semantica
-// de sanciones; nunca reutilizados como color de serie generico.
+// Colores de los graficos tomados de DESIGN.md (no valores sueltos): los de estado solo donde el
+// estado significa algo (pendiente = advertencia, pagada = exito, apelada = atencion en naranja de
+// marca, anulada = gris inactivo).
 const COLOR_MULTA: Record<string, string> = {
-  PENDIENTE: "#fab219", // warning
-  PAGADA: "#0ca30c", // good
-  APELADA: "#ec835a", // serious
-  ANULADA: "#898781", // muted (estado inactivo)
+  PENDIENTE: "#d97706", // advertencia
+  PAGADA: "#059669", // exito
+  APELADA: "#ea580c", // naranja de marca: requiere atencion
+  ANULADA: "#94a3b8", // inactiva
 };
 
-// Incidencias es una progresion ordinal (reportada -> resuelta): un solo hue,
-// mas oscuro = mas avanzado, tomado del ramp secuencial azul documentado.
+// Incidencias es una progresion (reportada -> resuelta): un solo tono, el azul de la marca,
+// mas oscuro = mas avanzada.
 const COLOR_INCIDENCIA: Record<string, string> = {
-  REPORTADA: "#86b6ef",
-  EN_REVISION: "#5598e7",
-  EN_PROCESO: "#2a78d6",
-  RESUELTA: "#1c5cab",
+  REPORTADA: "#93c5fd",
+  EN_REVISION: "#60a5fa",
+  EN_PROCESO: "#2563eb",
+  RESUELTA: "#1e40af",
 };
 
 const LABEL_MULTA: Record<string, string> = {
@@ -127,7 +128,7 @@ function Cifra({
 // Grupo de cifras en una sola tarjeta, separadas por lineas finas (en vez de una tarjeta por cifra).
 function GrupoCifras({ titulo, subtitulo, children }: { titulo: string; subtitulo?: string; children: ReactNode }) {
   return (
-    <Card className="overflow-hidden">
+    <Card plana className="overflow-hidden">
       <CardHeader title={titulo} subtitle={subtitulo} />
       <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-4 xl:grid-cols-2 dark:bg-slate-700/60">{children}</div>
     </Card>
@@ -279,7 +280,7 @@ export default function AdminDashboard() {
             valor={data.accesos.hoyAutorizados + data.accesos.hoyRechazados}
             detalle={
               data.accesos.hoyAutorizados + data.accesos.hoyRechazados > 0
-                ? `${data.accesos.hoyAutorizados} autorizados · ${data.accesos.hoyRechazados} rechazados`
+                ? `${data.accesos.hoyAutorizados} ${data.accesos.hoyAutorizados === 1 ? "autorizado" : "autorizados"} · ${data.accesos.hoyRechazados} ${data.accesos.hoyRechazados === 1 ? "rechazado" : "rechazados"}`
                 : undefined
             }
             to="/accesos?periodo=hoy"
@@ -292,7 +293,11 @@ export default function AdminDashboard() {
             icono={Warning}
             etiqueta="Incidencias abiertas"
             valor={data.incidencias.pendientes}
-            detalle={data.atencion.incidenciasUrgentes > 0 ? `${data.atencion.incidenciasUrgentes} urgentes` : undefined}
+            detalle={
+              data.atencion.incidenciasUrgentes > 0
+                ? `${data.atencion.incidenciasUrgentes} ${data.atencion.incidenciasUrgentes === 1 ? "urgente" : "urgentes"}`
+                : undefined
+            }
             to="/incidencias?estado=ABIERTAS"
           />
           <Cifra
@@ -323,7 +328,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
+        <Card plana>
           <CardHeader title="Multas por estado" />
           {Object.values(data.multas).every((n) => n === 0) ? (
             <SinDatos icono={Gavel} texto="Aún no hay multas registradas." />
@@ -332,13 +337,13 @@ export default function AdminDashboard() {
               items={Object.entries(data.multas).map(([estado, cantidad]) => ({
                 label: LABEL_MULTA[estado] ?? estado,
                 value: cantidad,
-                color: COLOR_MULTA[estado] ?? "#898781",
+                color: COLOR_MULTA[estado] ?? "#94a3b8",
               }))}
             />
           )}
         </Card>
 
-        <Card>
+        <Card plana>
           <CardHeader title="Incidencias por estado" subtitle="Progreso de reportada a resuelta" />
           {Object.values(data.incidencias.porEstado).every((n) => n === 0) ? (
             <SinDatos icono={ChartBar} texto="Aún no hay incidencias reportadas." />
@@ -347,14 +352,14 @@ export default function AdminDashboard() {
               items={Object.entries(data.incidencias.porEstado).map(([estado, cantidad]) => ({
                 label: LABEL_INCIDENCIA[estado] ?? estado,
                 value: cantidad,
-                color: COLOR_INCIDENCIA[estado] ?? "#2a78d6",
+                color: COLOR_INCIDENCIA[estado] ?? "#2563eb",
               }))}
             />
           )}
         </Card>
       </div>
 
-      <Card>
+      <Card plana>
         <CardHeader
           title="Últimos accesos"
           subtitle="Validaciones de códigos QR en portería"

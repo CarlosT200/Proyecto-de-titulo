@@ -127,7 +127,7 @@ export function BotonHero({
     <Link
       to={to}
       className={clsx(
-        "inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-[0.97]",
+        "inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700",
         principal
           ? "bg-white text-brand-700 shadow-lg shadow-black/10 hover:bg-brand-50"
           : "bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm hover:bg-white/25",
@@ -191,7 +191,7 @@ export interface ItemAtencion {
 
 const TONO_ATENCION = {
   red: { icono: "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300", numero: "text-red-600 dark:text-red-300" },
-  amber: { icono: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300", numero: "text-amber-600 dark:text-amber-300" },
+  amber: { icono: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300", numero: "text-amber-700 dark:text-amber-300" },
 } as const;
 
 // "Requiere atención": solo lo que hay que resolver ahora (los items en cero no se muestran).
@@ -225,7 +225,7 @@ export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  className="group flex min-h-[56px] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                  className="group flex min-h-[56px] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/40"
                 >
                   <span className={clsx("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", tono.icono)}>
                     <Icono size={18} weight="fill" aria-hidden />

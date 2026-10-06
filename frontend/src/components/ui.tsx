@@ -70,7 +70,21 @@ export function Button({
   );
 }
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
+export function Card({ className, children, plana = false }: { className?: string; children: ReactNode; plana?: boolean }) {
+  if (plana) {
+    // Pantallas de trabajo (DESIGN.md, "Flat-At-Work"): superficie solida con borde y una sombra
+    // minima, sin translucidez ni movimiento. Se va aplicando pantalla por pantalla.
+    return (
+      <div
+        className={clsx(
+          "rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 dark:border-white/[0.06] dark:bg-slate-800 dark:shadow-none",
+          className
+        )}
+      >
+        {children}
+      </div>
+    );
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
