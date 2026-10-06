@@ -17,6 +17,7 @@ import {
   Siren,
   Wallet,
   Warning,
+  UserPlus,
   Wrench,
 } from "@phosphor-icons/react";
 import { dashboardApi } from "../../api/endpoints";
@@ -192,11 +193,13 @@ export default function AdminDashboard() {
           <BotonHero to="/comunicados" icon={Megaphone} principal className="col-span-2 justify-center">
             Publicar comunicado
           </BotonHero>
-          <BotonHero to="/multas" icon={Warning} className="justify-center text-center leading-tight">
-            Registrar multa
+          {/* Tareas reales de la administracion. Las alertas SOS ya estan en "Requiere atencion",
+              en "Dia a dia" y en el menu, asi que no se repiten aqui. */}
+          <BotonHero to="/gastos-comunes" icon={Wallet} className="justify-center text-center leading-tight max-[359px]:col-span-2">
+            Emitir cobro del mes
           </BotonHero>
-          <BotonHero to="/alertas-sos" icon={Siren} className="justify-center text-center leading-tight">
-            Alertas SOS
+          <BotonHero to="/residentes" icon={UserPlus} className="justify-center text-center leading-tight max-[359px]:col-span-2">
+            Nuevo residente
           </BotonHero>
         </div>
       </HeroBanner>
