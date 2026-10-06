@@ -1,6 +1,5 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import {
   ArrowClockwise,
@@ -24,7 +23,7 @@ import {
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useAuth } from "../../context/AuthContext";
-import { Button, Card, CardHeader, EmptyState, Spinner, Alert, Badge, staggerFade, HorizontalBarChart } from "../../components/ui";
+import { Button, Card, CardHeader, EmptyState, Spinner, Alert, Badge, HorizontalBarChart } from "../../components/ui";
 import { BotonHero, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
 import { formatFechaHora, formatMonto } from "../../lib/format";
 import { RESULTADO_ACCESO_LABEL } from "../../lib/badges";
@@ -64,6 +63,19 @@ const LABEL_INCIDENCIA: Record<string, string> = {
   RESUELTA: "Resuelta",
 };
 
+// Cuenta las veces que cambio un valor despues del primer pintado (para reproducir el destello).
+function usePulsoAlCambiar(valor: string | number): number {
+  const previo = useRef(valor);
+  const [pulso, setPulso] = useState(0);
+  useEffect(() => {
+    if (previo.current !== valor) {
+      previo.current = valor;
+      setPulso((p) => p + 1);
+    }
+  }, [valor]);
+  return pulso;
+}
+
 // Una cifra del panel dentro de un grupo. Toda la celda es un enlace a la lista ya filtrada (si hay
 // a donde ir). Un cero se muestra atenuado para que destaque solo lo que tiene valor; "alerta"
 // pinta la cifra en rojo cuando el valor es un problema (ej. una SOS activa).
@@ -83,15 +95,25 @@ function Cifra({
   alerta?: boolean;
 }) {
   const vacio = valor === 0 || valor === "Sin datos";
+  const pulso = usePulsoAlCambiar(valor);
   const contenido = (
     <>
+      {/* Si la cifra cambia con la actualizacion automatica, la celda se ilumina y se apaga (1,2 s):
+          indica que algo cambio sin mover nada. Con "reducir movimiento" no se anima. */}
+      {pulso > 0 && (
+        <span
+          key={pulso}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 animate-cifra-cambio bg-brand-500/10 dark:bg-brand-400/15"
+        />
+      )}
       <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
         <Icono size={16} className="shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
         <span className="min-w-0 flex-1">{etiqueta}</span>
         {to && (
           <CaretRight
             size={14}
-            className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 dark:text-slate-500"
+            className="shrink-0 text-slate-400 transition-transform duration-150 ease-salida dark:text-slate-500 [@media(hover:hover)_and_(pointer:fine)]:group-hover:translate-x-0.5"
             aria-hidden
           />
         )}
@@ -114,7 +136,7 @@ function Cifra({
       {detalle && <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{detalle}</span>}
     </>
   );
-  const clases = "block h-full bg-white px-4 py-4 [container-type:inline-size] dark:bg-slate-800 sm:px-5";
+  const clases = "relative block h-full bg-white px-4 py-4 [container-type:inline-size] dark:bg-slate-800 sm:px-5";
   return to ? (
     <Link
       to={to}
@@ -390,8 +412,8 @@ export default function AdminDashboard() {
           <EmptyState icon={QrCode} title="Sin accesos registrados" />
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-            {data.accesos.recientes.slice(0, 5).map((a, i) => (
-              <motion.li key={a.id} {...staggerFade(i)} className="flex items-center justify-between gap-3 px-5 py-3">
+            {data.accesos.recientes.slice(0, 5).map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-700 dark:text-slate-200">{a.motivo}</p>
                   <p className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
@@ -399,7 +421,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <Badge tone={a.resultado === "AUTORIZADO" ? "green" : "red"}>{RESULTADO_ACCESO_LABEL[a.resultado]}</Badge>
-              </motion.li>
+              </li>
             ))}
           </ul>
         )}

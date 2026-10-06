@@ -303,17 +303,12 @@ export function HorizontalBarChart({ items }: { items: BarChartItem[] }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
     <div className="space-y-2.5 p-5">
-      {items.map((item, i) => (
+      {items.map((item) => (
         <div key={item.label} className="flex items-center gap-3 text-sm">
           <span className="w-28 shrink-0 truncate text-xs text-slate-500 dark:text-slate-400">{item.label}</span>
           <div className="h-[10px] flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(item.value / max) * 100}%` }}
-              transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.06 }}
-              className="h-full rounded-full"
-              style={{ backgroundColor: item.color }}
-            />
+            {/* Sin animacion: crecer desde cero en cada visita no explica nada y animaba el ancho. */}
+            <div className="h-full rounded-full" style={{ width: `${(item.value / max) * 100}%`, backgroundColor: item.color }} />
           </div>
           <span className="w-6 shrink-0 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">{item.value}</span>
         </div>

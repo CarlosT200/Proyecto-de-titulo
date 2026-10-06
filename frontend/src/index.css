@@ -97,6 +97,21 @@ h3,
   }
 }
 
+/* "Requiere atencion": un aviso que aparece con la actualizacion automatica entra suave (estado
+   nuevo); los que ya estaban al abrir la pagina no se animan, porque la lista recibe data-montado
+   despues del primer pintado y @starting-style solo afecta a elementos nuevos. */
+.lista-avisos[data-montado] > li {
+  transition:
+    opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@starting-style {
+  .lista-avisos[data-montado] > li {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 /* Tablas en celular: en vez de una tabla que se desplaza hacia el lado (y deja ocultos el rol, el
    estado y los botones), cada fila se muestra como una tarjeta con "Etiqueta  valor" por linea.
    La etiqueta sale del atributo data-label de cada celda; la primera celda es el titulo. */

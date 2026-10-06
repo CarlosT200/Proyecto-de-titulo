@@ -116,6 +116,7 @@ Rechazos confirmados: la paleta teal / "lujo inmobiliario" con tipografías deco
 - Estados con color y texto a la vez (insignias con palabra, nunca solo un punto de color).
 - Celular primero para residentes y conserjería: 44 px táctiles, campos a 16 px.
 - Modo claro y oscuro completos, con los mismos roles de color.
+- Movimiento solo para avisar un cambio de estado (una cifra que cambió, un aviso nuevo); las pantallas de trabajo no se animan al entrar.
 
 ## Colors
 
@@ -240,6 +241,8 @@ Lista de pendientes urgentes con número grande, texto y enlace a la lista ya fi
 - **Do** mantener 44 px táctiles y campos de 16 px en celular, y probar cada pantalla en 375 px y en escritorio, en modo claro y oscuro.
 - **Do** dejar las tarjetas de las pantallas de trabajo planas con borde de 1 px (#e2e8f0).
 - **Do** poner lo urgente primero y enlazarlo a la lista ya filtrada.
+- **Do** animar solo `transform` y `opacity`, con la curva de salida (`cubic-bezier(0.23, 1, 0.32, 1)`, clase `ease-salida`) y menos de 300 ms; el destello de una cifra que cambió (1,2 s, que se va apagando) es la excepción porque señala, no responde a un toque.
+- **Do** limitar el movimiento al pasar el mouse a dispositivos con mouse (`@media (hover: hover) and (pointer: fine)`) y respetar "reducir movimiento".
 
 ### Don't:
 - **Don't** usar la paleta teal ni tipografías decorativas de "lujo inmobiliario".
@@ -248,3 +251,4 @@ Lista de pendientes urgentes con número grande, texto y enlace a la lista ya fi
 - **Don't** poner nada fijo o flotante sobre la zona del botón SOS (88 px abajo a la derecha) ni avisos en la parte inferior.
 - **Don't** usar texto más claro que #64748b sobre fondo blanco.
 - **Don't** usar emoji como íconos.
+- **Don't** animar la entrada de pantallas que se abren muchas veces al día (panel, listas), ni usar `transition: all` o animar el ancho y el alto.

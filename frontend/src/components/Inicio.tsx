@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
@@ -31,11 +31,10 @@ export function HeroBanner({
   compacto?: boolean;
 }) {
   if (compacto) {
+    // Sin animacion de entrada: es la pantalla de trabajo que la administracion abre muchas veces
+    // al dia, y una entrada repetida solo la hace sentir mas lenta.
     return (
-      <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
+      <section
         // Fondo azul (no el degrade hasta el naranja): en escritorio los botones quedan a la derecha
         // y el texto blanco sobre naranja no alcanza el contraste AA. El naranja queda como un brillo
         // de marca en la esquina, sin texto encima.
@@ -53,7 +52,7 @@ export function HeroBanner({
           </div>
           {children && <div className="shrink-0">{children}</div>}
         </div>
-      </motion.section>
+      </section>
     );
   }
 
@@ -127,7 +126,7 @@ export function BotonHero({
     <Link
       to={to}
       className={clsx(
-        "inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700",
+        "inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-[transform,background-color] duration-150 ease-salida active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700",
         principal
           ? "bg-white text-brand-700 shadow-lg shadow-black/10 hover:bg-brand-50"
           : "bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm hover:bg-white/25",
@@ -198,11 +197,16 @@ const TONO_ATENCION = {
 // Cada fila lleva a la lista ya filtrada.
 export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
   const pendientes = items.filter((i) => i.cantidad > 0);
+  // Despues del primer pintado se marca la lista: desde ahi, solo los avisos que lleguen con la
+  // actualizacion automatica entran con movimiento (ver .lista-avisos en index.css).
+  const lista = useRef<HTMLUListElement>(null);
+  const hayLista = pendientes.length > 0;
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => lista.current?.setAttribute("data-montado", ""));
+    return () => cancelAnimationFrame(frame);
+  }, [hayLista]);
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+    <section
       aria-labelledby="titulo-requiere-atencion"
       className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 dark:border-white/[0.06] dark:bg-slate-800 dark:shadow-none"
     >
@@ -217,7 +221,7 @@ export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
           <CheckCircle size={18} weight="fill" aria-hidden /> Todo en orden: no hay pendientes urgentes.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+        <ul ref={lista} className="lista-avisos divide-y divide-slate-100 dark:divide-slate-700/60">
           {pendientes.map((item) => {
             const tono = TONO_ATENCION[item.tono];
             const Icono = item.icono;
@@ -237,7 +241,7 @@ export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
                   <CaretRight
                     size={16}
                     weight="bold"
-                    className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600"
+                    className="text-slate-300 transition-transform duration-150 ease-salida group-hover:text-brand-500 dark:text-slate-600 [@media(hover:hover)_and_(pointer:fine)]:group-hover:translate-x-0.5"
                     aria-hidden
                   />
                 </Link>
@@ -246,6 +250,6 @@ export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
           })}
         </ul>
       )}
-    </motion.section>
+    </section>
   );
 }
