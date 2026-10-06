@@ -1,11 +1,16 @@
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import clsx from "clsx";
 import {
   Buildings,
   CalendarCheck,
+  CaretRight,
+  ChartBar,
   CheckCircle,
   Gavel,
   Hourglass,
+  Icon as PhosphorIcon,
   Megaphone,
   Package,
   QrCode,
@@ -17,20 +22,9 @@ import {
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useAuth } from "../../context/AuthContext";
-import {
-  Card,
-  CardHeader,
-  EmptyState,
-  Spinner,
-  Alert,
-  Badge,
-  StatCard,
-  staggerFade,
-  HorizontalBarChart,
-  Meter,
-} from "../../components/ui";
+import { Card, CardHeader, EmptyState, Spinner, Alert, Badge, staggerFade, HorizontalBarChart } from "../../components/ui";
 import { BotonHero, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
-import { formatFechaHora } from "../../lib/format";
+import { formatFechaHora, formatMonto } from "../../lib/format";
 import { RESULTADO_ACCESO_LABEL } from "../../lib/badges";
 import { duracionLegible } from "../../lib/tiempo";
 import { ENCOMIENDA_ATRASADA_HORAS } from "../../lib/umbrales";
@@ -67,6 +61,93 @@ const LABEL_INCIDENCIA: Record<string, string> = {
   RESUELTA: "Resuelta",
 };
 
+// Una cifra del panel dentro de un grupo. Toda la celda es un enlace a la lista ya filtrada (si hay
+// a donde ir). Un cero se muestra atenuado para que destaque solo lo que tiene valor; "alerta"
+// pinta la cifra en rojo cuando el valor es un problema (ej. una SOS activa).
+function Cifra({
+  icono: Icono,
+  etiqueta,
+  valor,
+  detalle,
+  to,
+  alerta = false,
+}: {
+  icono: PhosphorIcon;
+  etiqueta: string;
+  valor: string | number;
+  detalle?: ReactNode;
+  to?: string;
+  alerta?: boolean;
+}) {
+  const vacio = valor === 0 || valor === "Sin datos";
+  const contenido = (
+    <>
+      <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+        <Icono size={16} className="shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
+        <span className="min-w-0 flex-1">{etiqueta}</span>
+        {to && (
+          <CaretRight
+            size={14}
+            className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 dark:text-slate-500"
+            aria-hidden
+          />
+        )}
+      </span>
+      <span
+        className={clsx(
+          "mt-1.5 block font-display text-2xl font-bold tracking-tight",
+          vacio
+            ? "text-slate-500 dark:text-slate-400"
+            : alerta
+              ? "text-red-600 dark:text-red-400"
+              : "text-slate-900 dark:text-white"
+        )}
+      >
+        {typeof valor === "number" ? valor.toLocaleString("es-CL") : valor}
+      </span>
+      {detalle && <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{detalle}</span>}
+    </>
+  );
+  const clases = "block h-full bg-white px-4 py-4 dark:bg-slate-800 sm:px-5";
+  return to ? (
+    <Link
+      to={to}
+      className={clsx(
+        clases,
+        "group transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/60"
+      )}
+    >
+      {contenido}
+    </Link>
+  ) : (
+    <div className={clases}>{contenido}</div>
+  );
+}
+
+// Grupo de cifras en una sola tarjeta, separadas por lineas finas (en vez de una tarjeta por cifra).
+function GrupoCifras({ titulo, subtitulo, children }: { titulo: string; subtitulo?: string; children: ReactNode }) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader title={titulo} subtitle={subtitulo} />
+      <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-4 xl:grid-cols-2 dark:bg-slate-700/60">{children}</div>
+    </Card>
+  );
+}
+
+function SinDatos({ icono: Icono, texto }: { icono: PhosphorIcon; texto: string }) {
+  return (
+    <p className="flex items-center gap-2 px-5 py-6 text-sm text-slate-500 dark:text-slate-400">
+      <Icono size={18} className="shrink-0" aria-hidden />
+      {texto}
+    </p>
+  );
+}
+
+function fechaDeHoy(): string {
+  const texto = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export default function AdminDashboard() {
   const { usuario } = useAuth();
   const { data, cargando, error, setData } = useAsync(() => dashboardApi.indicadores(), []);
@@ -86,27 +167,34 @@ export default function AdminDashboard() {
 
   const promedio = data.incidencias.promedioHorasResolucion;
 
-  const totalAccesos = data.accesos.totalAutorizados + data.accesos.totalRechazados;
-
   return (
     <div className="space-y-6">
       <HeroBanner
+        compacto
         etiqueta={
           <>
-            <Buildings size={13} weight="fill" aria-hidden /> {usuario?.condominio?.nombre ?? "Panel administrativo"}
+            <span className="inline-flex items-center gap-1.5">
+              <Buildings size={14} weight="fill" aria-hidden /> {usuario?.condominio?.nombre ?? "Panel administrativo"}
+            </span>
+            <span aria-hidden className="hidden sm:inline">
+              ·
+            </span>
+            {/* en celular la fecha va en su propia linea */}
+            <span className="basis-full sm:basis-auto">{fechaDeHoy()}</span>
           </>
         }
         titulo={`${saludoSegunHora()}, ${usuario?.nombre ?? ""}`}
-        subtitulo="Así está tu condominio hoy. Indicadores generales."
       >
-        <div className="flex flex-wrap gap-2">
-          <BotonHero to="/comunicados" icon={Megaphone} principal>
+        {/* En celular: la accion principal a todo el ancho y las otras dos lado a lado (antes eran
+            tres filas y el saludo ocupaba casi media pantalla). */}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <BotonHero to="/comunicados" icon={Megaphone} principal className="col-span-2 justify-center">
             Publicar comunicado
           </BotonHero>
-          <BotonHero to="/multas" icon={Warning}>
+          <BotonHero to="/multas" icon={Warning} className="justify-center text-center leading-tight">
             Registrar multa
           </BotonHero>
-          <BotonHero to="/alertas-sos" icon={Siren}>
+          <BotonHero to="/alertas-sos" icon={Siren} className="justify-center text-center leading-tight">
             Alertas SOS
           </BotonHero>
         </div>
@@ -165,73 +253,136 @@ export default function AdminDashboard() {
         ]}
       />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-6">
-        <StatCard to="/incidencias?estado=ABIERTAS" icon={Warning} label="Incidencias abiertas" value={data.incidencias.pendientes} tone="amber" index={0} />
-        <StatCard to="/incidencias?estado=RESUELTA" icon={CheckCircle} label="Incidencias resueltas" value={data.incidencias.resueltas} tone="green" index={1} />
-        <StatCard
-          icon={Hourglass}
-          label="Tiempo promedio de resolución"
-          value={0}
-          valorTexto={promedio === null ? "Sin datos" : duracionLegible(promedio)}
-          tone="slate"
-          index={2}
-        />
-        <StatCard to="/reservas" icon={CalendarCheck} label="Reservas próximas" value={data.reservas.proximas} tone="brand" index={3} />
-        <StatCard to="/encomiendas?estado=NOTIFICADA" icon={Package} label="Encomiendas por retirar" value={data.encomiendas.pendientesDeRetiro} tone="purple" index={4} />
-        <StatCard to="/accesos?periodo=hoy" icon={QrCode} label="Accesos de hoy" value={data.accesos.hoyAutorizados + data.accesos.hoyRechazados} tone="green" index={5} />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <GrupoCifras titulo="Día a día" subtitulo="Portería, accesos y espacios comunes">
+          <Cifra
+            icono={Siren}
+            etiqueta="Alertas SOS activas"
+            valor={data.sos.activas}
+            alerta
+            to="/alertas-sos?estado=ACTIVA"
+          />
+          <Cifra
+            icono={Package}
+            etiqueta="Encomiendas por retirar"
+            valor={data.encomiendas.pendientesDeRetiro}
+            detalle={
+              data.encomiendas.atrasadas > 0
+                ? `${data.encomiendas.atrasadas} con más de ${ENCOMIENDA_ATRASADA_HORAS} h`
+                : undefined
+            }
+            to="/encomiendas?estado=NOTIFICADA"
+          />
+          <Cifra
+            icono={QrCode}
+            etiqueta="Accesos de hoy"
+            valor={data.accesos.hoyAutorizados + data.accesos.hoyRechazados}
+            detalle={
+              data.accesos.hoyAutorizados + data.accesos.hoyRechazados > 0
+                ? `${data.accesos.hoyAutorizados} autorizados · ${data.accesos.hoyRechazados} rechazados`
+                : undefined
+            }
+            to="/accesos?periodo=hoy"
+          />
+          <Cifra icono={CalendarCheck} etiqueta="Reservas próximas" valor={data.reservas.proximas} to="/reservas" />
+        </GrupoCifras>
+
+        <GrupoCifras titulo="Gestión" subtitulo="Incidencias y gastos comunes">
+          <Cifra
+            icono={Warning}
+            etiqueta="Incidencias abiertas"
+            valor={data.incidencias.pendientes}
+            detalle={data.atencion.incidenciasUrgentes > 0 ? `${data.atencion.incidenciasUrgentes} urgentes` : undefined}
+            to="/incidencias?estado=ABIERTAS"
+          />
+          <Cifra
+            icono={CheckCircle}
+            etiqueta="Incidencias resueltas"
+            valor={data.incidencias.resueltas}
+            to="/incidencias?estado=RESUELTA"
+          />
+          <Cifra
+            icono={Hourglass}
+            etiqueta="Tiempo promedio de resolución"
+            valor={promedio === null ? "Sin datos" : duracionLegible(promedio)}
+            detalle={promedio === null ? "Aparece al resolver la primera incidencia" : undefined}
+          />
+          <Cifra
+            icono={Wallet}
+            etiqueta="Gastos comunes vencidos"
+            valor={data.gastosComunes.deudaVencida === 0 ? 0 : formatMonto(data.gastosComunes.deudaVencida)}
+            detalle={
+              data.gastosComunes.unidadesMorosas > 0
+                ? `${data.gastosComunes.unidadesMorosas} ${data.gastosComunes.unidadesMorosas === 1 ? "unidad atrasada" : "unidades atrasadas"}`
+                : undefined
+            }
+            alerta
+            to="/gastos-comunes?vista=atrasadas"
+          />
+        </GrupoCifras>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Multas por estado" />
-          <HorizontalBarChart
-            items={Object.entries(data.multas).map(([estado, cantidad]) => ({
-              label: LABEL_MULTA[estado] ?? estado,
-              value: cantidad,
-              color: COLOR_MULTA[estado] ?? "#898781",
-            }))}
-          />
+          {Object.values(data.multas).every((n) => n === 0) ? (
+            <SinDatos icono={Gavel} texto="Aún no hay multas registradas." />
+          ) : (
+            <HorizontalBarChart
+              items={Object.entries(data.multas).map(([estado, cantidad]) => ({
+                label: LABEL_MULTA[estado] ?? estado,
+                value: cantidad,
+                color: COLOR_MULTA[estado] ?? "#898781",
+              }))}
+            />
+          )}
         </Card>
 
         <Card>
           <CardHeader title="Incidencias por estado" subtitle="Progreso de reportada a resuelta" />
-          <HorizontalBarChart
-            items={Object.entries(data.incidencias.porEstado).map(([estado, cantidad]) => ({
-              label: LABEL_INCIDENCIA[estado] ?? estado,
-              value: cantidad,
-              color: COLOR_INCIDENCIA[estado] ?? "#2a78d6",
-            }))}
-          />
+          {Object.values(data.incidencias.porEstado).every((n) => n === 0) ? (
+            <SinDatos icono={ChartBar} texto="Aún no hay incidencias reportadas." />
+          ) : (
+            <HorizontalBarChart
+              items={Object.entries(data.incidencias.porEstado).map(([estado, cantidad]) => ({
+                label: LABEL_INCIDENCIA[estado] ?? estado,
+                value: cantidad,
+                color: COLOR_INCIDENCIA[estado] ?? "#2a78d6",
+              }))}
+            />
+          )}
         </Card>
       </div>
 
       <Card>
-        <CardHeader title="Accesos por resultado" subtitle="Histórico completo de validaciones QR" />
-        {totalAccesos === 0 ? (
-          <EmptyState icon={QrCode} title="Aún no hay accesos registrados" />
-        ) : (
-          <Meter label="Accesos autorizados" value={data.accesos.totalAutorizados} total={totalAccesos} color="#0ca30c" />
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader title="Accesos recientes" subtitle="Últimos 10 registros de validación QR" />
+        <CardHeader
+          title="Últimos accesos"
+          subtitle="Validaciones de códigos QR en portería"
+          action={
+            <Link
+              to="/accesos"
+              className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg text-sm font-medium text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 max-sm:min-h-11 dark:text-brand-400"
+            >
+              Ver todo <CaretRight size={14} aria-hidden />
+            </Link>
+          }
+        />
         {data.accesos.recientes.length === 0 ? (
           <EmptyState icon={QrCode} title="Sin accesos registrados" />
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-700">
-            {data.accesos.recientes.map((a, i) => (
-              <motion.div key={a.id} {...staggerFade(i)} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                <div>
-                  <p className="text-sm text-slate-700 dark:text-slate-300">{a.motivo}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
-                    Validado por {a.validadoPor.nombre} {a.validadoPor.apellido} · {formatFechaHora(a.createdAt)}
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+            {data.accesos.recientes.slice(0, 5).map((a, i) => (
+              <motion.li key={a.id} {...staggerFade(i)} className="flex items-center justify-between gap-3 px-5 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-slate-700 dark:text-slate-200">{a.motivo}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {formatFechaHora(a.createdAt)} · {a.validadoPor.nombre} {a.validadoPor.apellido}
                   </p>
                 </div>
                 <Badge tone={a.resultado === "AUTORIZADO" ? "green" : "red"}>{RESULTADO_ACCESO_LABEL[a.resultado]}</Badge>
-              </motion.div>
+              </motion.li>
             ))}
-          </div>
+          </ul>
         )}
       </Card>
     </div>

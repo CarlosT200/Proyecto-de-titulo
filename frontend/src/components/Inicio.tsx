@@ -20,12 +20,43 @@ export function HeroBanner({
   titulo,
   subtitulo,
   children,
+  compacto = false,
 }: {
   etiqueta?: ReactNode;
   titulo: string;
   subtitulo?: string;
   children?: ReactNode;
+  /** Franja baja para pantallas de trabajo (panel de administracion): titulo y contexto en una
+   * columna y las acciones al lado en escritorio. */
+  compacto?: boolean;
 }) {
+  if (compacto) {
+    return (
+      <motion.section
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        // Fondo azul (no el degrade hasta el naranja): en escritorio los botones quedan a la derecha
+        // y el texto blanco sobre naranja no alcanza el contraste AA. El naranja queda como un brillo
+        // de marca en la esquina, sin texto encima.
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-700 to-brand-600 px-5 py-5 text-white shadow-lg shadow-brand-900/15 sm:px-6"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -right-16 h-44 w-44 rounded-full bg-[radial-gradient(closest-side,rgb(234_88_12/0.55),transparent)]"
+        />
+        <Buildings aria-hidden size={120} weight="fill" className="pointer-events-none absolute -bottom-6 right-4 text-white/10" />
+        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">{titulo}</h1>
+            {etiqueta && <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-white/90">{etiqueta}</p>}
+          </div>
+          {children && <div className="shrink-0">{children}</div>}
+        </div>
+      </motion.section>
+    );
+  }
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -84,11 +115,13 @@ export function BotonHero({
   icon: Icon,
   children,
   principal = false,
+  className,
 }: {
   to: string;
   icon: PhosphorIcon;
   children: ReactNode;
   principal?: boolean;
+  className?: string;
 }) {
   return (
     <Link
@@ -97,7 +130,8 @@ export function BotonHero({
         "inline-flex min-h-[44px] items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-[0.97]",
         principal
           ? "bg-white text-brand-700 shadow-lg shadow-black/10 hover:bg-brand-50"
-          : "bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm hover:bg-white/25"
+          : "bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm hover:bg-white/25",
+        className
       )}
     >
       <Icon size={18} weight="bold" aria-hidden />
