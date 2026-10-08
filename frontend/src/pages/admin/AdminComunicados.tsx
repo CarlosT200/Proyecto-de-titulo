@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 import { Megaphone, Trash } from "@phosphor-icons/react";
 import { comunicadosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, SearchInput, Select, Spinner, staggerFade, Textarea } from "../../components/ui";
-import { formatFechaHora } from "../../lib/format";
+import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, SearchInput, Select, Spinner, staggerFade, Textarea } from "../../components/ui";
+import { ItemComunicado } from "../../components/Comunicados";
 import { TIPO_COMUNICADO_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -73,11 +73,11 @@ export default function AdminComunicados() {
       <PageHeader icon={Megaphone} title="Comunicados" subtitle="Publicación de avisos para los residentes." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Comunicados publicados"
-            action={<SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar..." className="w-48" />}
-          />
+        <Card plana className="lg:col-span-2">
+          <CardHeader nivel={2} title="Comunicados publicados" />
+          <div className="border-b border-slate-100 px-5 py-3 dark:border-slate-700/60">
+            <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar comunicados..." className="w-full sm:max-w-xs" />
+          </div>
           {cargando ? (
             <Spinner />
           ) : error ? (
@@ -87,34 +87,33 @@ export default function AdminComunicados() {
           ) : !filtrados.length ? (
             <EmptyState title="Sin resultados" description="Ningún comunicado coincide con la búsqueda." />
           ) : (
-            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+            <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
               {filtrados.map((c, i) => (
-                <motion.div key={c.id} {...staggerFade(i)} className="group flex items-start justify-between gap-3 px-5 py-4 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                  <div className="min-w-0">
-                    <div className="mb-1 flex items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{c.titulo}</p>
-                      <Badge tone="blue">{TIPO_COMUNICADO_LABEL[c.tipo]}</Badge>
-                    </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">{c.contenido}</p>
-                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{formatFechaHora(c.createdAt)}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleEliminar(c.id, c.titulo)}
-                    className="shrink-0 rounded-lg p-1.5 max-sm:p-3.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                    aria-label="Eliminar comunicado"
-                    title="Eliminar comunicado"
-                  >
-                    <Trash size={16} />
-                  </button>
+                <motion.div key={c.id} {...staggerFade(i)}>
+                  <ItemComunicado
+                    comunicado={c}
+                    accion={
+                      <button
+                        type="button"
+                        onClick={() => handleEliminar(c.id, c.titulo)}
+                        className="shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-100 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:p-3.5 dark:text-slate-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                        aria-label={`Eliminar el comunicado "${c.titulo}"`}
+                        title="Eliminar comunicado"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    }
+                  />
                 </motion.div>
               ))}
             </div>
           )}
         </Card>
 
-        <Card className="h-fit">
-          <CardHeader title="Publicar nuevo comunicado" />
+        {/* En celular el formulario va primero (publicar es la tarea principal); en escritorio queda
+            fijo a la derecha mientras se recorre la lista. */}
+        <Card plana className="order-first h-fit lg:sticky lg:top-24 lg:order-none">
+          <CardHeader nivel={2} title="Publicar nuevo comunicado" />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
               <Label htmlFor="campo-comunicados-1">Tipo</Label>

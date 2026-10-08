@@ -126,6 +126,17 @@ export const TIPO_COMUNICADO_LABEL: Record<string, string> = {
   GENERAL: "General",
 };
 
+// Solo lo que importa lleva color: la emergencia en rojo y los cortes de servicio en ámbar.
+export const TIPO_COMUNICADO_TONO: Record<string, Tono> = {
+  EMERGENCIA: "red",
+  CORTE_AGUA: "amber",
+  CORTE_ELECTRICO: "amber",
+  MANTENCION: "slate",
+  REUNION: "slate",
+  CAMBIO_HORARIO: "slate",
+  GENERAL: "slate",
+};
+
 export const ESTADO_COBRO_LABEL: Record<string, string> = {
   PENDIENTE: "Por pagar",
   VENCIDO: "Vencido",
