@@ -1,19 +1,58 @@
 import { FormEvent, useState } from "react";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import { Plus, Trash, Warning } from "@phosphor-icons/react";
 import { multasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useFiltroUrl } from "../../hooks/useFiltroUrl";
-import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea, staggerFade } from "../../components/ui";
+import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
+import { Alert, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea } from "../../components/ui";
+import { BadgeEstadoMulta } from "../../components/Multas";
 import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
-import { ESTADO_MULTA_LABEL, ESTADO_MULTA_TONO } from "../../lib/badges";
+import { ESTADO_MULTA_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
 import type { EstadoMulta, Multa } from "../../types";
 
 const ESTADOS: EstadoMulta[] = ["PENDIENTE", "PAGADA", "APELADA", "ANULADA"];
+
+type CeldaDeResumen = { estado: EstadoMulta; titulo: string; valor: string; detalle: string; alerta?: boolean };
+
+// Una cifra del resumen. Si cambia (al marcar una multa como pagada, por ejemplo) la celda se ilumina
+// y se apaga (1,2 s, solo opacidad): indica que algo cambio. Con "reducir movimiento" no se anima.
+function CeldaResumen({ celda: c, activa, onToggle }: { celda: CeldaDeResumen; activa: boolean; onToggle: () => void }) {
+  const pulso = usePulsoAlCambiar(c.valor);
+  return (
+    <button
+      type="button"
+      aria-pressed={activa}
+      onClick={onToggle}
+      className={clsx(
+        "relative block bg-white px-3 py-4 text-left transition-colors [container-type:inline-size] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
+        activa && "ring-2 ring-inset ring-brand-500"
+      )}
+    >
+      {pulso > 0 && (
+        <span key={pulso} aria-hidden className="pointer-events-none absolute inset-0 animate-cifra-cambio bg-brand-500/10 dark:bg-brand-400/15" />
+      )}
+      <span className="relative block text-sm text-slate-600 dark:text-slate-300">{c.titulo}</span>
+      <span
+        style={c.valor.length > 6 ? { fontSize: `min(1.5rem, ${(100 / (c.valor.length * 0.62)).toFixed(1)}cqi)` } : undefined}
+        className={clsx(
+          "relative mt-1 block whitespace-nowrap font-display text-2xl font-bold tabular-nums tracking-tight",
+          c.valor === "0" || c.valor === "$0"
+            ? "text-slate-500 dark:text-slate-400"
+            : c.alerta
+              ? "text-amber-700 dark:text-amber-300"
+              : "text-slate-900 dark:text-white"
+        )}
+      >
+        {c.valor}
+      </span>
+      <span className="relative mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{c.detalle}</span>
+    </button>
+  );
+}
 
 // Resumen de lo que importa al abrir la pantalla; cada cifra filtra la lista por ese estado
 // (y vuelve a tocarla para quitar el filtro). Se calcula con todas las multas, no con el filtro.
@@ -33,7 +72,7 @@ function ResumenMultas({
   const pendientes = de("PENDIENTE");
   const apeladas = de("APELADA");
   const pagadas = de("PAGADA");
-  const celdas: { estado: EstadoMulta; titulo: string; valor: string; detalle: string; alerta?: boolean }[] = [
+  const celdas: CeldaDeResumen[] = [
     {
       estado: "PENDIENTE",
       titulo: "Por cobrar",
@@ -48,32 +87,7 @@ function ResumenMultas({
     <Card plana className="overflow-hidden">
       <div className="grid grid-cols-3 gap-px bg-slate-100 dark:bg-slate-700/60">
         {celdas.map((c) => (
-          <button
-            key={c.estado}
-            type="button"
-            aria-pressed={filtro === c.estado}
-            onClick={() => onFiltrar(filtro === c.estado ? "" : c.estado)}
-            className={clsx(
-              "block bg-white px-3 py-4 text-left transition-colors [container-type:inline-size] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
-              filtro === c.estado && "ring-2 ring-inset ring-brand-500"
-            )}
-          >
-            <span className="block text-sm text-slate-600 dark:text-slate-300">{c.titulo}</span>
-            <span
-              style={c.valor.length > 6 ? { fontSize: `min(1.5rem, ${(100 / (c.valor.length * 0.62)).toFixed(1)}cqi)` } : undefined}
-              className={clsx(
-                "mt-1 block whitespace-nowrap font-display text-2xl font-bold tabular-nums tracking-tight",
-                c.valor === "0" || c.valor === "$0"
-                  ? "text-slate-500 dark:text-slate-400"
-                  : c.alerta
-                    ? "text-amber-700 dark:text-amber-300"
-                    : "text-slate-900 dark:text-white"
-              )}
-            >
-              {c.valor}
-            </span>
-            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{c.detalle}</span>
-          </button>
+          <CeldaResumen key={c.estado} celda={c} activa={filtro === c.estado} onToggle={() => onFiltrar(filtro === c.estado ? "" : c.estado)} />
         ))}
       </div>
     </Card>
@@ -222,11 +236,11 @@ export default function AdminMultas() {
             {/* Celular: una tarjeta por multa (nombre y estado arriba, motivo completo, monto y fecha,
                 y las acciones juntas abajo). Desde 640 px: tabla. */}
             <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
-              {filtradas.map((m, i) => (
-                <motion.li key={m.id} {...staggerFade(i)} className="space-y-2 px-5 py-4">
+              {filtradas.map((m) => (
+                <li key={m.id} className="space-y-2 px-5 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">{nombreDe(m)}</p>
-                    <Badge tone={ESTADO_MULTA_TONO[m.estado]}>{ESTADO_MULTA_LABEL[m.estado]}</Badge>
+                    <BadgeEstadoMulta estado={m.estado} />
                   </div>
                   <p className="break-words text-sm text-slate-700 dark:text-slate-300">{m.motivo}</p>
                   {m.observaciones && <p className="break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</p>}
@@ -241,7 +255,7 @@ export default function AdminMultas() {
                     {selectorEstado(m, "min-w-0 flex-1")}
                     {botonEliminar(m)}
                   </div>
-                </motion.li>
+                </li>
               ))}
             </ul>
 
@@ -260,8 +274,8 @@ export default function AdminMultas() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                  {filtradas.map((m, i) => (
-                    <motion.tr key={m.id} {...staggerFade(i)}>
+                  {filtradas.map((m) => (
+                    <tr key={m.id}>
                       <td className="px-5 py-3 font-medium text-slate-900 dark:text-slate-100">{nombreDe(m)}</td>
                       <td className="max-w-xs px-5 py-3 text-slate-700 dark:text-slate-300">
                         <span className="block break-words">{m.motivo}</span>
@@ -278,7 +292,7 @@ export default function AdminMultas() {
                         {formatMonto(m.monto)}
                       </td>
                       <td className="px-5 py-3">
-                        <Badge tone={ESTADO_MULTA_TONO[m.estado]}>{ESTADO_MULTA_LABEL[m.estado]}</Badge>
+                        <BadgeEstadoMulta estado={m.estado} />
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-end gap-2">
@@ -286,7 +300,7 @@ export default function AdminMultas() {
                           {botonEliminar(m)}
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>

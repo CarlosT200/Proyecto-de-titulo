@@ -1,14 +1,13 @@
 import { FormEvent, useState } from "react";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 import { multasApi } from "../../api/endpoints";
 import { mensajeError } from "../../api/client";
 import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../context/ToastContext";
-import { Alert, Badge, Button, Card, EmptyState, Label, Modal, PageHeader, Spinner, Textarea, staggerFade } from "../../components/ui";
+import { Alert, Button, Card, EmptyState, Label, Modal, PageHeader, Spinner, Textarea } from "../../components/ui";
+import { BadgeEstadoMulta } from "../../components/Multas";
 import { formatFecha, formatMonto } from "../../lib/format";
-import { ESTADO_MULTA_LABEL, ESTADO_MULTA_TONO } from "../../lib/badges";
 import type { Multa } from "../../types";
 
 const MIN_APELACION = 10;
@@ -133,11 +132,11 @@ export default function ResidenteMultas() {
           <EmptyState icon={Warning} title="No tienes multas registradas" />
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-            {data.map((m, i) => (
-              <motion.li key={m.id} {...staggerFade(i)} className="px-5 py-4">
+            {data.map((m) => (
+              <li key={m.id} className="px-5 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <p className="min-w-0 break-words text-sm font-medium text-slate-900 dark:text-slate-100">{m.motivo}</p>
-                  <Badge tone={ESTADO_MULTA_TONO[m.estado]}>{ESTADO_MULTA_LABEL[m.estado]}</Badge>
+                  <BadgeEstadoMulta estado={m.estado} />
                 </div>
                 <p className="mt-1 flex items-baseline gap-2">
                   <span
@@ -163,7 +162,7 @@ export default function ResidenteMultas() {
                     Apelar esta multa
                   </Button>
                 )}
-              </motion.li>
+              </li>
             ))}
           </ul>
         )}

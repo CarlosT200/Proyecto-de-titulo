@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import {
@@ -22,6 +22,7 @@ import {
 } from "@phosphor-icons/react";
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
+import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { useAuth } from "../../context/AuthContext";
 import { Button, Card, CardHeader, EmptyState, Spinner, Alert, Badge, HorizontalBarChart } from "../../components/ui";
 import { BotonHero, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
@@ -62,19 +63,6 @@ const LABEL_INCIDENCIA: Record<string, string> = {
   EN_PROCESO: "En proceso",
   RESUELTA: "Resuelta",
 };
-
-// Cuenta las veces que cambio un valor despues del primer pintado (para reproducir el destello).
-function usePulsoAlCambiar(valor: string | number): number {
-  const previo = useRef(valor);
-  const [pulso, setPulso] = useState(0);
-  useEffect(() => {
-    if (previo.current !== valor) {
-      previo.current = valor;
-      setPulso((p) => p + 1);
-    }
-  }, [valor]);
-  return pulso;
-}
 
 // Una cifra del panel dentro de un grupo. Toda la celda es un enlace a la lista ya filtrada (si hay
 // a donde ir). Un cero se muestra atenuado para que destaque solo lo que tiene valor; "alerta"
