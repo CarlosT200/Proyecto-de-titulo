@@ -14,7 +14,14 @@ export function PieDePagina({ sobreOscuro = false, className }: { sobreOscuro?: 
       <Buildings size={13} weight="fill" aria-hidden className={sobreOscuro ? "text-white/50" : "text-brand-400"} />
       <span>© {new Date().getFullYear()} HabitaSmart.</span>
       <span>Todos los derechos reservados.</span>
-      <Link to="/privacidad" className={clsx("underline-offset-2 hover:underline", sobreOscuro ? "hover:text-white" : "hover:text-slate-700 dark:hover:text-slate-200")}>
+      {/* El ::before agranda el area tactil (44 px) sin cambiar la altura del pie. */}
+      <Link
+        to="/privacidad"
+        className={clsx(
+          "relative underline-offset-2 before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline",
+          sobreOscuro ? "hover:text-white" : "hover:text-slate-700 dark:hover:text-slate-200"
+        )}
+      >
         Aviso de privacidad
       </Link>
     </footer>

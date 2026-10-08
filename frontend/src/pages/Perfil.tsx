@@ -257,7 +257,7 @@ export default function Perfil() {
                 {iosSinInstalar ? (
                   <>
                     En Safari toca <IconoCompartir size={13} className="inline -mt-0.5" /> <strong>Compartir</strong> →{" "}
-                    <strong>Agregar a inicio</strong>, abre HabitaSmart desde ese icono y vuelve aqui para activarlas.
+                    <strong>Agregar a inicio</strong>, abre HabitaSmart desde ese ícono y vuelve aquí para activarlas.
                   </>
                 ) : push.soportado ? (
                   "Incluye alertas SOS, multas, comunicados y más."

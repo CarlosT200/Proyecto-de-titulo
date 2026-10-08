@@ -24,6 +24,34 @@ body {
     radial-gradient(circle at 100% 0%, rgba(234, 88, 12, 0.05), transparent 35%);
 }
 
+/* Que los controles que dibuja el navegador (calendario, reloj, barras, campo de archivo) usen la
+   paleta oscura en modo oscuro; sin esto el icono del calendario queda negro sobre fondo oscuro. */
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+/* Fecha y hora: Safari de iPhone las dibuja con su propio estilo (valor centrado, ancho y alto
+   propios) y no se parecian a los demas campos. Con appearance none respetan el ancho y el alto de
+   la clase y el valor va a la izquierda; al tocarlas iOS sigue abriendo su selector nativo. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value,
+input[type="month"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+
 h1,
 h2,
 h3,

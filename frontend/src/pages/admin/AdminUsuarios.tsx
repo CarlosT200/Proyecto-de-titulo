@@ -102,14 +102,14 @@ export default function AdminUsuarios() {
                       {u.id === yo?.id ? (
                         <span className="text-xs text-slate-400 dark:text-slate-500">Tu cuenta</span>
                       ) : (
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" className="whitespace-nowrap" onClick={() => setUsuarioClave(u)}>
+                        <div className="flex flex-wrap justify-end gap-2 sm:gap-1">
+                          <Button variant="ghost" size="sm" className="whitespace-nowrap max-sm:border max-sm:border-slate-300 dark:max-sm:border-slate-600" onClick={() => setUsuarioClave(u)}>
                             <Key size={14} /> Restablecer clave
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="whitespace-nowrap"
+                            className="whitespace-nowrap max-sm:border max-sm:border-slate-300 dark:max-sm:border-slate-600"
                             onClick={async () => {
                               if (u.activo) {
                                 const ok = await confirmar(

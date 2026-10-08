@@ -135,15 +135,15 @@ export default function ResidenteQR() {
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {visitas.map((v, i) => (
-                <motion.div key={v.id} {...staggerFade(i)} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                  <div>
+                <motion.div key={v.id} {...staggerFade(i)} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
+                  <div className="min-w-0 flex-1 basis-44">
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{v.nombreVisita}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {formatFechaHora(v.periodoInicio)} — {formatFechaHora(v.periodoFin)}
-                      {v.soloUnUso ? " · Uso unico" : ""}
+                      {v.soloUnUso ? " · Uso único" : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge tone={ESTADO_VISITA_TONO[v.estado]}>{ESTADO_VISITA_LABEL[v.estado]}</Badge>
                     {v.estado === "VIGENTE" && !v.qrToken && (
                       <Button

@@ -103,7 +103,7 @@ export default function AdminDocumentos() {
                       {doc.categoria ?? "General"} · {formatFecha(doc.createdAt)}
                     </p>
                   </button>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="flex shrink-0 items-center gap-1 max-sm:gap-2">
                     <button
                       type="button"
                       onClick={() => handleAbrir(doc.id)}
@@ -140,7 +140,13 @@ export default function AdminDocumentos() {
             </div>
             <div>
               <Label htmlFor="campo-documentos-archivo">Archivo (PDF, imagen)</Label>
-              <input id="campo-documentos-archivo" ref={fileRef} type="file" accept=".pdf,image/*" className="block w-full text-sm" />
+              <input
+                id="campo-documentos-archivo"
+                ref={fileRef}
+                type="file"
+                accept=".pdf,image/*"
+                className="block w-full text-sm text-slate-600 file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:text-slate-300 dark:file:bg-brand-500/15 dark:file:text-brand-200"
+              />
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>

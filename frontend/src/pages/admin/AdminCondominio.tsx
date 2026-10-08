@@ -95,8 +95,8 @@ function EspaciosComunes() {
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {data.map((esp, i) => (
-              <motion.div key={esp.id} {...staggerFade(i)} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                <div>
+              <motion.div key={esp.id} {...staggerFade(i)} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
+                <div className="min-w-0 flex-1 basis-44">
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{esp.nombre}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {esp.horarioInicio} - {esp.horarioFin} {esp.capacidad ? `· Capacidad ${esp.capacidad}` : ""}
