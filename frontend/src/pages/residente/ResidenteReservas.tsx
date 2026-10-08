@@ -1,14 +1,18 @@
 import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { CalendarBlank, CalendarCheck } from "@phosphor-icons/react";
 import { condominioApi, reservasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { CalendarBlank } from "@phosphor-icons/react";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Select, Spinner, staggerFade } from "../../components/ui";
-import { formatFecha, hoyLocal, reservaFinalizada } from "../../lib/format";
-import { ESTADO_RESERVA_LABEL, ESTADO_RESERVA_TONO } from "../../lib/badges";
+import { BadgeEstadoReserva } from "../../components/Reservas";
+import { formatFecha, hoyLocal } from "../../lib/format";
+import { avisoDeHorario, cuandoEs, esProxima, estadoVisible, fechaConDia, ordenarReservas } from "../../lib/reservas";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import type { Reserva } from "../../types";
+
+const ANTERIORES_VISIBLES = 5;
 
 export default function ResidenteReservas() {
   const toast = useToast();
@@ -26,6 +30,7 @@ export default function ResidenteReservas() {
   const [ocupados, setOcupados] = useState<{ horaInicio: string; horaFin: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [verTodasLasAnteriores, setVerTodasLasAnteriores] = useState(false);
 
   useEffect(() => {
     if (!espacioComunId || !fecha) return;
@@ -33,6 +38,12 @@ export default function ResidenteReservas() {
   }, [espacioComunId, fecha]);
 
   const espacioSeleccionado = espacios?.find((e) => e.id === espacioComunId);
+  const aviso = avisoDeHorario(espacioSeleccionado, fecha, horaInicio, horaFin, ocupados);
+
+  const ordenadas = ordenarReservas(misReservas ?? []);
+  const proximas = ordenadas.filter(esProxima);
+  const anteriores = ordenadas.filter((r) => !esProxima(r));
+  const proxima = proximas[0];
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -50,13 +61,81 @@ export default function ResidenteReservas() {
     }
   }
 
+  // Si la cancelacion falla se avisa (antes quedaba en silencio).
+  async function cancelar(r: Reserva) {
+    const ok = await confirmar(`¿Cancelar tu reserva de ${r.espacioComun.nombre}?`, {
+      titulo: "Cancelar reserva",
+      textoConfirmar: "Cancelar reserva",
+      textoCancelar: "Volver",
+    });
+    if (!ok) return;
+    try {
+      await reservasApi.cancelar(r.id);
+      toast.info("Reserva cancelada.");
+      recargarReservas();
+    } catch (err) {
+      toast.error(mensajeError(err, "No se pudo cancelar la reserva."));
+    }
+  }
+
+  const contenidoFila = (r: Reserva, conCancelar: boolean) => (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-words text-sm font-medium text-slate-900 dark:text-slate-100">{r.espacioComun.nombre}</p>
+        <BadgeEstadoReserva estado={estadoVisible(r)} />
+      </div>
+      <p className="mt-0.5 text-sm tabular-nums text-slate-600 dark:text-slate-300">
+        {formatFecha(r.fecha)} · {r.horaInicio} - {r.horaFin}
+      </p>
+      {conCancelar && (
+        <button
+          type="button"
+          onClick={() => cancelar(r)}
+          className="-ml-2 mt-1 inline-flex items-center rounded-lg px-2 py-1 text-sm font-medium text-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:min-h-11 dark:text-red-400"
+        >
+          Cancelar reserva
+        </button>
+      )}
+    </>
+  );
+
+  const anterioresVisibles = verTodasLasAnteriores ? anteriores : anteriores.slice(0, ANTERIORES_VISIBLES);
+
   return (
     <div className="space-y-6">
       <PageHeader icon={CalendarBlank} title="Reservar espacios comunes" subtitle="Consulta disponibilidad y reserva." />
 
+      {/* Lo que mas se consulta: cuando es mi proxima reserva. */}
+      {!cargandoReservas && (
+        <Card plana>
+          <div className="flex items-center gap-4 px-5 py-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
+              <CalendarCheck size={24} weight="duotone" aria-hidden />
+            </span>
+            {proxima ? (
+              <div className="min-w-0">
+                <h2 className="text-sm text-slate-600 dark:text-slate-300">Tu próxima reserva</h2>
+                <p className="break-words font-display text-lg font-bold text-slate-900 dark:text-white">{proxima.espacioComun.nombre}</p>
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600 dark:text-slate-300">
+                  <Badge tone="blue">{cuandoEs(proxima.fecha)}</Badge>
+                  <span>
+                    {fechaConDia(proxima.fecha)} · <span className="tabular-nums">{proxima.horaInicio} - {proxima.horaFin}</span>
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <h2 className="font-medium text-slate-900 dark:text-white">No tienes reservas próximas</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Elige un espacio abajo para reservar.</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 h-fit">
-          <CardHeader title="Nueva reserva" />
+        <Card plana className="h-fit lg:col-span-2">
+          <CardHeader nivel={2} title="Nueva reserva" />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
               <Label htmlFor="campo-reservas-1">Espacio común</Label>
@@ -71,13 +150,7 @@ export default function ResidenteReservas() {
             </div>
             <div>
               <Label htmlFor="campo-reservas-2">Fecha</Label>
-              <Input id="campo-reservas-2"
-                type="date"
-                required
-                min={hoyLocal()}
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-              />
+              <Input id="campo-reservas-2" type="date" required min={hoyLocal()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -91,22 +164,33 @@ export default function ResidenteReservas() {
             </div>
 
             {espacioSeleccionado && (
-              <div className="rounded-lg bg-slate-50 dark:bg-slate-900/40 p-3 text-xs text-slate-600 dark:text-slate-300">
-                <p className="mb-1 font-medium">Horarios ya reservados para esa fecha:</p>
-                {ocupados.length === 0 ? (
-                  <p>Sin reservas para este día.</p>
-                ) : (
-                  <ul className="space-y-0.5">
-                    {ocupados.map((o, idx) => (
-                      <li key={idx}>
-                        {o.horaInicio} - {o.horaFin}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
+                <p>
+                  <span className="font-medium">{espacioSeleccionado.nombre}</span> se puede reservar de{" "}
+                  <span className="font-medium tabular-nums">{espacioSeleccionado.horarioInicio}</span> a{" "}
+                  <span className="font-medium tabular-nums">{espacioSeleccionado.horarioFin}</span>.
+                </p>
+                <div>
+                  <p className="mb-1.5 font-medium">Horarios ya reservados ese día</p>
+                  {ocupados.length === 0 ? (
+                    <p>Sin reservas: está libre todo su horario.</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-2">
+                      {ocupados.map((o, idx) => (
+                        <li
+                          key={idx}
+                          className="rounded-full bg-white px-2.5 py-1 font-medium tabular-nums text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600"
+                        >
+                          {o.horaInicio} - {o.horaFin}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
 
+            {aviso && <Alert tone="amber">{aviso}</Alert>}
             {error && <Alert tone="red">{error}</Alert>}
 
             <Button type="submit" className="w-full" loading={enviando}>
@@ -115,46 +199,50 @@ export default function ResidenteReservas() {
           </form>
         </Card>
 
-        <Card>
-          <CardHeader title="Mis reservas" />
+        <Card plana className="h-fit">
+          <CardHeader nivel={2} title="Mis reservas" />
           {cargandoReservas ? (
             <Spinner />
           ) : !misReservas?.length ? (
             <EmptyState title="Aún no tienes reservas" />
           ) : (
-            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-              {misReservas.map((r, i) => {
-                const finalizada = reservaFinalizada(r);
-                const estado = finalizada ? "FINALIZADA" : r.estado;
-                return (
-                  <motion.div key={r.id} {...staggerFade(i)} className="px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{r.espacioComun.nombre}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {formatFecha(r.fecha)} · {r.horaInicio} - {r.horaFin}
-                    </p>
-                    <div className="mt-1 flex items-center justify-between">
-                      <Badge tone={ESTADO_RESERVA_TONO[estado]}>{ESTADO_RESERVA_LABEL[estado]}</Badge>
-                      {r.estado === "CONFIRMADA" && !finalizada && (
-                        <button
-                          className="text-xs text-red-600 dark:text-red-400 hover:underline max-sm:min-h-11 max-sm:px-3"
-                          onClick={async () => {
-                            const ok = await confirmar(`¿Cancelar tu reserva de ${r.espacioComun.nombre}?`, {
-                              titulo: "Cancelar reserva",
-                              textoConfirmar: "Cancelar reserva",
-                            });
-                            if (!ok) return;
-                            await reservasApi.cancelar(r.id);
-                            toast.info("Reserva cancelada.");
-                            recargarReservas();
-                          }}
-                        >
-                          Cancelar
-                        </button>
-                      )}
+            <div>
+              <h3 className="px-5 pt-4 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Próximas</h3>
+              {proximas.length === 0 ? (
+                <p className="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">No tienes reservas próximas.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                  {proximas.map((r, i) => (
+                    <motion.li key={r.id} {...staggerFade(i)} className="px-5 py-3">
+                      {contenidoFila(r, true)}
+                    </motion.li>
+                  ))}
+                </ul>
+              )}
+              {anteriores.length > 0 && (
+                <>
+                  <h3 className="border-t border-slate-100 px-5 pt-4 text-xs font-semibold uppercase text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                    Anteriores
+                  </h3>
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">{anterioresVisibles.map((r) => (
+                      <li key={r.id} className="px-5 py-3">
+                        {contenidoFila(r, false)}
+                      </li>
+                    ))}</ul>
+                  {anteriores.length > ANTERIORES_VISIBLES && (
+                    <div className="border-t border-slate-100 px-5 py-2 dark:border-slate-700/60">
+                      <button
+                        type="button"
+                        aria-expanded={verTodasLasAnteriores}
+                        onClick={() => setVerTodasLasAnteriores((v) => !v)}
+                        className="inline-flex items-center rounded text-sm font-medium text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 max-sm:min-h-11 dark:text-brand-400"
+                      >
+                        {verTodasLasAnteriores ? "Ver menos" : `Ver todas (${anteriores.length})`}
+                      </button>
                     </div>
-                  </motion.div>
-                );
-              })}
+                  )}
+                </>
+              )}
             </div>
           )}
         </Card>
