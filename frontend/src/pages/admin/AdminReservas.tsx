@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { CalendarBlank } from "@phosphor-icons/react";
 import { reservasApi } from "../../api/endpoints";
 import { mensajeError } from "../../api/client";
 import { useAsync } from "../../hooks/useAsync";
 import { useFiltroUrl } from "../../hooks/useFiltroUrl";
-import { Alert, Button, Card, EmptyState, PageHeader, SearchInput, Select, Spinner, staggerFade } from "../../components/ui";
+import { Alert, Button, Card, EmptyState, PageHeader, SearchInput, Select, Spinner } from "../../components/ui";
 import { BadgeEstadoReserva } from "../../components/Reservas";
 import { CeldaResumen } from "../../components/CeldaResumen";
 import { formatFecha } from "../../lib/format";
@@ -127,8 +126,8 @@ export default function AdminReservas() {
             {/* Celular: una tarjeta por reserva (espacio y estado, fecha y horario, residente y accion).
                 Desde 640 px: tabla. */}
             <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
-              {filtradas.map((r, i) => (
-                <motion.li key={r.id} {...staggerFade(i)} className="space-y-1.5 px-5 py-4">
+              {filtradas.map((r) => (
+                <li key={r.id} className="space-y-1.5 px-5 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">{r.espacioComun.nombre}</p>
                     <BadgeEstadoReserva estado={estadoVisible(r)} />
@@ -142,7 +141,7 @@ export default function AdminReservas() {
                       Cancelar reserva
                     </Button>
                   )}
-                </motion.li>
+                </li>
               ))}
             </ul>
 
@@ -161,8 +160,8 @@ export default function AdminReservas() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                  {filtradas.map((r, i) => (
-                    <motion.tr key={r.id} {...staggerFade(i)}>
+                  {filtradas.map((r) => (
+                    <tr key={r.id}>
                       <td className="px-5 py-3 font-medium text-slate-900 dark:text-slate-100">{r.espacioComun.nombre}</td>
                       <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{nombreDe(r)}</td>
                       <td className="whitespace-nowrap px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatFecha(r.fecha)}</td>
@@ -179,7 +178,7 @@ export default function AdminReservas() {
                           </Button>
                         )}
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>

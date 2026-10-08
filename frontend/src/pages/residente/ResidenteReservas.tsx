@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import clsx from "clsx";
 import { CalendarBlank, CalendarCheck } from "@phosphor-icons/react";
 import { condominioApi, reservasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Select, Spinner, staggerFade } from "../../components/ui";
+import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Select, Spinner } from "../../components/ui";
 import { BadgeEstadoReserva } from "../../components/Reservas";
+import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
+import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { formatFecha, hoyLocal } from "../../lib/format";
 import { avisoDeHorario, cuandoEs, esProxima, estadoVisible, fechaConDia, ordenarReservas } from "../../lib/reservas";
 import { mensajeError } from "../../api/client";
@@ -13,6 +15,32 @@ import { useConfirm } from "../../context/ConfirmContext";
 import type { Reserva } from "../../types";
 
 const ANTERIORES_VISIBLES = 5;
+
+// Una reserva en "Mis reservas". La recien confirmada entra con un movimiento corto y, si la lista quedo
+// fuera de la pantalla (con una columna el formulario esta arriba), se acerca para confirmarlo.
+function FilaReserva({ r, nueva, onCancelar }: { r: Reserva; nueva: boolean; onCancelar?: () => void }) {
+  const ref = useAcercarAlAparecer<HTMLLIElement>(nueva, 1023);
+  return (
+    <li ref={ref} className={clsx("px-5 py-3", nueva && "animate-aparece")}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-words text-sm font-medium text-slate-900 dark:text-slate-100">{r.espacioComun.nombre}</p>
+        <BadgeEstadoReserva estado={estadoVisible(r)} />
+      </div>
+      <p className="mt-0.5 text-sm tabular-nums text-slate-600 dark:text-slate-300">
+        {formatFecha(r.fecha)} · {r.horaInicio} - {r.horaFin}
+      </p>
+      {onCancelar && (
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="-ml-2 mt-1 inline-flex items-center rounded-lg px-2 py-1 text-sm font-medium text-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:min-h-11 dark:text-red-400"
+        >
+          Cancelar reserva
+        </button>
+      )}
+    </li>
+  );
+}
 
 export default function ResidenteReservas() {
   const toast = useToast();
@@ -31,6 +59,7 @@ export default function ResidenteReservas() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [verTodasLasAnteriores, setVerTodasLasAnteriores] = useState(false);
+  const [nuevaId, setNuevaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!espacioComunId || !fecha) return;
@@ -44,13 +73,16 @@ export default function ResidenteReservas() {
   const proximas = ordenadas.filter(esProxima);
   const anteriores = ordenadas.filter((r) => !esProxima(r));
   const proxima = proximas[0];
+  // La tarjeta de arriba se mueve solo cuando cambia la reserva mostrada (nueva, cancelada), no al cargar.
+  const pulsoProxima = usePulsoAlCambiar(proxima?.id ?? "");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setEnviando(true);
     try {
-      await reservasApi.crear({ espacioComunId, fecha, horaInicio, horaFin });
+      const creada = await reservasApi.crear({ espacioComunId, fecha, horaInicio, horaFin });
+      setNuevaId(creada.id);
       toast.success("Reserva confirmada.");
       recargarReservas();
       reservasApi.disponibilidad(espacioComunId, fecha).then((res) => setOcupados(res.horariosOcupados));
@@ -78,27 +110,6 @@ export default function ResidenteReservas() {
     }
   }
 
-  const contenidoFila = (r: Reserva, conCancelar: boolean) => (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 break-words text-sm font-medium text-slate-900 dark:text-slate-100">{r.espacioComun.nombre}</p>
-        <BadgeEstadoReserva estado={estadoVisible(r)} />
-      </div>
-      <p className="mt-0.5 text-sm tabular-nums text-slate-600 dark:text-slate-300">
-        {formatFecha(r.fecha)} · {r.horaInicio} - {r.horaFin}
-      </p>
-      {conCancelar && (
-        <button
-          type="button"
-          onClick={() => cancelar(r)}
-          className="-ml-2 mt-1 inline-flex items-center rounded-lg px-2 py-1 text-sm font-medium text-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:min-h-11 dark:text-red-400"
-        >
-          Cancelar reserva
-        </button>
-      )}
-    </>
-  );
-
   const anterioresVisibles = verTodasLasAnteriores ? anteriores : anteriores.slice(0, ANTERIORES_VISIBLES);
 
   return (
@@ -106,9 +117,9 @@ export default function ResidenteReservas() {
       <PageHeader icon={CalendarBlank} title="Reservar espacios comunes" subtitle="Consulta disponibilidad y reserva." />
 
       {/* Lo que mas se consulta: cuando es mi proxima reserva. */}
-      {!cargandoReservas && (
+      {misReservas && (
         <Card plana>
-          <div className="flex items-center gap-4 px-5 py-4">
+          <div key={pulsoProxima} className={clsx("flex items-center gap-4 px-5 py-4", pulsoProxima > 0 && "animate-aparece")}>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
               <CalendarCheck size={24} weight="duotone" aria-hidden />
             </span>
@@ -201,7 +212,7 @@ export default function ResidenteReservas() {
 
         <Card plana className="h-fit">
           <CardHeader nivel={2} title="Mis reservas" />
-          {cargandoReservas ? (
+          {cargandoReservas && !misReservas ? (
             <Spinner />
           ) : !misReservas?.length ? (
             <EmptyState title="Aún no tienes reservas" />
@@ -212,10 +223,8 @@ export default function ResidenteReservas() {
                 <p className="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">No tienes reservas próximas.</p>
               ) : (
                 <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                  {proximas.map((r, i) => (
-                    <motion.li key={r.id} {...staggerFade(i)} className="px-5 py-3">
-                      {contenidoFila(r, true)}
-                    </motion.li>
+                  {proximas.map((r) => (
+                    <FilaReserva key={r.id} r={r} nueva={r.id === nuevaId} onCancelar={() => cancelar(r)} />
                   ))}
                 </ul>
               )}
@@ -225,9 +234,7 @@ export default function ResidenteReservas() {
                     Anteriores
                   </h3>
                   <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">{anterioresVisibles.map((r) => (
-                      <li key={r.id} className="px-5 py-3">
-                        {contenidoFila(r, false)}
-                      </li>
+                      <FilaReserva key={r.id} r={r} nueva={false} />
                     ))}</ul>
                   {anteriores.length > ANTERIORES_VISIBLES && (
                     <div className="border-t border-slate-100 px-5 py-2 dark:border-slate-700/60">
