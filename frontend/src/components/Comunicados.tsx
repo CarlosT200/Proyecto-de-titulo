@@ -9,8 +9,20 @@ import type { Comunicado } from "../types";
 // "Ver más" (antes un comunicado extenso ocupaba varias pantallas en el celular) y se respetan los
 // saltos de linea que escribio la administracion. El color del tipo solo destaca lo que importa:
 // emergencias en rojo y cortes de servicio en ámbar.
-export function ItemComunicado({ comunicado, accion, nivel = 3 }: { comunicado: Comunicado; accion?: ReactNode; nivel?: 2 | 3 }) {
+export function ItemComunicado({
+  comunicado,
+  accion,
+  nivel = 3,
+  nuevo = false,
+}: {
+  comunicado: Comunicado;
+  accion?: ReactNode;
+  nivel?: 2 | 3;
+  /** Recien publicado: entra con un movimiento corto y, si quedo fuera de la pantalla, se acerca. */
+  nuevo?: boolean;
+}) {
   const Titulo = nivel === 2 ? "h2" : "h3";
+  const raiz = useRef<HTMLDivElement>(null);
   const texto = useRef<HTMLParagraphElement>(null);
   const [abierto, setAbierto] = useState(false);
   const [hayMas, setHayMas] = useState(false);
@@ -29,8 +41,16 @@ export function ItemComunicado({ comunicado, accion, nivel = 3 }: { comunicado: 
     return () => observador.disconnect();
   }, [comunicado.contenido]);
 
+  // Con una sola columna (celular y tableta) el formulario esta arriba y la lista abajo: el
+  // comunicado nuevo queda fuera de la pantalla, asi que se acerca para confirmar que se publico.
+  useEffect(() => {
+    if (!nuevo || !window.matchMedia("(max-width: 1023px)").matches) return;
+    const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    raiz.current?.scrollIntoView({ behavior: reducir ? "auto" : "smooth", block: "nearest" });
+  }, [nuevo]);
+
   return (
-    <div className="flex items-start justify-between gap-3 px-5 py-4">
+    <div ref={raiz} className={clsx("flex items-start justify-between gap-3 px-5 py-4", nuevo && "animate-aparece")}>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Titulo className="break-words text-sm font-semibold text-slate-800 dark:text-slate-100">{comunicado.titulo}</Titulo>

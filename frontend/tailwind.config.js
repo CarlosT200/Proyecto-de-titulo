@@ -39,6 +39,11 @@ export default {
         salida: "cubic-bezier(0.23, 1, 0.32, 1)",
       },
       keyframes: {
+        // Un elemento nuevo en una lista (ej. el comunicado recien publicado) entra desde arriba.
+        aparece: {
+          "0%": { opacity: 0, transform: "translateY(-6px)" },
+          "100%": { opacity: 1, transform: "translateY(0)" },
+        },
         // Una cifra del panel que cambio con la actualizacion automatica se ilumina y se apaga.
         "cifra-cambio": {
           "0%": { opacity: 1 },
@@ -62,6 +67,7 @@ export default {
         },
       },
       animation: {
+        aparece: "aparece 220ms cubic-bezier(0.23, 1, 0.32, 1) both",
         "cifra-cambio": "cifra-cambio 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards",
         "grid-drift": "grid-drift 30s linear infinite",
         "window-glow": "window-glow 5s ease-in-out infinite",

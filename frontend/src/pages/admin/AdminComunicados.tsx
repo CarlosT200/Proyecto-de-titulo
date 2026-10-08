@@ -1,9 +1,8 @@
 import { FormEvent, useState } from "react";
-import { motion } from "framer-motion";
 import { Megaphone, Trash } from "@phosphor-icons/react";
 import { comunicadosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, SearchInput, Select, Spinner, staggerFade, Textarea } from "../../components/ui";
+import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, SearchInput, Select, Spinner, Textarea } from "../../components/ui";
 import { ItemComunicado } from "../../components/Comunicados";
 import { TIPO_COMUNICADO_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
@@ -31,6 +30,7 @@ export default function AdminComunicados() {
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [nuevoId, setNuevoId] = useState<string | null>(null);
 
   const filtrados = (data ?? []).filter(
     (c) => !busqueda || `${c.titulo} ${c.contenido}`.toLowerCase().includes(busqueda.toLowerCase())
@@ -56,7 +56,9 @@ export default function AdminComunicados() {
     setFormError(null);
     setEnviando(true);
     try {
-      await comunicadosApi.crear({ titulo, contenido, tipo });
+      const creado = await comunicadosApi.crear({ titulo, contenido, tipo });
+      setNuevoId(creado.id);
+      setBusqueda("");
       setTitulo("");
       setContenido("");
       toast.success("Comunicado publicado y notificado a los residentes.");
@@ -78,7 +80,7 @@ export default function AdminComunicados() {
           <div className="border-b border-slate-100 px-5 py-3 dark:border-slate-700/60">
             <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar comunicados..." className="w-full sm:max-w-xs" />
           </div>
-          {cargando ? (
+          {cargando && !data ? (
             <Spinner />
           ) : error ? (
             <Alert tone="red">{error}</Alert>
@@ -88,23 +90,23 @@ export default function AdminComunicados() {
             <EmptyState title="Sin resultados" description="Ningún comunicado coincide con la búsqueda." />
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-              {filtrados.map((c, i) => (
-                <motion.div key={c.id} {...staggerFade(i)}>
-                  <ItemComunicado
-                    comunicado={c}
-                    accion={
-                      <button
-                        type="button"
-                        onClick={() => handleEliminar(c.id, c.titulo)}
-                        className="shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-100 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:p-3.5 dark:text-slate-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                        aria-label={`Eliminar el comunicado "${c.titulo}"`}
-                        title="Eliminar comunicado"
-                      >
-                        <Trash size={16} />
-                      </button>
-                    }
-                  />
-                </motion.div>
+              {filtrados.map((c) => (
+                <ItemComunicado
+                  key={c.id}
+                  nuevo={c.id === nuevoId}
+                  comunicado={c}
+                  accion={
+                    <button
+                      type="button"
+                      onClick={() => handleEliminar(c.id, c.titulo)}
+                      className="shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-100 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:p-3.5 dark:text-slate-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                      aria-label={`Eliminar el comunicado "${c.titulo}"`}
+                      title="Eliminar comunicado"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  }
+                />
               ))}
             </div>
           )}
