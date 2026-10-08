@@ -1,6 +1,31 @@
+import { randomBytes } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 
+// Codigo del QR: 16 bytes aleatorios en base64url = 22 caracteres. Es opaco: no contiene datos
+// personales ni el id del registro (RNF-09), solo es la llave para buscar el QrToken en la base,
+// donde estan la vigencia (RNF-08), si fue revocado y cuantos usos lleva. No necesita firma porque
+// la validacion siempre consulta la base; con 128 bits aleatorios no se puede adivinar.
+//
+// Por que no un JWT: firmado medía ~180 caracteres y el link completo ~250, o sea un QR de 85x85
+// modulos que la camara de un celular casi no lograba leer. Con 22 caracteres el QR es de 33-41
+// modulos y se lee a mas distancia, con menos luz y con la pantalla un poco borrosa.
+const LARGO_TOKEN_CORTO = 22;
+const FORMATO_TOKEN_CORTO = /^[A-Za-z0-9_-]{22}$/;
+
+export function nuevoTokenQr(): string {
+  return randomBytes(16).toString("base64url");
+}
+
+export function esTokenCorto(token: string): boolean {
+  return token.length === LARGO_TOKEN_CORTO && FORMATO_TOKEN_CORTO.test(token);
+}
+
+// --- Formato anterior (JWT) ---
+// Los QR emitidos antes del cambio (24 h para residentes, hasta el fin del periodo para visitas)
+// siguen siendo validos: validarQr acepta ambos formatos. signQrToken ya no se usa para generar
+// codigos nuevos; queda para las pruebas de compatibilidad.
+//
 // RFC 7519 (JWT): el claim "exp" limita la vigencia del codigo QR (RNF-08).
 // El payload solo contiene el identificador interno (jti) del registro QrToken,
 // nunca datos personales del residente o de la visita (RNF-09).

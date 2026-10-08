@@ -3,17 +3,19 @@ import QRCode from "qrcode";
 import sharp from "sharp";
 import { EstadoVisita, ResultadoAcceso, TipoQrToken } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
-import { signQrToken, verifyQrToken } from "../../lib/qrToken";
+import { esTokenCorto, nuevoTokenQr, verifyQrToken } from "../../lib/qrToken";
 import { ConflictError, NotFoundError } from "../../lib/errors";
 import { env } from "../../config/env";
 import { QR_LOGO_SVG } from "../../lib/qrLogo";
 
 const VIGENCIA_QR_RESIDENTE_HORAS = 24;
-const QR_ANCHO = 320;
-// ~22% del ancho del QR: suficiente para que el logo se note, pero dentro
-// del margen que tolera la correccion de errores "H" (hasta ~30% del area
-// puede quedar tapada/dañada y el QR sigue leyendose).
-const LOGO_PROPORCION = 0.22;
+// Pixeles por modulo del QR (entero, para que los bordes salgan nitidos: con un ancho fijo cada
+// modulo medía 3,7 px con bordes borrosos). El codigo es corto (22 caracteres), asi que el QR es
+// de ~41 modulos y la imagen de ~390 px.
+const PIXELES_POR_MODULO = 8;
+// ~18% del ancho del QR (~3% del area): el logo se nota y queda muy por debajo del 25% que
+// tolera la correccion de errores "Q".
+const LOGO_PROPORCION = 0.18;
 
 // El QR codifica un link real (no solo el token en texto plano) para que
 // cualquier camara de celular lo reconozca como algo abrible, en vez de
@@ -24,17 +26,18 @@ function urlAcceso(token: string): string {
   return `${env.appUrl}/acceso/${encodeURIComponent(token)}`;
 }
 
-// Nivel de correccion "H" (alto) porque se le superpone el logo en el
-// centro -- con "M" (el nivel anterior) tapar el medio con un logo podria
-// dejar el codigo ilegible para algunos lectores.
+// Correccion de errores "Q" (hasta ~25% del area) porque se le superpone el logo al centro; "H"
+// obligaba a un QR mucho mas denso. Margen de 4 modulos: es la zona blanca que exige el estandar
+// (con 1 modulo, el lector confundia el borde del QR con el fondo de la pantalla).
 async function generarImagenQr(token: string): Promise<string> {
   const qrBuffer = await QRCode.toBuffer(urlAcceso(token), {
-    errorCorrectionLevel: "H",
-    margin: 1,
-    width: QR_ANCHO,
+    errorCorrectionLevel: "Q",
+    margin: 4,
+    scale: PIXELES_POR_MODULO,
   });
+  const { width: qrAncho = 0 } = await sharp(qrBuffer).metadata();
 
-  const logoLado = Math.round(QR_ANCHO * LOGO_PROPORCION);
+  const logoLado = Math.round(qrAncho * LOGO_PROPORCION);
   const logoBuffer = await sharp(Buffer.from(QR_LOGO_SVG)).resize(logoLado, logoLado).png().toBuffer();
 
   const compuesto = await sharp(qrBuffer)
@@ -54,7 +57,7 @@ export async function generarQrResidente(condominioId: string, usuarioId: string
 
   const expiraEn = new Date(Date.now() + VIGENCIA_QR_RESIDENTE_HORAS * 60 * 60 * 1000);
   const id = randomUUID();
-  const token = signQrToken(id, "RESIDENTE", expiraEn);
+  const token = nuevoTokenQr();
   await prisma.qrToken.create({
     data: { id, tipo: TipoQrToken.RESIDENTE, usuarioId, expiraEn, token },
   });
@@ -112,7 +115,7 @@ export async function generarQrVisita(condominioId: string, residenteId: string,
   }
 
   const id = randomUUID();
-  const token = signQrToken(id, "VISITA", visita.periodoFin);
+  const token = nuevoTokenQr();
   await prisma.qrToken.create({
     data: {
       id,
@@ -175,6 +178,31 @@ interface ResultadoValidacion {
   detalle?: Record<string, unknown>;
 }
 
+const INCLUDE_VALIDACION = {
+  usuario: {
+    select: {
+      id: true,
+      condominioId: true,
+      activo: true,
+      nombre: true,
+      apellido: true,
+      departamento: { include: { torre: true } },
+    },
+  },
+  visita: {
+    include: {
+      residente: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          departamento: { include: { torre: true } },
+        },
+      },
+    },
+  },
+} as const;
+
 // HU-18 / HU-21: validar QR de residente o de visita mediante escaneo en conserjeria.
 export async function validarQr(
   condominioId: string,
@@ -183,34 +211,12 @@ export async function validarQr(
 ): Promise<ResultadoValidacion> {
   let registro;
   try {
-    const payload = verifyQrToken(tokenCrudo);
-    registro = await prisma.qrToken.findUnique({
-      where: { id: payload.jti },
-      include: {
-        usuario: {
-          select: {
-            id: true,
-            condominioId: true,
-            activo: true,
-            nombre: true,
-            apellido: true,
-            departamento: { include: { torre: true } },
-          },
-        },
-        visita: {
-          include: {
-            residente: {
-              select: {
-                id: true,
-                nombre: true,
-                apellido: true,
-                departamento: { include: { torre: true } },
-              },
-            },
-          },
-        },
-      },
-    });
+    // Codigo corto (formato actual): se busca directo por el codigo. Si no, se intenta como JWT
+    // (formato anterior, de los QR ya emitidos): verifica la firma y busca por el id del registro.
+    // Cualquier otro texto lanza y se rechaza como invalido.
+    registro = esTokenCorto(tokenCrudo)
+      ? await prisma.qrToken.findUnique({ where: { token: tokenCrudo }, include: INCLUDE_VALIDACION })
+      : await prisma.qrToken.findUnique({ where: { id: verifyQrToken(tokenCrudo).jti }, include: INCLUDE_VALIDACION });
   } catch {
     return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Código QR inválido o expirado.");
   }

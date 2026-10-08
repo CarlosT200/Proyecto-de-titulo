@@ -13,7 +13,7 @@ vi.mock("../../lib/prisma", () => ({
 }));
 
 import { prisma } from "../../lib/prisma";
-import { signQrToken } from "../../lib/qrToken";
+import { nuevoTokenQr, signQrToken } from "../../lib/qrToken";
 import { validarQr } from "./qr.service";
 
 const findUnique = prisma.qrToken.findUnique as unknown as Mock;
@@ -41,6 +41,80 @@ beforeEach(() => {
 
 // HU-18 / HU-21: validarQr es la puerta de entrada real del condominio --
 // cada caso aca es un escenario que un conserje puede encontrar al escanear.
+describe("validarQr: codigo corto (formato actual)", () => {
+  it("busca el registro por el codigo y autoriza al residente", async () => {
+    const codigo = nuevoTokenQr();
+    const expiraEn = new Date(Date.now() + 60_000);
+    findUnique.mockResolvedValueOnce({
+      id: "qr-corto",
+      tipo: TipoQrToken.RESIDENTE,
+      revocado: false,
+      expiraEn,
+      usosMaximos: null,
+      usosRealizados: 0,
+      usuario: persona(),
+      visita: null,
+    });
+
+    const resultado = await validarQr("condo-1", "conserje-1", codigo);
+
+    expect(resultado.resultado).toBe(ResultadoAcceso.AUTORIZADO);
+    expect(findUnique.mock.calls[0][0].where).toEqual({ token: codigo });
+  });
+
+  it("el vencimiento sale de la base: un codigo corto vencido se rechaza", async () => {
+    findUnique.mockResolvedValueOnce({
+      id: "qr-vencido",
+      tipo: TipoQrToken.RESIDENTE,
+      revocado: false,
+      expiraEn: new Date(Date.now() - 1000),
+      usosMaximos: null,
+      usosRealizados: 0,
+      usuario: persona(),
+      visita: null,
+    });
+
+    const resultado = await validarQr("condo-1", "conserje-1", nuevoTokenQr());
+
+    expect(resultado.resultado).toBe(ResultadoAcceso.RECHAZADO);
+    expect(resultado.motivo).toBe("El código QR se encuentra vencido.");
+    expect(updateManyToken).not.toHaveBeenCalled();
+  });
+
+  it("un codigo corto que no existe se rechaza como no reconocido", async () => {
+    findUnique.mockResolvedValueOnce(null);
+    const resultado = await validarQr("condo-1", "conserje-1", nuevoTokenQr());
+    expect(resultado).toMatchObject({ resultado: ResultadoAcceso.RECHAZADO, motivo: "Código QR no reconocido." });
+  });
+
+  it("texto que no es ni codigo corto ni JWT se rechaza sin consultar la base", async () => {
+    const resultado = await validarQr("condo-1", "conserje-1", "cualquier-cosa-que-no-sirve");
+    expect(resultado).toMatchObject({ resultado: ResultadoAcceso.RECHAZADO, motivo: "Código QR inválido o expirado." });
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("validarQr: JWT (QR emitidos antes del codigo corto siguen valiendo)", () => {
+  it("un QR del formato anterior se busca por el id firmado y se autoriza", async () => {
+    const expiraEn = new Date(Date.now() + 60_000);
+    findUnique.mockResolvedValueOnce({
+      id: "qr-viejo",
+      tipo: TipoQrToken.RESIDENTE,
+      revocado: false,
+      expiraEn,
+      usosMaximos: null,
+      usosRealizados: 0,
+      usuario: persona(),
+      visita: null,
+    });
+
+    const resultado = await validarQr("condo-1", "conserje-1", signQrToken("qr-viejo", "RESIDENTE", expiraEn));
+
+    expect(resultado.resultado).toBe(ResultadoAcceso.AUTORIZADO);
+    expect(findUnique.mock.calls[0][0].where).toEqual({ id: "qr-viejo" });
+  });
+});
+
 describe("validarQr", () => {
   it("autoriza el QR de un residente vigente y devuelve sus datos", async () => {
     const expiraEn = new Date(Date.now() + 60_000);

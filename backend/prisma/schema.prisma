@@ -416,7 +416,7 @@ model Visita {
 model QrToken {
   id             String      @id @default(uuid())
   tipo           TipoQrToken
-  token          String      @unique // jti del JWT firmado
+  token          String      @unique // codigo opaco de 22 caracteres (o el JWT firmado de los QR anteriores)
   usuarioId      String?
   visitaId       String?     @unique
   expiraEn       DateTime

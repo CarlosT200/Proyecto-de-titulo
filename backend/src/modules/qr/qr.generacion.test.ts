@@ -9,7 +9,7 @@ vi.mock("../../lib/prisma", () => ({
 }));
 
 import { prisma } from "../../lib/prisma";
-import { verifyQrToken } from "../../lib/qrToken";
+import { esTokenCorto } from "../../lib/qrToken";
 import { generarQrResidente, generarQrVisita } from "./qr.service";
 
 const crear = prisma.qrToken.create as unknown as Mock;
@@ -33,8 +33,9 @@ describe("generacion de QR", () => {
     const { data } = crear.mock.calls[0][0];
     expect(data.token).toBeTruthy();
     expect(data.token).not.toBe("");
-    // el token firmado lleva el mismo id con el que se guardo el registro
-    expect(verifyQrToken(data.token).jti).toBe(data.id);
+    // codigo corto y opaco: el QR queda pequeno y legible para la camara de un celular
+    expect(esTokenCorto(data.token)).toBe(true);
+    expect(data.token).not.toContain(data.id);
   });
 
   it("dos QR simultaneos reciben tokens distintos (no chocan en la columna unica)", async () => {
@@ -53,6 +54,6 @@ describe("generacion de QR", () => {
     const { data } = crear.mock.calls[0][0];
     expect(data.token).not.toBe("");
     expect(data.usosMaximos).toBe(1);
-    expect(verifyQrToken(data.token).jti).toBe(data.id);
+    expect(esTokenCorto(data.token)).toBe(true);
   });
 });

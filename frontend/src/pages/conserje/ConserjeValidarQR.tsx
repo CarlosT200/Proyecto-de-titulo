@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { qrApi } from "../../api/endpoints";
-import { QrCode } from "@phosphor-icons/react";
+import { CheckCircle, QrCode, XCircle } from "@phosphor-icons/react";
 import { Alert, Button, Card, CardHeader, Input, Label, PageHeader } from "../../components/ui";
 import { DetalleAcceso, DetalleAccesoData } from "../../components/DetalleAcceso";
 import { mensajeError } from "../../api/client";
@@ -36,6 +36,7 @@ export default function ConserjeValidarQR() {
   const [errorCamara, setErrorCamara] = useState<string | null>(null);
   const [tokenManual, setTokenManual] = useState("");
   const [validandoManual, setValidandoManual] = useState(false);
+  const resultadoRef = useRef<HTMLDivElement>(null);
 
   async function validarToken(token: string) {
     if (procesandoRef.current) return;
@@ -54,7 +55,9 @@ export default function ConserjeValidarQR() {
     setErrorCamara(null);
     setResultado(null);
     try {
-      const scanner = new Html5Qrcode(READER_ID);
+      // Solo codigos QR: con todos los formatos el lector prueba varios decodificadores por cada
+      // cuadro y lee mas lento.
+      const scanner = new Html5Qrcode(READER_ID, { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
       scannerRef.current = scanner;
       await scanner.start(
         { facingMode: "environment" },
@@ -112,6 +115,14 @@ export default function ConserjeValidarQR() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Al llegar un resultado se lleva a la vista: en celular la camara se apaga y, sin esto, el
+  // resultado quedaba fuera de la pantalla y parecia que no habia pasado nada.
+  useEffect(() => {
+    if (!resultado) return;
+    const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultadoRef.current?.scrollIntoView({ behavior: reducir ? "auto" : "smooth", block: "start" });
+  }, [resultado]);
+
   async function handleManualSubmit(e: FormEvent) {
     e.preventDefault();
     setValidandoManual(true);
@@ -126,6 +137,39 @@ export default function ConserjeValidarQR() {
   return (
     <div className="space-y-6">
       <PageHeader icon={QrCode} title="Validar acceso QR" subtitle="Escanea el código de un residente o una visita." />
+
+      {resultado && (
+        <div
+          ref={resultadoRef}
+          role="status"
+          aria-live="polite"
+          className={
+            "scroll-mt-20 rounded-2xl border p-5 text-center " +
+            (resultado.resultado === "AUTORIZADO"
+              ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10"
+              : "border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10")
+          }
+        >
+          {resultado.resultado === "AUTORIZADO" ? (
+            <CheckCircle size={44} weight="fill" className="mx-auto text-emerald-600 dark:text-emerald-400" aria-hidden />
+          ) : (
+            <XCircle size={44} weight="fill" className="mx-auto text-red-600 dark:text-red-400" aria-hidden />
+          )}
+          <p
+            className={
+              "mt-2 font-display text-xl font-bold " +
+              (resultado.resultado === "AUTORIZADO" ? "text-emerald-800 dark:text-emerald-300" : "text-red-800 dark:text-red-300")
+            }
+          >
+            {resultado.resultado === "AUTORIZADO" ? "Acceso autorizado" : "Acceso rechazado"}
+          </p>
+          <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{resultado.motivo}</p>
+          <DetalleAcceso detalle={resultado.detalle} className="mx-auto mt-3 max-w-sm rounded-lg bg-white/70 p-3 text-left dark:bg-slate-900/30" />
+          <Button className="mt-4 w-full sm:w-auto" onClick={iniciarCamara}>
+            <QrCode size={16} aria-hidden /> Escanear otro código
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
@@ -155,24 +199,6 @@ export default function ConserjeValidarQR() {
               Validar
             </Button>
           </form>
-
-          {resultado && (
-            <div className="border-t border-slate-100 dark:border-slate-700/60 p-5">
-              <div
-                className={
-                  resultado.resultado === "AUTORIZADO"
-                    ? "rounded-lg border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 p-4 text-center"
-                    : "rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4 text-center"
-                }
-              >
-                <p className={resultado.resultado === "AUTORIZADO" ? "text-lg font-bold text-emerald-700 dark:text-emerald-300" : "text-lg font-bold text-red-700 dark:text-red-300"}>
-                  {resultado.resultado === "AUTORIZADO" ? "✓ Acceso autorizado" : "✗ Acceso rechazado"}
-                </p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{resultado.motivo}</p>
-                <DetalleAcceso detalle={resultado.detalle} className="mt-3 rounded-md bg-white/60 p-3 text-left dark:bg-slate-900/30" />
-              </div>
-            </div>
-          )}
         </Card>
       </div>
     </div>
