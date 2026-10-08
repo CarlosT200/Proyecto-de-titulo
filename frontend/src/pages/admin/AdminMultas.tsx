@@ -7,6 +7,7 @@ import { useFiltroUrl } from "../../hooks/useFiltroUrl";
 import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { Alert, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea } from "../../components/ui";
 import { BadgeEstadoMulta } from "../../components/Multas";
+import { RespuestaApelacion } from "../../components/RespuestaApelacion";
 import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
 import { ESTADO_MULTA_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
@@ -98,10 +99,127 @@ function ResumenMultas({
 function Apelacion({ multa }: { multa: Multa }) {
   if (!multa.apelacion) return null;
   return (
-    <p className="mt-1 break-words rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-      <span className="font-semibold">Apelación del residente{multa.apeladaEn ? ` (${formatFecha(multa.apeladaEn)})` : ""}:</span>{" "}
-      {multa.apelacion}
-    </p>
+    <div className="mt-1 space-y-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+      <p className="break-words">
+        <span className="font-semibold">Apelación del residente{multa.apeladaEn ? ` (${formatFecha(multa.apeladaEn)})` : ""}:</span>{" "}
+        {multa.apelacion}
+      </p>
+      <RespuestaApelacion multa={multa} className="border-t border-slate-200 pt-2 dark:border-slate-700" />
+    </div>
+  );
+}
+
+const MIN_RESPUESTA = 10;
+const MAX_RESPUESTA = 500;
+
+// La administracion decide una apelacion: la acepta (la multa se anula) o la rechaza (la multa sigue
+// pendiente y no se puede apelar de nuevo) y escribe la respuesta que recibira el residente.
+function ModalResponderApelacion({
+  multa,
+  decisionInicial,
+  onClose,
+  onResuelta,
+}: {
+  multa: Multa;
+  decisionInicial: "ACEPTADA" | "RECHAZADA" | null;
+  onClose: () => void;
+  onResuelta: () => void;
+}) {
+  const toast = useToast();
+  const [decision, setDecision] = useState<"ACEPTADA" | "RECHAZADA" | null>(decisionInicial);
+  const [respuesta, setRespuesta] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const largo = respuesta.trim().length;
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    if (!decision) return;
+    setError(null);
+    setEnviando(true);
+    try {
+      await multasApi.resolverApelacion(multa.id, { decision, respuesta: respuesta.trim() });
+      toast.success(decision === "ACEPTADA" ? "Apelación aceptada: la multa quedó anulada." : "Apelación rechazada: la multa sigue pendiente.");
+      onResuelta();
+      onClose();
+    } catch (err) {
+      setError(mensajeError(err));
+      // si otra persona ya la respondio, se actualiza la lista para mostrar el estado real
+      onResuelta();
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  const opciones: { valor: "ACEPTADA" | "RECHAZADA"; titulo: string; detalle: string }[] = [
+    { valor: "ACEPTADA", titulo: "Aceptar la apelación", detalle: "La multa se anula." },
+    { valor: "RECHAZADA", titulo: "Rechazar la apelación", detalle: "La multa sigue pendiente y no se puede apelar de nuevo." },
+  ];
+
+  return (
+    <Modal open onClose={onClose} title="Responder apelación">
+      <form onSubmit={enviar} className="space-y-4">
+        <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-900/40">
+          <p className="break-words font-medium text-slate-900 dark:text-slate-100">
+            {multa.usuario ? `${multa.usuario.nombre} ${multa.usuario.apellido}` : "Residente"} · {formatMonto(multa.monto)}
+          </p>
+          <p className="break-words text-slate-700 dark:text-slate-300">{multa.motivo}</p>
+          <p className="break-words border-t border-slate-200 pt-2 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-300">
+            <span className="font-semibold">Apelación{multa.apeladaEn ? ` (${formatFecha(multa.apeladaEn)})` : ""}:</span> {multa.apelacion}
+          </p>
+        </div>
+
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">Tu decisión</legend>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {opciones.map((o) => (
+              <button
+                key={o.valor}
+                type="button"
+                aria-pressed={decision === o.valor}
+                onClick={() => setDecision(o.valor)}
+                className={clsx(
+                  "rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 max-sm:min-h-11",
+                  decision === o.valor
+                    ? "border-brand-500 bg-brand-50 dark:border-brand-400 dark:bg-brand-500/15"
+                    : "border-slate-200 hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-700"
+                )}
+              >
+                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">{o.titulo}</span>
+                <span className="block text-xs text-slate-600 dark:text-slate-300">{o.detalle}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div>
+          <Label htmlFor="campo-respuesta-apelacion">Respuesta para el residente</Label>
+          <Textarea
+            id="campo-respuesta-apelacion"
+            rows={4}
+            required
+            minLength={MIN_RESPUESTA}
+            maxLength={MAX_RESPUESTA}
+            value={respuesta}
+            onChange={(e) => setRespuesta(e.target.value)}
+            placeholder="Explica por qué se acepta o se rechaza la apelación."
+          />
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {largo < MIN_RESPUESTA ? `Escribe al menos ${MIN_RESPUESTA} letras.` : `${largo} de ${MAX_RESPUESTA} caracteres.`} El residente la recibe como aviso.
+          </p>
+        </div>
+
+        {error && <Alert tone="red">{error}</Alert>}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={enviando}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={enviando} disabled={!decision || largo < MIN_RESPUESTA}>
+            Enviar respuesta
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -113,6 +231,7 @@ export default function AdminMultas() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useFiltroUrl("estado", ESTADOS);
+  const [respondiendo, setRespondiendo] = useState<{ multa: Multa; decision: "ACEPTADA" | "RECHAZADA" | null } | null>(null);
 
   const filtradas = (data ?? []).filter((m) => {
     const texto = `${m.motivo} ${m.usuario?.nombre ?? ""} ${m.usuario?.apellido ?? ""}`.toLowerCase();
@@ -142,6 +261,12 @@ export default function AdminMultas() {
   // cancela o falla, vuelve solo al estado anterior.
   async function cambiarEstado(m: Multa, nuevo: EstadoMulta) {
     if (nuevo === m.estado) return;
+    // Una multa apelada no cambia de estado "a secas": se responde la apelacion (el residente recibe
+    // la decision y su explicacion). Aceptar la anula; rechazarla la deja pendiente.
+    if (m.estado === "APELADA") {
+      setRespondiendo({ multa: m, decision: nuevo === "ANULADA" ? "ACEPTADA" : nuevo === "PENDIENTE" ? "RECHAZADA" : null });
+      return;
+    }
     const etiqueta = ESTADO_MULTA_LABEL[nuevo].toLowerCase();
     if (nuevo === "PAGADA" || nuevo === "ANULADA") {
       const ok = await confirmar(
@@ -162,6 +287,13 @@ export default function AdminMultas() {
   }
 
   const nombreDe = (m: Multa) => (m.usuario ? `${m.usuario.nombre} ${m.usuario.apellido}` : "—");
+
+  const botonResponder = (m: Multa) =>
+    m.estado === "APELADA" ? (
+      <Button size="sm" className="whitespace-nowrap" onClick={() => setRespondiendo({ multa: m, decision: null })}>
+        Responder apelación
+      </Button>
+    ) : null;
 
   const selectorEstado = (m: Multa, className: string) => (
     <Select
@@ -251,6 +383,7 @@ export default function AdminMultas() {
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">{formatFecha(m.fecha)}</span>
                   </p>
+                  {m.estado === "APELADA" && <div className="pt-1 [&>button]:w-full">{botonResponder(m)}</div>}
                   <div className="flex items-center gap-2 pt-1">
                     {selectorEstado(m, "min-w-0 flex-1")}
                     {botonEliminar(m)}
@@ -296,6 +429,7 @@ export default function AdminMultas() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-end gap-2">
+                          {botonResponder(m)}
                           {selectorEstado(m, "w-36")}
                           {botonEliminar(m)}
                         </div>
@@ -308,6 +442,15 @@ export default function AdminMultas() {
           </>
         )}
       </Card>
+
+      {respondiendo && (
+        <ModalResponderApelacion
+          multa={respondiendo.multa}
+          decisionInicial={respondiendo.decision}
+          onClose={() => setRespondiendo(null)}
+          onResuelta={recargar}
+        />
+      )}
 
       <Modal open={modalAbierto} onClose={() => setModalAbierto(false)} title="Registrar multa">
         <FormularioMulta

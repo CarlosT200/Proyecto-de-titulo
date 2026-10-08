@@ -7,6 +7,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { useToast } from "../../context/ToastContext";
 import { Alert, Button, Card, EmptyState, Label, Modal, PageHeader, Spinner, Textarea } from "../../components/ui";
 import { BadgeEstadoMulta } from "../../components/Multas";
+import { RespuestaApelacion } from "../../components/RespuestaApelacion";
 import { formatFecha, formatMonto } from "../../lib/format";
 import type { Multa } from "../../types";
 
@@ -155,9 +156,13 @@ export default function ResidenteMultas() {
                     <p className="font-semibold">Tu apelación{m.apeladaEn ? ` (${formatFecha(m.apeladaEn)})` : ""}</p>
                     <p className="mt-0.5 break-words">{m.apelacion}</p>
                     {m.estado === "APELADA" && <p className="mt-1 text-slate-500 dark:text-slate-400">En revisión por la administración. Te avisaremos su decisión.</p>}
+                    <RespuestaApelacion multa={m} className="mt-2 border-t border-slate-200 pt-2 dark:border-slate-700" />
+                    {m.estado === "PENDIENTE" && m.respuesta && (
+                      <p className="mt-1 text-slate-500 dark:text-slate-400">Una multa se puede apelar una sola vez, así que esta ya no admite otra apelación.</p>
+                    )}
                   </div>
                 )}
-                {m.estado === "PENDIENTE" && (
+                {m.estado === "PENDIENTE" && !m.apelacion && (
                   <Button size="sm" variant="secondary" className="mt-3" onClick={() => setApelando(m)}>
                     Apelar esta multa
                   </Button>

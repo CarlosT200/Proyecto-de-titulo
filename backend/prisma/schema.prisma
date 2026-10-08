@@ -279,6 +279,11 @@ model Multa {
   // Lo que el residente escribio al apelar y cuando (la administracion resuelve cambiando el estado)
   apelacion       String?
   apeladaEn       DateTime?
+  // Decision de la administracion sobre la apelacion: si se acepto (la multa se anula) o se rechazo
+  // (sigue pendiente), con la respuesta que ve el residente. Una multa se apela una sola vez.
+  apelacionAceptada Boolean?
+  respuesta       String?
+  respondidaEn    DateTime?
 
   condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
   usuario       Usuario    @relation("MultaResidente", fields: [usuarioId], references: [id], onDelete: Cascade)

@@ -116,6 +116,9 @@ export const multasApi = {
   eliminar: (id: string) => api.delete(`/multas/${id}`),
   // el residente apela una multa suya que sigue pendiente
   apelar: (id: string, motivo: string) => api.patch(`/multas/${id}/apelar`, { motivo }).then((r) => r.data),
+  // la administracion acepta (la multa se anula) o rechaza (sigue pendiente) una apelacion, con su respuesta
+  resolverApelacion: (id: string, data: { decision: "ACEPTADA" | "RECHAZADA"; respuesta: string }) =>
+    api.patch(`/multas/${id}/resolver-apelacion`, data).then((r) => r.data),
 };
 
 // --- Incidencias (HU-08 a HU-11, HU-25) ---

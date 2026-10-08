@@ -74,6 +74,10 @@ export interface Multa {
   observaciones?: string | null;
   apelacion?: string | null;
   apeladaEn?: string | null;
+  // decision de la administracion sobre la apelacion (null mientras no responde)
+  apelacionAceptada?: boolean | null;
+  respuesta?: string | null;
+  respondidaEn?: string | null;
 }
 
 export type EstadoIncidencia = "REPORTADA" | "EN_REVISION" | "EN_PROCESO" | "RESUELTA";

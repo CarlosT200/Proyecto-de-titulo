@@ -15,6 +15,15 @@ export const actualizarMultaSchema = z.object({
   observaciones: z.string().optional(),
 });
 
+export const resolverApelacionSchema = z.object({
+  decision: z.enum(["ACEPTADA", "RECHAZADA"], { errorMap: () => ({ message: "Elige si aceptas o rechazas la apelación." }) }),
+  respuesta: z
+    .string({ required_error: "Escribe la respuesta para el residente." })
+    .trim()
+    .min(10, "Explica con un poco más de detalle la decisión (al menos 10 letras).")
+    .max(500, "La respuesta puede tener hasta 500 caracteres."),
+});
+
 export const apelarMultaSchema = z.object({
   motivo: z
     .string({ required_error: "Explica por qué apelas la multa." })

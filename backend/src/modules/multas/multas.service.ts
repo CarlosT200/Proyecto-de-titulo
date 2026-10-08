@@ -1,6 +1,6 @@
 import { EstadoMulta, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
-import { ConflictError, NotFoundError } from "../../lib/errors";
+import { AppError, ConflictError, NotFoundError } from "../../lib/errors";
 import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { ESTADO_MULTA_LABEL } from "../../lib/etiquetas";
 
@@ -61,6 +61,12 @@ export async function actualizarMulta(
   const multa = await prisma.multa.findFirst({ where: { id: multaId, condominioId } });
   if (!multa) throw new NotFoundError("Multa no encontrada.");
 
+  // Una apelacion se resuelve aceptandola o rechazandola con una respuesta (resolverApelacion): asi
+  // el residente siempre sabe por que se decidio lo que se decidio.
+  if (multa.estado === EstadoMulta.APELADA && data.estado && data.estado !== EstadoMulta.APELADA) {
+    throw new AppError("Esta multa está apelada: para resolverla acepta o rechaza la apelación y escribe la respuesta para el residente.", 422);
+  }
+
   const actualizada = await prisma.multa.update({ where: { id: multaId }, data });
 
   if (data.estado && data.estado !== multa.estado) {
@@ -87,12 +93,19 @@ export async function apelarMulta(usuarioId: string, multaId: string, motivo: st
   });
   if (!multa) throw new NotFoundError("Multa no encontrada.");
 
+  // "apeladaEn: null": una multa se apela una sola vez (si la administracion la rechazo, vuelve a
+  // quedar pendiente pero ya no se puede apelar de nuevo).
   const { count } = await prisma.multa.updateMany({
-    where: { id: multaId, usuarioId, estado: EstadoMulta.PENDIENTE },
+    where: { id: multaId, usuarioId, estado: EstadoMulta.PENDIENTE, apeladaEn: null },
     data: { estado: EstadoMulta.APELADA, apelacion: motivo, apeladaEn: new Date() },
   });
   if (count === 0) {
-    throw new ConflictError("Solo se puede apelar una multa pendiente. Esta ya fue apelada o la administración la resolvió.");
+    const actual = await prisma.multa.findFirst({ where: { id: multaId, usuarioId }, select: { estado: true, apeladaEn: true } });
+    throw new ConflictError(
+      actual?.apeladaEn && actual.estado === EstadoMulta.PENDIENTE
+        ? "Esta multa ya fue apelada y la administración respondió. No se puede apelar de nuevo."
+        : "Solo se puede apelar una multa pendiente. Esta ya fue apelada o la administración la resolvió."
+    );
   }
 
   const admins = await prisma.usuario.findMany({
@@ -111,6 +124,43 @@ export async function apelarMulta(usuarioId: string, multaId: string, motivo: st
   );
 
   return { motivo: multa.motivo };
+}
+
+// La administracion responde una apelacion: la acepta (la multa se anula) o la rechaza (la multa sigue
+// pendiente) y escribe la respuesta que ve el residente. La condicion "sigue apelada" va en el mismo
+// UPDATE: si dos administradores responden a la vez, o ya estaba resuelta, solo una respuesta gana.
+export async function resolverApelacion(
+  condominioId: string,
+  multaId: string,
+  data: { decision: "ACEPTADA" | "RECHAZADA"; respuesta: string }
+) {
+  const multa = await prisma.multa.findFirst({ where: { id: multaId, condominioId }, select: { id: true, usuarioId: true, motivo: true } });
+  if (!multa) throw new NotFoundError("Multa no encontrada.");
+
+  const aceptada = data.decision === "ACEPTADA";
+  const { count } = await prisma.multa.updateMany({
+    where: { id: multaId, condominioId, estado: EstadoMulta.APELADA },
+    data: {
+      estado: aceptada ? EstadoMulta.ANULADA : EstadoMulta.PENDIENTE,
+      apelacionAceptada: aceptada,
+      respuesta: data.respuesta,
+      respondidaEn: new Date(),
+    },
+  });
+  if (count === 0) throw new ConflictError("Esta multa no tiene una apelación por resolver. Quizás otra persona ya la respondió.");
+
+  await crearNotificacion({
+    usuarioId: multa.usuarioId,
+    tipo: "MULTA",
+    titulo: aceptada ? "Apelación aceptada" : "Apelación rechazada",
+    mensaje: aceptada
+      ? `La administración aceptó tu apelación: la multa "${multa.motivo}" quedó anulada. Respuesta: ${data.respuesta}`
+      : `La administración rechazó tu apelación: la multa "${multa.motivo}" sigue pendiente. Respuesta: ${data.respuesta}`,
+    entidadTipo: "Multa",
+    entidadId: multa.id,
+  });
+
+  return { motivo: multa.motivo, aceptada };
 }
 
 export async function eliminarMulta(condominioId: string, multaId: string) {
