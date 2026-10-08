@@ -1,18 +1,84 @@
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
+import clsx from "clsx";
 import { Plus, Trash, Warning } from "@phosphor-icons/react";
 import { multasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useFiltroUrl } from "../../hooks/useFiltroUrl";
-import { Alert, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea, staggerFade } from "../../components/ui";
+import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea, staggerFade } from "../../components/ui";
 import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
-import { ESTADO_MULTA_LABEL } from "../../lib/badges";
+import { ESTADO_MULTA_LABEL, ESTADO_MULTA_TONO } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
-import type { EstadoMulta } from "../../types";
+import type { EstadoMulta, Multa } from "../../types";
 
 const ESTADOS: EstadoMulta[] = ["PENDIENTE", "PAGADA", "APELADA", "ANULADA"];
+
+// Resumen de lo que importa al abrir la pantalla; cada cifra filtra la lista por ese estado
+// (y vuelve a tocarla para quitar el filtro). Se calcula con todas las multas, no con el filtro.
+function ResumenMultas({
+  multas,
+  filtro,
+  onFiltrar,
+}: {
+  multas: Multa[];
+  filtro: EstadoMulta | "";
+  onFiltrar: (estado: EstadoMulta | "") => void;
+}) {
+  const de = (estado: EstadoMulta) => {
+    const lista = multas.filter((m) => m.estado === estado);
+    return { n: lista.length, monto: lista.reduce((s, m) => s + m.monto, 0) };
+  };
+  const pendientes = de("PENDIENTE");
+  const apeladas = de("APELADA");
+  const pagadas = de("PAGADA");
+  const celdas: { estado: EstadoMulta; titulo: string; valor: string; detalle: string; alerta?: boolean }[] = [
+    {
+      estado: "PENDIENTE",
+      titulo: "Por cobrar",
+      valor: formatMonto(pendientes.monto),
+      detalle: `${pendientes.n} ${pendientes.n === 1 ? "pendiente" : "pendientes"}`,
+      alerta: pendientes.n > 0,
+    },
+    { estado: "APELADA", titulo: "Apeladas", valor: String(apeladas.n), detalle: apeladas.n === 1 ? "por resolver" : "por resolver" },
+    { estado: "PAGADA", titulo: "Cobrado", valor: formatMonto(pagadas.monto), detalle: `${pagadas.n} ${pagadas.n === 1 ? "pagada" : "pagadas"}` },
+  ];
+  return (
+    <Card plana className="overflow-hidden">
+      <div className="grid grid-cols-3 gap-px bg-slate-100 dark:bg-slate-700/60">
+        {celdas.map((c) => (
+          <button
+            key={c.estado}
+            type="button"
+            aria-pressed={filtro === c.estado}
+            onClick={() => onFiltrar(filtro === c.estado ? "" : c.estado)}
+            className={clsx(
+              "block bg-white px-3 py-4 text-left transition-colors [container-type:inline-size] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
+              filtro === c.estado && "ring-2 ring-inset ring-brand-500"
+            )}
+          >
+            <span className="block text-sm text-slate-600 dark:text-slate-300">{c.titulo}</span>
+            <span
+              style={c.valor.length > 6 ? { fontSize: `min(1.5rem, ${(100 / (c.valor.length * 0.62)).toFixed(1)}cqi)` } : undefined}
+              className={clsx(
+                "mt-1 block whitespace-nowrap font-display text-2xl font-bold tabular-nums tracking-tight",
+                c.valor === "0" || c.valor === "$0"
+                  ? "text-slate-500 dark:text-slate-400"
+                  : c.alerta
+                    ? "text-amber-700 dark:text-amber-300"
+                    : "text-slate-900 dark:text-white"
+              )}
+            >
+              {c.valor}
+            </span>
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{c.detalle}</span>
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 export default function AdminMultas() {
   const toast = useToast();
@@ -45,6 +111,60 @@ export default function AdminMultas() {
     }
   }
 
+  // Cada cambio de estado le llega al residente como aviso, asi que marcar una multa como pagada o
+  // anulada pide confirmacion (un toque equivocado en el selector cobraba o perdonaba una multa), y
+  // si el cambio falla se avisa en vez de quedar en silencio. El selector es controlado: si se
+  // cancela o falla, vuelve solo al estado anterior.
+  async function cambiarEstado(m: Multa, nuevo: EstadoMulta) {
+    if (nuevo === m.estado) return;
+    const etiqueta = ESTADO_MULTA_LABEL[nuevo].toLowerCase();
+    if (nuevo === "PAGADA" || nuevo === "ANULADA") {
+      const ok = await confirmar(
+        `¿Marcar la multa "${m.motivo}" como ${etiqueta}? ${
+          nuevo === "ANULADA" ? "Dejará de contar como cobro." : "Quedará registrada como cobrada."
+        } El residente recibirá un aviso.`,
+        { titulo: `Marcar como ${etiqueta}`, textoConfirmar: `Marcar como ${etiqueta}`, tono: "normal" }
+      );
+      if (!ok) return;
+    }
+    try {
+      await multasApi.actualizar(m.id, { estado: nuevo });
+      toast.success(`Multa marcada como ${etiqueta}.`);
+      recargar();
+    } catch (err) {
+      toast.error(mensajeError(err, "No se pudo cambiar el estado de la multa."));
+    }
+  }
+
+  const nombreDe = (m: Multa) => (m.usuario ? `${m.usuario.nombre} ${m.usuario.apellido}` : "—");
+
+  const selectorEstado = (m: Multa, className: string) => (
+    <Select
+      aria-label={`Cambiar el estado de la multa: ${m.motivo}`}
+      className={className}
+      value={m.estado}
+      onChange={(e) => cambiarEstado(m, e.target.value as EstadoMulta)}
+    >
+      {ESTADOS.map((estado) => (
+        <option key={estado} value={estado}>
+          {ESTADO_MULTA_LABEL[estado]}
+        </option>
+      ))}
+    </Select>
+  );
+
+  const botonEliminar = (m: Multa) => (
+    <button
+      type="button"
+      onClick={() => handleEliminar(m.id, m.motivo)}
+      className="shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-100 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 max-sm:p-3.5 dark:text-slate-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+      aria-label={`Eliminar la multa: ${m.motivo}`}
+      title="Eliminar multa"
+    >
+      <Trash size={16} />
+    </button>
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -57,6 +177,8 @@ export default function AdminMultas() {
           </Button>
         }
       />
+
+      {data && data.length > 0 && <ResumenMultas multas={data} filtro={filtroEstado} onFiltrar={setFiltroEstado} />}
 
       <div className="flex flex-wrap gap-3">
         <SearchInput
@@ -75,8 +197,8 @@ export default function AdminMultas() {
         </Select>
       </div>
 
-      <Card>
-        {cargando ? (
+      <Card plana>
+        {cargando && !data ? (
           <Spinner />
         ) : error ? (
           <Alert tone="red">{error}</Alert>
@@ -85,61 +207,78 @@ export default function AdminMultas() {
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna multa coincide con la búsqueda." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="tabla-movil w-full text-left text-sm">
-              <thead className="border-b border-slate-100 dark:border-slate-700/60 text-xs uppercase text-slate-400 dark:text-slate-500">
-                <tr>
-                  <th className="px-5 py-3">Residente</th>
-                  <th className="px-5 py-3">Motivo</th>
-                  <th className="px-5 py-3">Fecha</th>
-                  <th className="px-5 py-3">Monto</th>
-                  <th className="px-5 py-3">Estado</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                {filtradas.map((m, i) => (
-                  <motion.tr key={m.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                    <td data-label="Residente" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
-                      {m.usuario ? `${m.usuario.nombre} ${m.usuario.apellido}` : "—"}
-                    </td>
-                    <td data-label="Motivo" className="px-5 py-3 text-slate-500 dark:text-slate-400">{m.motivo}</td>
-                    <td data-label="Fecha" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFecha(m.fecha)}</td>
-                    <td data-label="Monto" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatMonto(m.monto)}</td>
-                    <td data-label="Estado" className="px-5 py-3">
-                      <Select
-                        aria-label={`Estado de la multa: ${m.motivo}`}
-                        className="w-36"
-                        value={m.estado}
-                        onChange={async (e) => {
-                          await multasApi.actualizar(m.id, { estado: e.target.value });
-                          toast.success(`Multa actualizada a ${ESTADO_MULTA_LABEL[e.target.value] ?? e.target.value}.`);
-                          recargar();
-                        }}
+          <>
+            {/* Celular: una tarjeta por multa (nombre y estado arriba, motivo completo, monto y fecha,
+                y las acciones juntas abajo). Desde 640 px: tabla. */}
+            <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
+              {filtradas.map((m, i) => (
+                <motion.li key={m.id} {...staggerFade(i)} className="space-y-2 px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">{nombreDe(m)}</p>
+                    <Badge tone={ESTADO_MULTA_TONO[m.estado]}>{ESTADO_MULTA_LABEL[m.estado]}</Badge>
+                  </div>
+                  <p className="break-words text-sm text-slate-700 dark:text-slate-300">{m.motivo}</p>
+                  {m.observaciones && <p className="break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</p>}
+                  <p className="flex items-baseline gap-2 text-sm">
+                    <span className={clsx("font-semibold tabular-nums", m.estado === "ANULADA" ? "text-slate-500 line-through dark:text-slate-400" : "text-slate-900 dark:text-white")}>
+                      {formatMonto(m.monto)}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{formatFecha(m.fecha)}</span>
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    {selectorEstado(m, "min-w-0 flex-1")}
+                    {botonEliminar(m)}
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-100 text-xs uppercase text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                  <tr>
+                    <th scope="col" className="px-5 py-3">Residente</th>
+                    <th scope="col" className="px-5 py-3">Motivo</th>
+                    <th scope="col" className="px-5 py-3">Fecha</th>
+                    <th scope="col" className="px-5 py-3 text-right">Monto</th>
+                    <th scope="col" className="px-5 py-3">Estado</th>
+                    <th scope="col" className="px-5 py-3">
+                      <span className="sr-only">Acciones</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                  {filtradas.map((m, i) => (
+                    <motion.tr key={m.id} {...staggerFade(i)}>
+                      <td className="px-5 py-3 font-medium text-slate-900 dark:text-slate-100">{nombreDe(m)}</td>
+                      <td className="max-w-xs px-5 py-3 text-slate-700 dark:text-slate-300">
+                        <span className="block break-words">{m.motivo}</span>
+                        {m.observaciones && <span className="mt-0.5 block break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</span>}
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatFecha(m.fecha)}</td>
+                      <td
+                        className={clsx(
+                          "whitespace-nowrap px-5 py-3 text-right font-semibold tabular-nums",
+                          m.estado === "ANULADA" ? "text-slate-500 line-through dark:text-slate-400" : "text-slate-900 dark:text-white"
+                        )}
                       >
-                        {ESTADOS.map((estado) => (
-                          <option key={estado} value={estado}>
-                            {ESTADO_MULTA_LABEL[estado]}
-                          </option>
-                        ))}
-                      </Select>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleEliminar(m.id, m.motivo)}
-                        className="rounded-lg p-1.5 max-sm:p-3.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                        aria-label="Eliminar multa"
-                        title="Eliminar multa"
-                      >
-                        <Trash size={16} />
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        {formatMonto(m.monto)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge tone={ESTADO_MULTA_TONO[m.estado]}>{ESTADO_MULTA_LABEL[m.estado]}</Badge>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          {selectorEstado(m, "w-36")}
+                          {botonEliminar(m)}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 
@@ -211,9 +350,12 @@ function FormularioMulta({
         </div>
         <div>
           <Label htmlFor="campo-multas-4">Monto (CLP)</Label>
-          <Input id="campo-multas-4" type="number" min={1} required value={monto} onChange={(e) => setMonto(e.target.value)} />
+          <Input id="campo-multas-4" type="number" inputMode="numeric" min={1} step={1} required value={monto} onChange={(e) => setMonto(e.target.value)} />
         </div>
       </div>
+      <p className="-mt-1 text-xs text-slate-500 dark:text-slate-400">
+        El monto es el valor final en pesos que verá el residente: la aplicación no agrega IVA ni otros impuestos.
+      </p>
       <div>
         <Label htmlFor="campo-multas-5">Observaciones</Label>
         <Textarea id="campo-multas-5" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />

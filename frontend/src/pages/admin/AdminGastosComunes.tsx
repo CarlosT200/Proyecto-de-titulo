@@ -312,6 +312,9 @@ function ModalNuevoCobro({
             <span>Total a cobrar</span>
             <span>{formatMonto(totalGastos + totalFondo)}</span>
           </div>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            La aplicación no suma IVA ni otros impuestos: el total es la suma de los gastos más el fondo de reserva.
+          </p>
           {unidades > 0 && (
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               {unidades} {unidades === 1 ? "unidad" : "unidades"}
