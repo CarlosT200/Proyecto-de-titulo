@@ -1,8 +1,34 @@
 import clsx from "clsx";
 import { Check, ChatText } from "@phosphor-icons/react";
+import { Badge } from "./ui";
+import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
 import { formatFechaHora } from "../lib/format";
-import { ESTADO_INCIDENCIA_LABEL } from "../lib/badges";
-import type { EstadoIncidencia, Incidencia, IncidenciaHistorialItem } from "../types";
+import { ESTADO_INCIDENCIA_LABEL, ESTADO_INCIDENCIA_TONO, PRIORIDAD_LABEL, PRIORIDAD_TONO } from "../lib/badges";
+import type { EstadoIncidencia, Incidencia, IncidenciaHistorialItem, PrioridadIncidencia } from "../types";
+
+// Insignias de estado y prioridad. Cuando cambian (la administracion resuelve la incidencia o le cambia
+// la prioridad) entran con un movimiento corto para que se note; al cargar la pagina no se mueven.
+export function BadgeEstadoIncidencia({ estado }: { estado: EstadoIncidencia }) {
+  const pulso = usePulsoAlCambiar(estado);
+  return (
+    <span key={pulso} className={clsx("inline-flex", pulso > 0 && "animate-aparece")}>
+      <Badge tone={ESTADO_INCIDENCIA_TONO[estado]}>{ESTADO_INCIDENCIA_LABEL[estado]}</Badge>
+    </span>
+  );
+}
+
+export function BadgePrioridadIncidencia({ prioridad, largo = false }: { prioridad?: PrioridadIncidencia | null; largo?: boolean }) {
+  const pulso = usePulsoAlCambiar(prioridad ?? "");
+  return (
+    <span key={pulso} className={clsx("inline-flex", pulso > 0 && "animate-aparece")}>
+      {prioridad ? (
+        <Badge tone={PRIORIDAD_TONO[prioridad]}>{largo ? `Prioridad ${PRIORIDAD_LABEL[prioridad].toLowerCase()}` : PRIORIDAD_LABEL[prioridad]}</Badge>
+      ) : (
+        <Badge tone="slate">Sin prioridad</Badge>
+      )}
+    </span>
+  );
+}
 
 const PASOS: EstadoIncidencia[] = ["REPORTADA", "EN_REVISION", "EN_PROCESO", "RESUELTA"];
 

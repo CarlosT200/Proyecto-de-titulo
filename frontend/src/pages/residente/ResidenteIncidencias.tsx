@@ -1,10 +1,10 @@
 import { FormEvent, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import { CaretRight, Siren, Wrench } from "@phosphor-icons/react";
 import { incidenciasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
+import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
 import {
   Alert,
   Badge,
@@ -17,15 +17,45 @@ import {
   Modal,
   PageHeader,
   Spinner,
-  staggerFade,
   Textarea,
 } from "../../components/ui";
-import { HistorialIncidencia, SeguimientoIncidencia } from "../../components/Incidencias";
+import { BadgeEstadoIncidencia, HistorialIncidencia, SeguimientoIncidencia } from "../../components/Incidencias";
 import { formatFechaHora } from "../../lib/format";
-import { ESTADO_INCIDENCIA_LABEL, ESTADO_INCIDENCIA_TONO, PRIORIDAD_LABEL, PRIORIDAD_TONO } from "../../lib/badges";
+import { PRIORIDAD_LABEL, PRIORIDAD_TONO } from "../../lib/badges";
 import { CATEGORIAS_INCIDENCIA, etiquetaCategoria, iconoCategoria } from "../../lib/categorias";
+import type { Incidencia } from "../../types";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
+
+// Una incidencia en "Mis incidencias". La recien reportada entra con un movimiento corto y, si la lista
+// quedo fuera de la pantalla (con una columna el formulario esta arriba), se acerca para confirmarlo.
+function FilaMiIncidencia({ inc, nueva, onAbrir }: { inc: Incidencia; nueva: boolean; onAbrir: () => void }) {
+  const Icono = iconoCategoria(inc.categoria);
+  const ref = useAcercarAlAparecer<HTMLLIElement>(nueva, 1279);
+  return (
+    <li ref={ref} className={clsx(nueva && "animate-aparece")}>
+      <button
+        type="button"
+        onClick={onAbrir}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/60"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
+          <Icono size={20} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{inc.titulo}</span>
+            <BadgeEstadoIncidencia estado={inc.estado} />
+          </span>
+          <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+            {[etiquetaCategoria(inc.categoria), inc.ubicacion, `Reportada el ${formatFechaHora(inc.createdAt)}`].filter(Boolean).join(" · ")}
+          </span>
+        </span>
+        <CaretRight size={16} weight="bold" className="shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
+      </button>
+    </li>
+  );
+}
 
 export default function ResidenteIncidencias() {
   const toast = useToast();
@@ -38,6 +68,7 @@ export default function ResidenteIncidencias() {
   const [descripcion, setDescripcion] = useState("");
   const [ubicacion, setUbicacion] = useState("");
   const [urgente, setUrgente] = useState(false);
+  const [nuevaId, setNuevaId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -60,7 +91,8 @@ export default function ResidenteIncidencias() {
       const archivo = fileRef.current?.files?.[0];
       if (archivo) formData.append("foto", archivo);
 
-      await incidenciasApi.crear(formData);
+      const creada = await incidenciasApi.crear(formData);
+      setNuevaId(creada.id);
       setCategoria("");
       setTitulo("");
       setDescripcion("");
@@ -196,34 +228,9 @@ export default function ResidenteIncidencias() {
             <EmptyState icon={Wrench} title="Aún no has reportado incidencias" />
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-              {data.map((inc, i) => {
-                const Icono = iconoCategoria(inc.categoria);
-                return (
-                  <motion.li key={inc.id} {...staggerFade(i)}>
-                    <button
-                      type="button"
-                      onClick={() => abrir(inc.id)}
-                      className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
-                        <Icono size={20} aria-hidden />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{inc.titulo}</span>
-                          <Badge tone={ESTADO_INCIDENCIA_TONO[inc.estado]}>{ESTADO_INCIDENCIA_LABEL[inc.estado]}</Badge>
-                        </span>
-                        <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                          {[etiquetaCategoria(inc.categoria), inc.ubicacion, `Reportada el ${formatFechaHora(inc.createdAt)}`]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                      </span>
-                      <CaretRight size={16} weight="bold" className="shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
-                    </button>
-                  </motion.li>
-                );
-              })}
+              {data.map((inc) => (
+                <FilaMiIncidencia key={inc.id} inc={inc} nueva={inc.id === nuevaId} onAbrir={() => abrir(inc.id)} />
+              ))}
             </ul>
           )}
         </Card>

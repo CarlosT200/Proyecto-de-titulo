@@ -1,7 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import clsx from "clsx";
 import { Wrench } from "@phosphor-icons/react";
 import { incidenciasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
@@ -9,7 +7,6 @@ import { useFiltroUrl } from "../../hooks/useFiltroUrl";
 import { useEsCelular } from "../../hooks/useEsCelular";
 import {
   Alert,
-  Badge,
   Button,
   Card,
   EmptyState,
@@ -19,12 +16,12 @@ import {
   SearchInput,
   Select,
   Spinner,
-  staggerFade,
   Textarea,
 } from "../../components/ui";
-import { HistorialIncidencia } from "../../components/Incidencias";
+import { BadgeEstadoIncidencia, BadgePrioridadIncidencia, HistorialIncidencia } from "../../components/Incidencias";
+import { CeldaResumen } from "../../components/CeldaResumen";
 import { formatFechaHora } from "../../lib/format";
-import { ESTADO_INCIDENCIA_LABEL, ESTADO_INCIDENCIA_TONO, PRIORIDAD_LABEL, PRIORIDAD_TONO } from "../../lib/badges";
+import { ESTADO_INCIDENCIA_LABEL, PRIORIDAD_LABEL } from "../../lib/badges";
 import { CATEGORIAS_INCIDENCIA, etiquetaCategoria, normalizarCategoria } from "../../lib/categorias";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -56,11 +53,6 @@ function ordenarPorUrgencia(lista: Incidencia[]): Incidencia[] {
   });
 }
 
-function BadgePrioridad({ prioridad, largo = false }: { prioridad?: PrioridadIncidencia | null; largo?: boolean }) {
-  if (!prioridad) return <Badge tone="slate">Sin prioridad</Badge>;
-  return <Badge tone={PRIORIDAD_TONO[prioridad]}>{largo ? `Prioridad ${PRIORIDAD_LABEL[prioridad].toLowerCase()}` : PRIORIDAD_LABEL[prioridad]}</Badge>;
-}
-
 type FiltroResumen = { estado: (typeof FILTROS_ESTADO)[number] | ""; prioridad: PrioridadIncidencia | "" };
 
 // Lo que hay que atender al abrir la pantalla; cada cifra aplica ese filtro (y al tocarla otra vez lo
@@ -88,33 +80,15 @@ function ResumenIncidencias({
         {celdas.map((c) => {
           const activa = filtro.estado === c.aplica.estado && filtro.prioridad === c.aplica.prioridad;
           return (
-            <button
+            <CeldaResumen
               key={c.clave}
-              type="button"
-              aria-pressed={activa}
-              onClick={() => onFiltrar(activa ? { estado: "", prioridad: "" } : c.aplica)}
-              className={clsx(
-                "flex flex-col justify-start bg-white px-3 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
-                activa && "ring-2 ring-inset ring-brand-500"
-              )}
-            >
-              <span className="block text-sm text-slate-600 dark:text-slate-300">{c.titulo}</span>
-              <span
-                className={clsx(
-                  "mt-1 block font-display text-2xl font-bold tabular-nums tracking-tight",
-                  c.valor === 0
-                    ? "text-slate-500 dark:text-slate-400"
-                    : c.alerta === "red"
-                      ? "text-red-700 dark:text-red-400"
-                      : c.alerta === "amber"
-                        ? "text-amber-700 dark:text-amber-300"
-                        : "text-slate-900 dark:text-white"
-                )}
-              >
-                {c.valor}
-              </span>
-              <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{c.detalle}</span>
-            </button>
+              titulo={c.titulo}
+              valor={c.valor}
+              detalle={c.detalle}
+              alerta={c.alerta}
+              activa={activa}
+              onToggle={() => onFiltrar(activa ? { estado: "", prioridad: "" } : c.aplica)}
+            />
           );
         })}
       </div>
@@ -248,8 +222,8 @@ export default function AdminIncidencias() {
             {/* Celular: una tarjeta compacta por incidencia (titulo, insignias y datos), toda tocable.
                 Desde 640 px: tabla. */}
             <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
-              {filtradas.map((inc, i) => (
-                <motion.li key={inc.id} {...staggerFade(i)}>
+              {filtradas.map((inc) => (
+                <li key={inc.id}>
                   <button
                     type="button"
                     onClick={() => abrir(inc.id)}
@@ -258,15 +232,15 @@ export default function AdminIncidencias() {
                   >
                     <span className="block break-words font-medium text-slate-900 dark:text-slate-100">{inc.titulo}</span>
                     <span className="flex flex-wrap gap-1.5">
-                      <BadgePrioridad prioridad={inc.prioridad} largo />
-                      <Badge tone={ESTADO_INCIDENCIA_TONO[inc.estado]}>{ESTADO_INCIDENCIA_LABEL[inc.estado]}</Badge>
+                      <BadgePrioridadIncidencia prioridad={inc.prioridad} largo />
+                      <BadgeEstadoIncidencia estado={inc.estado} />
                     </span>
                     <span className="block break-words text-sm text-slate-600 dark:text-slate-300">{inc.ubicacion}</span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
                       {etiquetaCategoria(inc.categoria) ?? "Sin categoría"} · {nombreDe(inc)} · {formatFechaHora(inc.createdAt)}
                     </span>
                   </button>
-                </motion.li>
+                </li>
               ))}
             </ul>
 
@@ -283,10 +257,9 @@ export default function AdminIncidencias() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                  {filtradas.map((inc, i) => (
-                    <motion.tr
+                  {filtradas.map((inc) => (
+                    <tr
                       key={inc.id}
-                      {...staggerFade(i)}
                       tabIndex={0}
                       role="button"
                       aria-label={`Abrir la incidencia ${inc.titulo}`}
@@ -306,13 +279,13 @@ export default function AdminIncidencias() {
                       <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{etiquetaCategoria(inc.categoria) ?? "Sin categoría"}</td>
                       <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{nombreDe(inc)}</td>
                       <td className="px-5 py-3">
-                        <BadgePrioridad prioridad={inc.prioridad} />
+                        <BadgePrioridadIncidencia prioridad={inc.prioridad} />
                       </td>
                       <td className="px-5 py-3">
-                        <Badge tone={ESTADO_INCIDENCIA_TONO[inc.estado]}>{ESTADO_INCIDENCIA_LABEL[inc.estado]}</Badge>
+                        <BadgeEstadoIncidencia estado={inc.estado} />
                       </td>
                       <td className="whitespace-nowrap px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatFechaHora(inc.createdAt)}</td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>

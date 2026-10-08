@@ -4,9 +4,9 @@ import { Plus, Trash, Warning } from "@phosphor-icons/react";
 import { multasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useFiltroUrl } from "../../hooks/useFiltroUrl";
-import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { Alert, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner, Textarea } from "../../components/ui";
 import { BadgeEstadoMulta } from "../../components/Multas";
+import { CeldaResumen } from "../../components/CeldaResumen";
 import { RespuestaApelacion } from "../../components/RespuestaApelacion";
 import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
 import { ESTADO_MULTA_LABEL } from "../../lib/badges";
@@ -18,42 +18,6 @@ import type { EstadoMulta, Multa } from "../../types";
 const ESTADOS: EstadoMulta[] = ["PENDIENTE", "PAGADA", "APELADA", "ANULADA"];
 
 type CeldaDeResumen = { estado: EstadoMulta; titulo: string; valor: string; detalle: string; alerta?: boolean };
-
-// Una cifra del resumen. Si cambia (al marcar una multa como pagada, por ejemplo) la celda se ilumina
-// y se apaga (1,2 s, solo opacidad): indica que algo cambio. Con "reducir movimiento" no se anima.
-function CeldaResumen({ celda: c, activa, onToggle }: { celda: CeldaDeResumen; activa: boolean; onToggle: () => void }) {
-  const pulso = usePulsoAlCambiar(c.valor);
-  return (
-    <button
-      type="button"
-      aria-pressed={activa}
-      onClick={onToggle}
-      className={clsx(
-        "relative flex flex-col justify-start bg-white px-3 py-4 text-left transition-colors [container-type:inline-size] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
-        activa && "ring-2 ring-inset ring-brand-500"
-      )}
-    >
-      {pulso > 0 && (
-        <span key={pulso} aria-hidden className="pointer-events-none absolute inset-0 animate-cifra-cambio bg-brand-500/10 dark:bg-brand-400/15" />
-      )}
-      <span className="relative block text-sm text-slate-600 dark:text-slate-300">{c.titulo}</span>
-      <span
-        style={c.valor.length > 6 ? { fontSize: `min(1.5rem, ${(100 / (c.valor.length * 0.62)).toFixed(1)}cqi)` } : undefined}
-        className={clsx(
-          "relative mt-1 block whitespace-nowrap font-display text-2xl font-bold tabular-nums tracking-tight",
-          c.valor === "0" || c.valor === "$0"
-            ? "text-slate-500 dark:text-slate-400"
-            : c.alerta
-              ? "text-amber-700 dark:text-amber-300"
-              : "text-slate-900 dark:text-white"
-        )}
-      >
-        {c.valor}
-      </span>
-      <span className="relative mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{c.detalle}</span>
-    </button>
-  );
-}
 
 // Resumen de lo que importa al abrir la pantalla; cada cifra filtra la lista por ese estado
 // (y vuelve a tocarla para quitar el filtro). Se calcula con todas las multas, no con el filtro.
@@ -88,7 +52,15 @@ function ResumenMultas({
     <Card plana className="overflow-hidden">
       <div className="grid grid-cols-3 gap-px bg-slate-100 dark:bg-slate-700/60">
         {celdas.map((c) => (
-          <CeldaResumen key={c.estado} celda={c} activa={filtro === c.estado} onToggle={() => onFiltrar(filtro === c.estado ? "" : c.estado)} />
+          <CeldaResumen
+            key={c.estado}
+            titulo={c.titulo}
+            valor={c.valor}
+            detalle={c.detalle}
+            alerta={c.alerta ? "amber" : undefined}
+            activa={filtro === c.estado}
+            onToggle={() => onFiltrar(filtro === c.estado ? "" : c.estado)}
+          />
         ))}
       </div>
     </Card>
