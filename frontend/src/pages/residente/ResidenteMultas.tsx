@@ -1,14 +1,91 @@
+import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 import { multasApi } from "../../api/endpoints";
+import { mensajeError } from "../../api/client";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Badge, Card, EmptyState, PageHeader, Spinner, staggerFade } from "../../components/ui";
+import { useToast } from "../../context/ToastContext";
+import { Alert, Badge, Button, Card, EmptyState, Label, Modal, PageHeader, Spinner, Textarea, staggerFade } from "../../components/ui";
 import { formatFecha, formatMonto } from "../../lib/format";
 import { ESTADO_MULTA_LABEL, ESTADO_MULTA_TONO } from "../../lib/badges";
+import type { Multa } from "../../types";
+
+const MIN_APELACION = 10;
+const MAX_APELACION = 500;
+
+// El residente explica por que apela. La multa pasa a "Apelada" y la administracion la revisa y le
+// avisa su decision (la misma notificacion de cambio de estado de siempre).
+function ModalApelar({ multa, onClose, onApelada }: { multa: Multa; onClose: () => void; onApelada: () => void }) {
+  const toast = useToast();
+  const [motivo, setMotivo] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const largo = motivo.trim().length;
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setEnviando(true);
+    try {
+      await multasApi.apelar(multa.id, motivo.trim());
+      toast.success("Apelación enviada. La administración la revisará y te avisará su decisión.");
+      onApelada();
+      onClose();
+    } catch (err) {
+      setError(mensajeError(err));
+      // si alguien ya la resolvio, se actualiza la lista para mostrar el estado real
+      onApelada();
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title="Apelar multa">
+      <form onSubmit={enviar} className="space-y-4">
+        <div className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-900/40">
+          <p className="break-words font-medium text-slate-900 dark:text-slate-100">{multa.motivo}</p>
+          <p className="mt-0.5 text-slate-600 dark:text-slate-300">
+            {formatMonto(multa.monto)} · {formatFecha(multa.fecha)}
+          </p>
+        </div>
+        <div>
+          <Label htmlFor="campo-apelacion">¿Por qué apelas esta multa?</Label>
+          <Textarea
+            id="campo-apelacion"
+            rows={5}
+            required
+            minLength={MIN_APELACION}
+            maxLength={MAX_APELACION}
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Cuéntale a la administración qué pasó y por qué no corresponde la multa."
+          />
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {largo < MIN_APELACION ? `Escribe al menos ${MIN_APELACION} letras.` : `${largo} de ${MAX_APELACION} caracteres.`}
+          </p>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Al enviarla, la multa queda en estado <strong>Apelada</strong> hasta que la administración decida. No podrás apelarla de nuevo.
+        </p>
+        {error && <Alert tone="red">{error}</Alert>}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={enviando}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={enviando} disabled={largo < MIN_APELACION}>
+            Enviar apelación
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 export default function ResidenteMultas() {
-  const { data, cargando, error } = useAsync(() => multasApi.mias(), []);
+  const { data, cargando, error, recargar } = useAsync(() => multasApi.mias(), []);
+  const [apelando, setApelando] = useState<Multa | null>(null);
 
   const pendientes = (data ?? []).filter((m) => m.estado === "PENDIENTE");
   const apeladas = (data ?? []).filter((m) => m.estado === "APELADA");
@@ -74,11 +151,24 @@ export default function ResidenteMultas() {
                   <span className="text-xs text-slate-500 dark:text-slate-400">{formatFecha(m.fecha)}</span>
                 </p>
                 {m.observaciones && <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</p>}
+                {m.apelacion && (
+                  <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                    <p className="font-semibold">Tu apelación{m.apeladaEn ? ` (${formatFecha(m.apeladaEn)})` : ""}</p>
+                    <p className="mt-0.5 break-words">{m.apelacion}</p>
+                    {m.estado === "APELADA" && <p className="mt-1 text-slate-500 dark:text-slate-400">En revisión por la administración. Te avisaremos su decisión.</p>}
+                  </div>
+                )}
+                {m.estado === "PENDIENTE" && (
+                  <Button size="sm" variant="secondary" className="mt-3" onClick={() => setApelando(m)}>
+                    Apelar esta multa
+                  </Button>
+                )}
               </motion.li>
             ))}
           </ul>
         )}
       </Card>
+      {apelando && <ModalApelar multa={apelando} onClose={() => setApelando(null)} onApelada={recargar} />}
     </div>
   );
 }

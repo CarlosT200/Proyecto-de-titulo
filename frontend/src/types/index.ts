@@ -72,6 +72,8 @@ export interface Multa {
   monto: number;
   estado: EstadoMulta;
   observaciones?: string | null;
+  apelacion?: string | null;
+  apeladaEn?: string | null;
 }
 
 export type EstadoIncidencia = "REPORTADA" | "EN_REVISION" | "EN_PROCESO" | "RESUELTA";

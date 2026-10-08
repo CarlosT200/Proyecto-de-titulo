@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { crearMultaSchema, actualizarMultaSchema, listarMultasQuerySchema } from "./multas.schema";
+import { crearMultaSchema, actualizarMultaSchema, apelarMultaSchema, listarMultasQuerySchema } from "./multas.schema";
 import * as service from "./multas.service";
 import { auditar } from "../auditoria/auditoria.service";
 import { ESTADO_MULTA_LABEL } from "../../lib/etiquetas";
@@ -16,6 +16,13 @@ export async function crearMultaController(req: Request, res: Response) {
 
 export async function misMultasController(req: Request, res: Response) {
   res.json(await service.listarMisMultas(req.auth!.sub));
+}
+
+export async function apelarMultaController(req: Request, res: Response) {
+  const { motivo } = apelarMultaSchema.parse(req.body);
+  const multa = await service.apelarMulta(req.auth!.sub, req.params.id, motivo);
+  await auditar(req, "ACTUALIZAR", "Multa", `Apeló la multa "${multa.motivo}".`, req.params.id);
+  res.json({ ok: true });
 }
 
 export async function listarMultasController(req: Request, res: Response) {

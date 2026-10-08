@@ -80,6 +80,17 @@ function ResumenMultas({
   );
 }
 
+// Lo que el residente escribio al apelar: la administracion lo necesita a la vista para decidir.
+function Apelacion({ multa }: { multa: Multa }) {
+  if (!multa.apelacion) return null;
+  return (
+    <p className="mt-1 break-words rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+      <span className="font-semibold">Apelación del residente{multa.apeladaEn ? ` (${formatFecha(multa.apeladaEn)})` : ""}:</span>{" "}
+      {multa.apelacion}
+    </p>
+  );
+}
+
 export default function AdminMultas() {
   const toast = useToast();
   const confirmar = useConfirm();
@@ -219,6 +230,7 @@ export default function AdminMultas() {
                   </div>
                   <p className="break-words text-sm text-slate-700 dark:text-slate-300">{m.motivo}</p>
                   {m.observaciones && <p className="break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</p>}
+                  <Apelacion multa={m} />
                   <p className="flex items-baseline gap-2 text-sm">
                     <span className={clsx("font-semibold tabular-nums", m.estado === "ANULADA" ? "text-slate-500 line-through dark:text-slate-400" : "text-slate-900 dark:text-white")}>
                       {formatMonto(m.monto)}
@@ -254,6 +266,7 @@ export default function AdminMultas() {
                       <td className="max-w-xs px-5 py-3 text-slate-700 dark:text-slate-300">
                         <span className="block break-words">{m.motivo}</span>
                         {m.observaciones && <span className="mt-0.5 block break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</span>}
+                        <Apelacion multa={m} />
                       </td>
                       <td className="whitespace-nowrap px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatFecha(m.fecha)}</td>
                       <td

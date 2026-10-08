@@ -15,6 +15,14 @@ export const actualizarMultaSchema = z.object({
   observaciones: z.string().optional(),
 });
 
+export const apelarMultaSchema = z.object({
+  motivo: z
+    .string({ required_error: "Explica por qué apelas la multa." })
+    .trim()
+    .min(10, "Explica con un poco más de detalle por qué apelas (al menos 10 letras).")
+    .max(500, "La explicación puede tener hasta 500 caracteres."),
+});
+
 export const listarMultasQuerySchema = z.object({
   estado: z.nativeEnum(EstadoMulta).optional(),
   usuarioId: z.string().uuid().optional(),

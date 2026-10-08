@@ -114,6 +114,8 @@ export const multasApi = {
   actualizar: (id: string, data: { estado?: string; observaciones?: string }) =>
     api.patch<Multa>(`/multas/${id}`, data).then((r) => r.data),
   eliminar: (id: string) => api.delete(`/multas/${id}`),
+  // el residente apela una multa suya que sigue pendiente
+  apelar: (id: string, motivo: string) => api.patch(`/multas/${id}/apelar`, { motivo }).then((r) => r.data),
 };
 
 // --- Incidencias (HU-08 a HU-11, HU-25) ---

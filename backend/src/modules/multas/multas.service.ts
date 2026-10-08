@@ -1,7 +1,7 @@
-import { EstadoMulta } from "@prisma/client";
+import { EstadoMulta, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
-import { NotFoundError } from "../../lib/errors";
-import { crearNotificacion } from "../notificaciones/notificaciones.service";
+import { ConflictError, NotFoundError } from "../../lib/errors";
+import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { ESTADO_MULTA_LABEL } from "../../lib/etiquetas";
 
 // HU-06: registrar multa asociada a un residente.
@@ -75,6 +75,42 @@ export async function actualizarMulta(
   }
 
   return actualizada;
+}
+
+// El residente apela una multa suya que sigue pendiente: pasa a "Apelada" con su explicacion y se
+// avisa a la administracion. La condicion va en el mismo UPDATE: si la administracion la marca como
+// pagada o anulada al mismo tiempo, o se envia dos veces, solo uno gana y el otro recibe un 409.
+export async function apelarMulta(usuarioId: string, multaId: string, motivo: string) {
+  const multa = await prisma.multa.findFirst({
+    where: { id: multaId, usuarioId },
+    select: { id: true, condominioId: true, motivo: true, usuario: { select: { nombre: true, apellido: true } } },
+  });
+  if (!multa) throw new NotFoundError("Multa no encontrada.");
+
+  const { count } = await prisma.multa.updateMany({
+    where: { id: multaId, usuarioId, estado: EstadoMulta.PENDIENTE },
+    data: { estado: EstadoMulta.APELADA, apelacion: motivo, apeladaEn: new Date() },
+  });
+  if (count === 0) {
+    throw new ConflictError("Solo se puede apelar una multa pendiente. Esta ya fue apelada o la administración la resolvió.");
+  }
+
+  const admins = await prisma.usuario.findMany({
+    where: { condominioId: multa.condominioId, rol: Rol.ADMIN, activo: true },
+    select: { id: true },
+  });
+  await crearNotificacionesMasivas(
+    admins.map((a) => a.id),
+    {
+      tipo: "MULTA",
+      titulo: "Multa apelada",
+      mensaje: `${multa.usuario.nombre} ${multa.usuario.apellido} apeló la multa "${multa.motivo}".`,
+      entidadTipo: "Multa",
+      entidadId: multa.id,
+    }
+  );
+
+  return { motivo: multa.motivo };
 }
 
 export async function eliminarMulta(condominioId: string, multaId: string) {
