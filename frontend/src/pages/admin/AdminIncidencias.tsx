@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import clsx from "clsx";
 import { Wrench } from "@phosphor-icons/react";
 import { incidenciasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useFiltroUrl } from "../../hooks/useFiltroUrl";
+import { useEsCelular } from "../../hooks/useEsCelular";
 import {
   Alert,
   Badge,
@@ -26,12 +28,99 @@ import { ESTADO_INCIDENCIA_LABEL, ESTADO_INCIDENCIA_TONO, PRIORIDAD_LABEL, PRIOR
 import { CATEGORIAS_INCIDENCIA, etiquetaCategoria, normalizarCategoria } from "../../lib/categorias";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
-import type { EstadoIncidencia, PrioridadIncidencia } from "../../types";
+import type { EstadoIncidencia, Incidencia, PrioridadIncidencia } from "../../types";
 
 const ESTADOS: EstadoIncidencia[] = ["REPORTADA", "EN_REVISION", "EN_PROCESO", "RESUELTA"];
 const PRIORIDADES: PrioridadIncidencia[] = ["BAJA", "MEDIA", "ALTA"];
 // "ABIERTAS" agrupa todo lo que no esta resuelto (lo usa el panel en "Requiere atención").
 const FILTROS_ESTADO = ["ABIERTAS", ...ESTADOS] as const;
+
+const ORDEN_PRIORIDAD: Record<string, number> = { ALTA: 0, MEDIA: 1, BAJA: 2 };
+const ORDEN_ESTADO: Record<EstadoIncidencia, number> = { REPORTADA: 0, EN_REVISION: 1, EN_PROCESO: 2, RESUELTA: 3 };
+
+// Lo abierto primero y, dentro de eso, lo mas urgente: prioridad alta antes que media y baja, y a igual
+// prioridad lo que esta mas atrasado en su gestion y lleva mas tiempo esperando. Lo resuelto va al
+// final, de la mas reciente a la mas antigua.
+function ordenarPorUrgencia(lista: Incidencia[]): Incidencia[] {
+  const tiempo = (i: Incidencia) => new Date(i.createdAt).getTime();
+  return [...lista].sort((a, b) => {
+    const aResuelta = a.estado === "RESUELTA";
+    const bResuelta = b.estado === "RESUELTA";
+    if (aResuelta !== bResuelta) return aResuelta ? 1 : -1;
+    if (aResuelta) return tiempo(b) - tiempo(a);
+    const pa = ORDEN_PRIORIDAD[a.prioridad ?? ""] ?? 3;
+    const pb = ORDEN_PRIORIDAD[b.prioridad ?? ""] ?? 3;
+    if (pa !== pb) return pa - pb;
+    if (a.estado !== b.estado) return ORDEN_ESTADO[a.estado] - ORDEN_ESTADO[b.estado];
+    return tiempo(a) - tiempo(b);
+  });
+}
+
+function BadgePrioridad({ prioridad, largo = false }: { prioridad?: PrioridadIncidencia | null; largo?: boolean }) {
+  if (!prioridad) return <Badge tone="slate">Sin prioridad</Badge>;
+  return <Badge tone={PRIORIDAD_TONO[prioridad]}>{largo ? `Prioridad ${PRIORIDAD_LABEL[prioridad].toLowerCase()}` : PRIORIDAD_LABEL[prioridad]}</Badge>;
+}
+
+type FiltroResumen = { estado: (typeof FILTROS_ESTADO)[number] | ""; prioridad: PrioridadIncidencia | "" };
+
+// Lo que hay que atender al abrir la pantalla; cada cifra aplica ese filtro (y al tocarla otra vez lo
+// quita). Se calcula con todas las incidencias, no con el filtro que este puesto.
+function ResumenIncidencias({
+  incidencias,
+  filtro,
+  onFiltrar,
+}: {
+  incidencias: Incidencia[];
+  filtro: FiltroResumen;
+  onFiltrar: (f: FiltroResumen) => void;
+}) {
+  const abiertas = incidencias.filter((i) => i.estado !== "RESUELTA");
+  const urgentes = abiertas.filter((i) => i.prioridad === "ALTA").length;
+  const sinRevisar = incidencias.filter((i) => i.estado === "REPORTADA").length;
+  const celdas: { clave: string; titulo: string; valor: number; detalle: string; alerta?: "red" | "amber"; aplica: FiltroResumen }[] = [
+    { clave: "urgentes", titulo: "Urgentes", valor: urgentes, detalle: "prioridad alta sin resolver", alerta: "red", aplica: { estado: "ABIERTAS", prioridad: "ALTA" } },
+    { clave: "sin-revisar", titulo: "Sin revisar", valor: sinRevisar, detalle: "recién reportadas", alerta: "amber", aplica: { estado: "REPORTADA", prioridad: "" } },
+    { clave: "abiertas", titulo: "Abiertas", valor: abiertas.length, detalle: "sin resolver", aplica: { estado: "ABIERTAS", prioridad: "" } },
+  ];
+  return (
+    <Card plana className="overflow-hidden">
+      <div className="grid grid-cols-3 gap-px bg-slate-100 dark:bg-slate-700/60">
+        {celdas.map((c) => {
+          const activa = filtro.estado === c.aplica.estado && filtro.prioridad === c.aplica.prioridad;
+          return (
+            <button
+              key={c.clave}
+              type="button"
+              aria-pressed={activa}
+              onClick={() => onFiltrar(activa ? { estado: "", prioridad: "" } : c.aplica)}
+              className={clsx(
+                "flex flex-col justify-start bg-white px-3 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
+                activa && "ring-2 ring-inset ring-brand-500"
+              )}
+            >
+              <span className="block text-sm text-slate-600 dark:text-slate-300">{c.titulo}</span>
+              <span
+                className={clsx(
+                  "mt-1 block font-display text-2xl font-bold tabular-nums tracking-tight",
+                  c.valor === 0
+                    ? "text-slate-500 dark:text-slate-400"
+                    : c.alerta === "red"
+                      ? "text-red-700 dark:text-red-400"
+                      : c.alerta === "amber"
+                        ? "text-amber-700 dark:text-amber-300"
+                        : "text-slate-900 dark:text-white"
+                )}
+              >
+                {c.valor}
+              </span>
+              <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{c.detalle}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
 
 export default function AdminIncidencias() {
   const { data, cargando, error, recargar } = useAsync(() => incidenciasApi.listarTodas(), []);
@@ -40,6 +129,7 @@ export default function AdminIncidencias() {
   const [filtroEstado, setFiltroEstado] = useFiltroUrl("estado", FILTROS_ESTADO);
   const [filtroPrioridad, setFiltroPrioridad] = useFiltroUrl("prioridad", PRIORIDADES);
   const seleccionadaId = params.get("ver");
+  const esCelular = useEsCelular();
 
   function abrir(id: string | null) {
     setParams(
@@ -53,27 +143,51 @@ export default function AdminIncidencias() {
     );
   }
 
-  const filtradas = (data ?? []).filter((inc) => {
-    const texto = `${inc.titulo} ${inc.ubicacion} ${inc.usuario?.nombre ?? ""} ${inc.usuario?.apellido ?? ""} ${etiquetaCategoria(inc.categoria) ?? ""}`.toLowerCase();
-    const coincideTexto = !busqueda || texto.includes(busqueda.toLowerCase());
-    const coincideEstado =
-      !filtroEstado || (filtroEstado === "ABIERTAS" ? inc.estado !== "RESUELTA" : inc.estado === filtroEstado);
-    const coincidePrioridad = !filtroPrioridad || inc.prioridad === filtroPrioridad;
-    return coincideTexto && coincideEstado && coincidePrioridad;
-  });
+  // Los dos filtros se cambian en una sola actualizacion de la direccion: dos cambios seguidos (uno por
+  // filtro) se pisan entre si y solo quedaba el ultimo.
+  function aplicarFiltro(f: FiltroResumen) {
+    setParams(
+      (actuales) => {
+        const siguientes = new URLSearchParams(actuales);
+        if (f.estado) siguientes.set("estado", f.estado);
+        else siguientes.delete("estado");
+        if (f.prioridad) siguientes.set("prioridad", f.prioridad);
+        else siguientes.delete("prioridad");
+        return siguientes;
+      },
+      { replace: true }
+    );
+  }
+
+  const filtradas = ordenarPorUrgencia(
+    (data ?? []).filter((inc) => {
+      const texto = `${inc.titulo} ${inc.ubicacion} ${inc.usuario?.nombre ?? ""} ${inc.usuario?.apellido ?? ""} ${etiquetaCategoria(inc.categoria) ?? ""}`.toLowerCase();
+      const coincideTexto = !busqueda || texto.includes(busqueda.toLowerCase());
+      const coincideEstado =
+        !filtroEstado || (filtroEstado === "ABIERTAS" ? inc.estado !== "RESUELTA" : inc.estado === filtroEstado);
+      const coincidePrioridad = !filtroPrioridad || inc.prioridad === filtroPrioridad;
+      return coincideTexto && coincideEstado && coincidePrioridad;
+    })
+  );
 
   const hayFiltros = Boolean(busqueda || filtroEstado || filtroPrioridad);
+  const nombreDe = (inc: Incidencia) => (inc.usuario ? `${inc.usuario.nombre} ${inc.usuario.apellido}` : "—");
 
   return (
     <div className="space-y-6">
       <PageHeader icon={Wrench} title="Incidencias" subtitle="Gestión, priorización e historial." />
 
-      <div className="flex flex-wrap items-center gap-3">
+      {data && data.length > 0 && (
+        <ResumenIncidencias incidencias={data} filtro={{ estado: filtroEstado, prioridad: filtroPrioridad }} onFiltrar={aplicarFiltro} />
+      )}
+
+      {/* En celular: el buscador a todo el ancho y los dos filtros lado a lado (antes eran tres filas). */}
+      <div className="grid grid-cols-2 items-center gap-3 sm:flex sm:flex-wrap">
         <SearchInput
           value={busqueda}
           onChange={setBusqueda}
           placeholder="Buscar por título, ubicación, categoría o residente..."
-          className="w-full sm:max-w-xs"
+          className="col-span-2 w-full sm:max-w-xs"
         />
         <Select
           aria-label="Filtrar por estado"
@@ -81,8 +195,8 @@ export default function AdminIncidencias() {
           onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}
           className="w-full sm:w-52"
         >
-          <option value="">Todos los estados</option>
-          <option value="ABIERTAS">Abiertas (sin resolver)</option>
+          <option value="">{esCelular ? "Estado" : "Todos los estados"}</option>
+          <option value="ABIERTAS">{esCelular ? "Abiertas" : "Abiertas (sin resolver)"}</option>
           {ESTADOS.map((estado) => (
             <option key={estado} value={estado}>
               {ESTADO_INCIDENCIA_LABEL[estado]}
@@ -95,10 +209,10 @@ export default function AdminIncidencias() {
           onChange={(e) => setFiltroPrioridad(e.target.value as typeof filtroPrioridad)}
           className="w-full sm:w-48"
         >
-          <option value="">Todas las prioridades</option>
+          <option value="">{esCelular ? "Prioridad" : "Todas las prioridades"}</option>
           {PRIORIDADES.map((p) => (
             <option key={p} value={p}>
-              Prioridad {PRIORIDAD_LABEL[p].toLowerCase()}
+              {esCelular ? PRIORIDAD_LABEL[p] : `Prioridad ${PRIORIDAD_LABEL[p].toLowerCase()}`}
             </option>
           ))}
         </Select>
@@ -107,17 +221,16 @@ export default function AdminIncidencias() {
             type="button"
             onClick={() => {
               setBusqueda("");
-              setFiltroEstado("");
-              setFiltroPrioridad("");
+              aplicarFiltro({ estado: "", prioridad: "" });
             }}
-            className="text-xs text-brand-600 hover:underline max-sm:min-h-11 dark:text-brand-400"
+            className="col-span-2 inline-flex items-center justify-center rounded-lg text-sm font-medium text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 max-sm:min-h-11 dark:text-brand-400"
           >
             Limpiar filtros
           </button>
         )}
       </div>
 
-      <Card>
+      <Card plana>
         {cargando && !data ? (
           <Spinner />
         ) : error ? (
@@ -127,59 +240,84 @@ export default function AdminIncidencias() {
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna incidencia coincide con los filtros." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="tabla-movil w-full text-left text-sm">
-              <thead className="border-b border-slate-100 text-xs uppercase text-slate-400 dark:border-slate-700/60 dark:text-slate-500">
-                <tr>
-                  <th className="px-5 py-3">Título</th>
-                  <th className="px-5 py-3">Categoría</th>
-                  <th className="px-5 py-3">Residente</th>
-                  <th className="px-5 py-3">Prioridad</th>
-                  <th className="px-5 py-3">Estado</th>
-                  <th className="px-5 py-3">Reportada</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                {filtradas.map((inc, i) => (
-                  <motion.tr
-                    key={inc.id}
-                    {...staggerFade(i)}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`Abrir la incidencia ${inc.titulo}`}
-                    className="cursor-pointer transition-colors hover:bg-slate-50 focus:bg-slate-50 focus:outline-none dark:hover:bg-slate-700/60 dark:focus:bg-slate-700/60"
+          <>
+            <p className="border-b border-slate-100 px-5 py-3 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+              Ordenadas por urgencia: primero la prioridad alta y lo que lleva más tiempo esperando.
+            </p>
+
+            {/* Celular: una tarjeta compacta por incidencia (titulo, insignias y datos), toda tocable.
+                Desde 640 px: tabla. */}
+            <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
+              {filtradas.map((inc, i) => (
+                <motion.li key={inc.id} {...staggerFade(i)}>
+                  <button
+                    type="button"
                     onClick={() => abrir(inc.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        abrir(inc.id);
-                      }
-                    }}
+                    aria-label={`Abrir la incidencia ${inc.titulo}`}
+                    className="block w-full space-y-1.5 px-5 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/60"
                   >
-                    <td data-label="Título" className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100">
-                      <div>
-                        {inc.titulo}
-                        <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">{inc.ubicacion}</span>
-                      </div>
-                    </td>
-                    <td data-label="Categoría" className="px-5 py-3 text-slate-500 dark:text-slate-400">
-                      {etiquetaCategoria(inc.categoria) ?? "—"}
-                    </td>
-                    <td data-label="Residente" className="px-5 py-3 text-slate-500 dark:text-slate-400">
-                      {inc.usuario ? `${inc.usuario.nombre} ${inc.usuario.apellido}` : "—"}
-                    </td>
-                    <td data-label="Prioridad" className="px-5 py-3">
-                      {inc.prioridad ? <Badge tone={PRIORIDAD_TONO[inc.prioridad]}>{PRIORIDAD_LABEL[inc.prioridad]}</Badge> : "—"}
-                    </td>
-                    <td data-label="Estado" className="px-5 py-3">
+                    <span className="block break-words font-medium text-slate-900 dark:text-slate-100">{inc.titulo}</span>
+                    <span className="flex flex-wrap gap-1.5">
+                      <BadgePrioridad prioridad={inc.prioridad} largo />
                       <Badge tone={ESTADO_INCIDENCIA_TONO[inc.estado]}>{ESTADO_INCIDENCIA_LABEL[inc.estado]}</Badge>
-                    </td>
-                    <td data-label="Reportada" className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatFechaHora(inc.createdAt)}</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </span>
+                    <span className="block break-words text-sm text-slate-600 dark:text-slate-300">{inc.ubicacion}</span>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {etiquetaCategoria(inc.categoria) ?? "Sin categoría"} · {nombreDe(inc)} · {formatFechaHora(inc.createdAt)}
+                    </span>
+                  </button>
+                </motion.li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-100 text-xs uppercase text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                  <tr>
+                    <th scope="col" className="px-5 py-3">Título</th>
+                    <th scope="col" className="px-5 py-3">Categoría</th>
+                    <th scope="col" className="px-5 py-3">Residente</th>
+                    <th scope="col" className="px-5 py-3">Prioridad</th>
+                    <th scope="col" className="px-5 py-3">Estado</th>
+                    <th scope="col" className="px-5 py-3">Reportada</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                  {filtradas.map((inc, i) => (
+                    <motion.tr
+                      key={inc.id}
+                      {...staggerFade(i)}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Abrir la incidencia ${inc.titulo}`}
+                      className="cursor-pointer transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/60 dark:focus-visible:bg-slate-700/60"
+                      onClick={() => abrir(inc.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          abrir(inc.id);
+                        }
+                      }}
+                    >
+                      <td className="max-w-xs px-5 py-3 font-medium text-slate-900 dark:text-slate-100">
+                        <span className="block break-words">{inc.titulo}</span>
+                        <span className="block break-words text-xs font-normal text-slate-500 dark:text-slate-400">{inc.ubicacion}</span>
+                      </td>
+                      <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{etiquetaCategoria(inc.categoria) ?? "Sin categoría"}</td>
+                      <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{nombreDe(inc)}</td>
+                      <td className="px-5 py-3">
+                        <BadgePrioridad prioridad={inc.prioridad} />
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge tone={ESTADO_INCIDENCIA_TONO[inc.estado]}>{ESTADO_INCIDENCIA_LABEL[inc.estado]}</Badge>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatFechaHora(inc.createdAt)}</td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 
@@ -301,7 +439,7 @@ function DetalleIncidencia({ id, onClose, onActualizada }: { id: string; onClose
           )}
 
           <form onSubmit={handleSubmit} className="space-y-3 border-t border-slate-100 pt-4 dark:border-slate-700/60">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="campo-incidencia-estado">Estado</Label>
                 <Select id="campo-incidencia-estado" value={estado} onChange={(e) => setEstado(e.target.value as EstadoIncidencia)}>
@@ -327,7 +465,7 @@ function DetalleIncidencia({ id, onClose, onActualizada }: { id: string; onClose
                   ))}
                 </Select>
               </div>
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <Label htmlFor="campo-incidencia-categoria">Categoría</Label>
                 <Select id="campo-incidencia-categoria" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
                   {!original?.categoria && (
@@ -340,7 +478,7 @@ function DetalleIncidencia({ id, onClose, onActualizada }: { id: string; onClose
                   ))}
                 </Select>
               </div>
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <Label htmlFor="campo-incidencia-responsable">Responsable</Label>
                 <Select id="campo-incidencia-responsable" value={responsableId} onChange={(e) => setResponsableId(e.target.value)}>
                   <option value="">Sin asignar</option>
@@ -372,13 +510,17 @@ function DetalleIncidencia({ id, onClose, onActualizada }: { id: string; onClose
               </p>
             </div>
             {error && <Alert tone="red">{error}</Alert>}
-            <Button type="submit" className="w-full" loading={guardando} disabled={!hayCambios}>
-              Guardar cambios
-            </Button>
+            {/* El boton queda pegado abajo mientras se edita el formulario: antes habia que bajar toda la
+                ventana (alerta, cuatro selectores, comentario) para guardar. */}
+            <div className="sticky bottom-0 -mx-5 border-t border-slate-100 bg-white px-5 py-3 dark:border-slate-700/60 dark:bg-slate-800">
+              <Button type="submit" className="w-full" loading={guardando} disabled={!hayCambios}>
+                Guardar cambios
+              </Button>
+            </div>
           </form>
 
           <div className="border-t border-slate-100 pt-4 dark:border-slate-700/60">
-            <p className="mb-2 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Historial</p>
+            <h4 className="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Historial</h4>
             <HistorialIncidencia historial={incidencia.historial ?? []} />
           </div>
         </div>

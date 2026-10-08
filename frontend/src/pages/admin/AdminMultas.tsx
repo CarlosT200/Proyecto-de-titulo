@@ -29,7 +29,7 @@ function CeldaResumen({ celda: c, activa, onToggle }: { celda: CeldaDeResumen; a
       aria-pressed={activa}
       onClick={onToggle}
       className={clsx(
-        "relative block bg-white px-3 py-4 text-left transition-colors [container-type:inline-size] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
+        "relative flex flex-col justify-start bg-white px-3 py-4 text-left transition-colors [container-type:inline-size] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:bg-slate-800 dark:hover:bg-slate-700/60 sm:px-5",
         activa && "ring-2 ring-inset ring-brand-500"
       )}
     >

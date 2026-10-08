@@ -23,7 +23,7 @@ export function HistorialIncidencia({ historial }: { historial: IncidenciaHistor
             <p className="flex flex-wrap items-center gap-x-1">
               {esComentario && <ChatText size={13} className="text-brand-500" aria-hidden />}
               <span className="font-medium text-slate-700 dark:text-slate-200">{titulo}</span>
-              <span className="text-slate-400 dark:text-slate-500">
+              <span className="text-slate-500 dark:text-slate-400">
                 · {h.usuario.nombre} {h.usuario.apellido} · {formatFechaHora(h.createdAt)}
               </span>
             </p>
@@ -57,7 +57,7 @@ export function SeguimientoIncidencia({ incidencia }: { incidencia: Incidencia }
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                   hecho
                     ? "bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md shadow-brand-600/30"
-                    : "border-2 border-slate-200 text-slate-400 dark:border-slate-600 dark:text-slate-500",
+                    : "border-2 border-slate-300 text-slate-500 dark:border-slate-600 dark:text-slate-400",
                   esActual && "ring-4 ring-brand-100 dark:ring-brand-500/20"
                 )}
               >
@@ -74,7 +74,7 @@ export function SeguimientoIncidencia({ incidencia }: { incidencia: Incidencia }
               <p
                 className={clsx(
                   "text-sm font-medium",
-                  hecho ? "text-slate-800 dark:text-slate-100" : "text-slate-400 dark:text-slate-500"
+                  hecho ? "text-slate-800 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"
                 )}
               >
                 {ESTADO_INCIDENCIA_LABEL[paso]}

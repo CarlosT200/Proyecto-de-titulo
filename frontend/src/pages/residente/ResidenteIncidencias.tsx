@@ -83,8 +83,8 @@ export default function ResidenteIncidencias() {
       <PageHeader icon={Wrench} title="Incidencias" subtitle="Reporta problemas del condominio y sigue su avance." />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-        <Card className="h-fit xl:col-span-2">
-          <CardHeader title="Reportar un problema" />
+        <Card plana className="h-fit xl:col-span-2">
+          <CardHeader nivel={2} title="Reportar un problema" />
           <form onSubmit={handleSubmit} className="space-y-4 p-5">
             <fieldset>
               <legend className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -186,8 +186,8 @@ export default function ResidenteIncidencias() {
           </form>
         </Card>
 
-        <Card className="h-fit xl:col-span-3">
-          <CardHeader title="Mis incidencias" subtitle="Toca una para ver su avance y los comentarios." />
+        <Card plana className="h-fit xl:col-span-3">
+          <CardHeader nivel={2} title="Mis incidencias" subtitle="Toca una para ver su avance y los comentarios." />
           {cargando && !data ? (
             <Spinner />
           ) : error ? (
@@ -195,7 +195,7 @@ export default function ResidenteIncidencias() {
           ) : !data?.length ? (
             <EmptyState icon={Wrench} title="Aún no has reportado incidencias" />
           ) : (
-            <ul className="divide-y divide-slate-50 dark:divide-slate-700/50">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
               {data.map((inc, i) => {
                 const Icono = iconoCategoria(inc.categoria);
                 return (
@@ -219,7 +219,7 @@ export default function ResidenteIncidencias() {
                             .join(" · ")}
                         </span>
                       </span>
-                      <CaretRight size={16} weight="bold" className="shrink-0 text-slate-300 dark:text-slate-600" aria-hidden />
+                      <CaretRight size={16} weight="bold" className="shrink-0 text-slate-400 dark:text-slate-500" aria-hidden />
                     </button>
                   </motion.li>
                 );
@@ -269,7 +269,7 @@ function DetalleMiIncidencia({ id, onClose }: { id: string; onClose: () => void 
           </dl>
 
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Descripción</p>
+            <h4 className="mb-1 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Descripción</h4>
             <p className="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">{inc.descripcion}</p>
           </div>
 
@@ -282,7 +282,7 @@ function DetalleMiIncidencia({ id, onClose }: { id: string; onClose: () => void 
           )}
 
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">Historial y comentarios</p>
+            <h4 className="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Historial y comentarios</h4>
             <HistorialIncidencia historial={inc.historial ?? []} />
           </div>
 
