@@ -172,12 +172,12 @@ export default function ConserjeValidarQR() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
+        <Card plana>
           <CardHeader title="Escáner de cámara" />
           <div className="space-y-3 p-5">
             <div id={READER_ID} className="mx-auto w-full max-w-sm overflow-hidden rounded-lg bg-slate-900" />
             {escaneando && (
-              <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                 Si es el QR en la pantalla de otro celular, sube el brillo y acércalo despacio hasta que quede dentro del recuadro.
               </p>
             )}
@@ -188,7 +188,7 @@ export default function ConserjeValidarQR() {
           </div>
         </Card>
 
-        <Card>
+        <Card plana>
           <CardHeader title="Validación manual" subtitle="Si no hay cámara disponible, pega el código QR" />
           <form onSubmit={handleManualSubmit} className="space-y-3 p-5">
             <div>

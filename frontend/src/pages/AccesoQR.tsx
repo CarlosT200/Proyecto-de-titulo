@@ -102,7 +102,7 @@ export default function AccesoQR() {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Muéstraselo al conserje para que lo escanee desde su celular y valide tu ingreso.
             </p>
-            <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+            <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <CheckCircle size={14} />
               No necesitas hacer nada más en esta pantalla.
             </div>

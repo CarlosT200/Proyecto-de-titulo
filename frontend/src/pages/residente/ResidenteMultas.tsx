@@ -125,7 +125,7 @@ export default function ResidenteMultas() {
       )}
 
       <Card plana>
-        {cargando ? (
+        {cargando && !data ? (
           <Spinner />
         ) : error ? (
           <Alert tone="red">{error}</Alert>

@@ -115,7 +115,7 @@ export function CredencialResidente({
               style={{ width: `${progreso}%` }}
             />
           </div>
-          <p className="mt-1.5 text-center text-[11px] text-slate-400 dark:text-slate-500">
+          <p className="mt-1.5 text-center text-[11px] text-slate-500 dark:text-slate-400">
             Por tu seguridad, se actualiza en {segundosRestantes}s
           </p>
         </div>

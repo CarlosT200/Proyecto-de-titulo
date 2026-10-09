@@ -52,7 +52,7 @@ export function CambioPasswordObligatorio() {
           {usuario ? `Hola, ${usuario.nombre}. ` : ""}Entraste con una contraseña temporal que te entregó la administración. Por tu
           seguridad, elige una propia antes de continuar.
         </p>
-        <p className="mt-2 text-center text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
           Antes de seguir, revisa el{" "}
           <Link to="/privacidad" className="font-medium text-brand-600 hover:underline dark:text-brand-400">
             aviso de privacidad

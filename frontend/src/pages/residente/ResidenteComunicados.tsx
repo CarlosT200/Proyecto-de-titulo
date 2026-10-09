@@ -12,7 +12,7 @@ export default function ResidenteComunicados() {
       <PageHeader icon={Megaphone} title="Comunicados" subtitle="Avisos publicados por la administración." />
 
       <Card plana>
-        {cargando ? (
+        {cargando && !data ? (
           <Spinner />
         ) : error ? (
           <Alert tone="red">{error}</Alert>
