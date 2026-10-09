@@ -179,6 +179,8 @@ export const qrApi = {
   misVisitas: () => api.get<Visita[]>("/qr/visitas/mias").then((r) => r.data),
   generarQrVisita: (visitaId: string) =>
     api.post<{ qrDataUrl: string; expiraEn: string }>(`/qr/visitas/${visitaId}/qr`).then((r) => r.data),
+  // vuelve a mostrar el QR ya generado (no crea uno nuevo)
+  verQrVisita: (id: string) => api.get<{ qrDataUrl: string; expiraEn: string }>(`/qr/visitas/${id}/qr`).then((r) => r.data),
   crearVisitaRapida: (nombreVisita?: string) =>
     api
       .post<{ visitaId: string; nombreVisita: string; qrDataUrl: string; expiraEn: string }>("/qr/visitas/rapida", {

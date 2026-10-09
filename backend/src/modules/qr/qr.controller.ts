@@ -21,6 +21,10 @@ export async function generarQrVisitaController(req: Request, res: Response) {
   res.json(qr);
 }
 
+export async function verQrVisitaController(req: Request, res: Response) {
+  res.json(await service.verQrVisita(req.auth!.condominioId, req.auth!.sub, req.params.id));
+}
+
 export async function crearVisitaRapidaController(req: Request, res: Response) {
   const { nombreVisita } = crearVisitaRapidaSchema.parse(req.body ?? {});
   const visita = await service.crearVisitaRapida(req.auth!.condominioId, req.auth!.sub, nombreVisita);

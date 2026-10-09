@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { QrCode, UserPlus } from "@phosphor-icons/react";
+import clsx from "clsx";
+import { DownloadSimple, Plus, QrCode, ShareNetwork, UserPlus } from "@phosphor-icons/react";
 import { qrApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import {
@@ -15,11 +15,12 @@ import {
   Modal,
   PageHeader,
   Spinner,
-  staggerFade,
   Textarea,
 } from "../../components/ui";
 import { CredencialResidente } from "../../components/CredencialResidente";
-import { formatFechaHora, hoyLocal } from "../../lib/format";
+import { formatDia, formatFechaHora, hoyLocal } from "../../lib/format";
+import { compartirQr } from "../../lib/compartirQr";
+import { horaLocal } from "../../lib/dias";
 import { ESTADO_VISITA_LABEL, ESTADO_VISITA_TONO } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -76,6 +77,47 @@ export default function ResidenteQR() {
     }
   }
 
+  async function qrDeVisita(id: string, nombre: string, yaGenerado: boolean) {
+    try {
+      const res = yaGenerado ? await qrApi.verQrVisita(id) : await qrApi.generarQrVisita(id);
+      setVisitaQr({ nombre, ...res });
+      recargar();
+    } catch (err) {
+      toast.error(mensajeError(err, "No se pudo generar el código."));
+    }
+  }
+
+  async function revocar(id: string, nombre: string) {
+    const ok = await confirmar(`¿Revocar la autorización de ${nombre}? Ya no podrá ingresar con ese QR.`, {
+      titulo: "Revocar visita",
+      textoConfirmar: "Revocar",
+      textoCancelar: "Volver",
+    });
+    if (!ok) return;
+    try {
+      await qrApi.revocarVisita(id);
+      toast.info("Autorización de visita revocada.");
+      recargar();
+    } catch (err) {
+      toast.error(mensajeError(err, "No se pudo revocar la visita."));
+    }
+  }
+
+  async function compartir() {
+    if (!visitaQr) return;
+    const resultado = await compartirQr(
+      visitaQr.qrDataUrl,
+      visitaQr.nombre,
+      `Tu código de acceso a ${usuario?.condominio?.nombre ?? "el condominio"}. Muéstralo en conserjería. Vigente hasta ${formatFechaHora(visitaQr.expiraEn)}.`
+    );
+    if (resultado === "descargado") toast.success("Imagen del QR descargada. Envíasela a tu visita.");
+  }
+
+  // Vigentes primero (lo que se puede usar), luego el resto, cada grupo del mas reciente al mas antiguo.
+  const visitasOrdenadas = [...(visitas ?? [])].sort(
+    (a, b) => Number(b.estado === "VIGENTE") - Number(a.estado === "VIGENTE") || b.periodoInicio.localeCompare(a.periodoInicio)
+  );
+
   useEffect(() => {
     generarQrResidente();
     const intervaloRotacion = setInterval(generarQrResidente, ROTACION_SEGUNDOS * 1000);
@@ -94,8 +136,8 @@ export default function ResidenteQR() {
       <PageHeader icon={QrCode} title="Mi QR y visitas" subtitle="Identificación digital y autorización de visitas." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="h-fit">
-          <CardHeader title="Mi credencial" subtitle="Muéstrala en conserjería para tu ingreso" />
+        <Card plana className="h-fit">
+          <CardHeader nivel={2} title="Mi credencial" subtitle="Muéstrala en conserjería para tu ingreso." />
           <div className="flex flex-col items-center gap-3 p-5">
             {errorQr && <Alert tone="red">{errorQr}</Alert>}
             {usuario && qrResidente ? (
@@ -108,78 +150,67 @@ export default function ResidenteQR() {
             ) : (
               !errorQr && <Spinner />
             )}
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => setModalInvitadoAbierto(true)}
-            >
-              <UserPlus size={16} /> QR para un invitado
+            <Button className="w-full" onClick={() => setModalInvitadoAbierto(true)}>
+              <UserPlus size={16} aria-hidden /> QR para un invitado
             </Button>
-            <p className="text-center text-xs text-slate-400 dark:text-slate-500">
-              Genera un código para que alguien te visite, sin registrar la visita a mano.
+            <p className="text-center text-sm text-slate-600 dark:text-slate-300">
+              Un código de 4 horas para que alguien te visite, listo para enviarlo por WhatsApp.
             </p>
           </div>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card plana className="overflow-hidden lg:col-span-2">
           <CardHeader
+            nivel={2}
             title="Visitas autorizadas"
-            action={<Button size="sm" onClick={() => setModalAbierto(true)}>+ Registrar visita</Button>}
+            subtitle="Para una visita con fecha y horario definidos."
+            action={
+              <Button size="sm" variant="secondary" className="shrink-0 max-sm:min-h-11" onClick={() => setModalAbierto(true)}>
+                <Plus size={14} weight="bold" aria-hidden /> Registrar
+              </Button>
+            }
           />
-          {cargando ? (
+          {cargando && !visitas ? (
             <Spinner />
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !visitas?.length ? (
             <EmptyState icon={QrCode} title="Aún no has registrado visitas" />
           ) : (
-            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-              {visitas.map((v, i) => (
-                <motion.div key={v.id} {...staggerFade(i)} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                  <div className="min-w-0 flex-1 basis-44">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{v.nombreVisita}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {formatFechaHora(v.periodoInicio)} — {formatFechaHora(v.periodoFin)}
-                      {v.soloUnUso ? " · Uso único" : ""}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone={ESTADO_VISITA_TONO[v.estado]}>{ESTADO_VISITA_LABEL[v.estado]}</Badge>
-                    {v.estado === "VIGENTE" && !v.qrToken && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={async () => {
-                          const res = await qrApi.generarQrVisita(v.id);
-                          setVisitaQr({ nombre: v.nombreVisita, ...res });
-                          recargar();
-                        }}
-                      >
-                        Generar QR
-                      </Button>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+              {visitasOrdenadas.map((v) => {
+                // Una visita cuyo horario ya termino se muestra como expirada aunque nadie la haya usado.
+                const vencida = v.estado === "VIGENTE" && new Date(v.periodoFin).getTime() < Date.now();
+                const estado = vencida ? "EXPIRADA" : v.estado;
+                const vigente = estado === "VIGENTE";
+                return (
+                  <li key={v.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className={clsx("break-words font-medium", vigente ? "text-slate-900 dark:text-slate-100" : "text-slate-600 dark:text-slate-300")}>
+                          {v.nombreVisita}
+                        </p>
+                        <Badge tone={ESTADO_VISITA_TONO[estado]}>{ESTADO_VISITA_LABEL[estado]}</Badge>
+                      </div>
+                      <p className="mt-0.5 text-sm tabular-nums text-slate-600 dark:text-slate-300">
+                        {formatDia(v.periodoInicio)} · {horaLocal(v.periodoInicio)} a {horaLocal(v.periodoFin)}
+                        {v.soloUnUso ? " · un solo uso" : ""}
+                      </p>
+                    </div>
+                    {vigente && (
+                      <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+                        <Button size="sm" variant="secondary" className="max-sm:min-h-11" onClick={() => qrDeVisita(v.id, v.nombreVisita, Boolean(v.qrToken))}>
+                          <QrCode size={14} aria-hidden /> {v.qrToken ? "Ver QR" : "Generar QR"}
+                        </Button>
+                        <Button size="sm" variant="secondary" className="text-red-700 max-sm:min-h-11 dark:text-red-300" onClick={() => revocar(v.id, v.nombreVisita)}>
+                          Revocar
+                        </Button>
+                      </div>
                     )}
-                    {v.estado === "VIGENTE" && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={async () => {
-                          const ok = await confirmar(
-                            `¿Revocar la autorización de ${v.nombreVisita}? Ya no podrá ingresar con ese QR.`,
-                            { titulo: "Revocar visita", textoConfirmar: "Revocar" }
-                          );
-                          if (!ok) return;
-                          await qrApi.revocarVisita(v.id);
-                          toast.info("Autorización de visita revocada.");
-                          recargar();
-                        }}
-                      >
-                        Revocar
-                      </Button>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </Card>
       </div>
@@ -202,9 +233,9 @@ export default function ResidenteQR() {
         title="QR para un invitado"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Se genera una autorización de 4 horas, de un solo uso. Comparte el código con tu visita y el conserje lo
-            validara al ingreso; quedara en tu lista de visitas autorizadas automaticamente.
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Se genera una autorización de 4 horas, de un solo uso. Envía el código a tu visita y el conserje lo validará al
+            ingreso; quedará en tu lista de visitas autorizadas automáticamente.
           </p>
           <div>
             <Label htmlFor="campo-qr-1">Nombre del invitado (opcional)</Label>
@@ -224,11 +255,15 @@ export default function ResidenteQR() {
 
       <Modal open={!!visitaQr} onClose={() => setVisitaQr(null)} title={`QR de ${visitaQr?.nombre ?? ""}`}>
         {visitaQr && (
-          <div className="flex flex-col items-center gap-3">
-            <img src={visitaQr.qrDataUrl} alt="QR de visita" className="h-56 w-56" />
-            <p className="text-xs text-slate-500 dark:text-slate-400">Vigente hasta {formatFechaHora(visitaQr.expiraEn)}</p>
-            <p className="text-center text-xs text-slate-400 dark:text-slate-500">
-              Comparte este código con tu visita. El conserje lo validará al ingreso.
+          <div className="flex flex-col items-center gap-4">
+            <img src={visitaQr.qrDataUrl} alt={`Código QR de acceso de ${visitaQr.nombre}`} className="h-60 w-60 rounded-xl bg-white p-2 ring-1 ring-slate-200" />
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Vigente hasta {formatFechaHora(visitaQr.expiraEn)}</p>
+            <Button className="w-full" onClick={compartir}>
+              <ShareNetwork size={18} aria-hidden /> Enviar a mi visita
+            </Button>
+            <p className="flex items-start gap-1.5 text-center text-sm text-slate-600 dark:text-slate-300">
+              <DownloadSimple size={16} className="mt-0.5 shrink-0" aria-hidden />
+              Se abre el menú para compartir (WhatsApp, correo…). En el computador se descarga la imagen.
             </p>
           </div>
         )}
@@ -269,7 +304,7 @@ function FormularioVisita({ onCreado }: { onCreado: () => void }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="campo-qr-2">Nombre de la visita</Label>
-        <Input id="campo-qr-2" required value={nombreVisita} onChange={(e) => setNombreVisita(e.target.value)} />
+        <Input id="campo-qr-2" required maxLength={120} value={nombreVisita} onChange={(e) => setNombreVisita(e.target.value)} placeholder="Ej: María González" />
       </div>
       <div>
         <Label htmlFor="campo-qr-3">Fecha</Label>
@@ -292,12 +327,13 @@ function FormularioVisita({ onCreado }: { onCreado: () => void }) {
         </div>
       </div>
       <div>
-        <Label htmlFor="campo-qr-6">Observaciones</Label>
+        <Label htmlFor="campo-qr-6">Observaciones (opcional)</Label>
         <Textarea id="campo-qr-6" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
       </div>
-      <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-        <input type="checkbox" checked={soloUnUso} onChange={(e) => setSoloUnUso(e.target.checked)} />
-        Autorización de un solo uso
+      {horaInicio && horaFin && horaFin <= horaInicio && <Alert tone="amber">La hora de término debe ser posterior a la de inicio.</Alert>}
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-200">
+        <input type="checkbox" className="h-5 w-5 accent-brand-600" checked={soloUnUso} onChange={(e) => setSoloUnUso(e.target.checked)} />
+        Autorización de un solo uso (el QR deja de servir al entrar)
       </label>
       <p className="text-xs text-slate-500 dark:text-slate-400">
         Avísale a tu visita que registras su nombre para su ingreso al condominio.

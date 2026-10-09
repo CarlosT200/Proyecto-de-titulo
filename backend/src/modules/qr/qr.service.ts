@@ -130,6 +130,21 @@ export async function generarQrVisita(condominioId: string, residenteId: string,
   return { qrDataUrl: await generarImagenQr(token), expiraEn: visita.periodoFin };
 }
 
+// Volver a mostrar el QR ya generado de una visita (por ejemplo, para reenviarlo si se perdio el
+// mensaje). No crea un codigo nuevo: el que ya tiene la visita sigue siendo el mismo y sigue valiendo.
+export async function verQrVisita(condominioId: string, residenteId: string, visitaId: string) {
+  const visita = await prisma.visita.findFirst({
+    where: { id: visitaId, condominioId, residenteId },
+    include: { qrToken: true },
+  });
+  if (!visita) throw new NotFoundError("Visita no encontrada.");
+  if (!visita.qrToken) throw new NotFoundError("Esta visita aún no tiene un código QR.");
+  if (visita.estado !== EstadoVisita.VIGENTE || visita.qrToken.revocado || visita.periodoFin.getTime() < Date.now()) {
+    throw new ConflictError("El código de esta visita ya no está vigente.");
+  }
+  return { qrDataUrl: await generarImagenQr(visita.qrToken.token), expiraEn: visita.periodoFin };
+}
+
 // Vigencia por defecto de una visita "rapida": pensada para alguien que ya
 // viene en camino (delivery, invitado puntual), no para agendar con dias de
 // anticipacion -- si necesitan mas control (fecha futura, horario extenso)

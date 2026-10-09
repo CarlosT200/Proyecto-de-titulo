@@ -7,7 +7,7 @@ import { authApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { abiertaComoApp, esIOS } from "../lib/push";
-import { Alert, Badge, Button, Card, CardHeader, Input, Label, PageHeader } from "../components/ui";
+import { Alert, Button, Card, CardHeader, Input, Label, PageHeader } from "../components/ui";
 
 const ROL_LABEL: Record<string, string> = {
   ADMIN: "Administrador",
@@ -32,6 +32,7 @@ export default function Perfil() {
   const [confirmarNueva, setConfirmarNueva] = useState("");
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
   const [errorPassword, setErrorPassword] = useState<string | null>(null);
+  const [verPasswords, setVerPasswords] = useState(false);
 
   const fotoInputRef = useRef<HTMLInputElement>(null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
@@ -91,7 +92,7 @@ export default function Perfil() {
     e.preventDefault();
     setErrorPassword(null);
     if (nueva !== confirmarNueva) {
-      setErrorPassword("Las contrasenas nuevas no coinciden.");
+      setErrorPassword("Las contraseñas nuevas no coinciden.");
       return;
     }
     setCambiandoPassword(true);
@@ -114,8 +115,8 @@ export default function Perfil() {
       <PageHeader icon={UserCircle} title="Mi perfil" subtitle="Datos de tu cuenta y seguridad." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="h-fit">
-          <CardHeader title="Datos personales" />
+        <Card plana className="h-fit">
+          <CardHeader nivel={2} title="Datos personales" />
           <form onSubmit={handleGuardarPerfil} className="space-y-4 p-5">
             <div className="flex items-center gap-4">
               <div className="relative h-20 w-20 shrink-0">
@@ -123,7 +124,7 @@ export default function Perfil() {
                   {usuario.fotoUrl ? (
                     <img src={usuario.fotoUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
                   ) : (
-                    <UserCircle size={40} className="text-slate-400 dark:text-slate-500" />
+                    <UserCircle size={40} className="text-slate-500 dark:text-slate-400" aria-hidden />
                   )}
                 </div>
                 <button
@@ -154,16 +155,17 @@ export default function Perfil() {
                   <Camera size={16} />
                   {usuario.fotoUrl ? "Cambiar foto" : "Subir foto"}
                 </Button>
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">JPG, PNG o WEBP. Máx. 8MB.</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">JPG, PNG o WEBP. Máx. 8 MB.</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Rol</span>
-              <Badge tone="blue">{ROL_LABEL[usuario.rol]}</Badge>
-            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Cuenta de <span className="font-medium text-slate-900 dark:text-white">{ROL_LABEL[usuario.rol]}</span>
+              {usuario.condominio?.nombre ? ` · ${usuario.condominio.nombre}` : ""}
+            </p>
             <div>
               <Label htmlFor="campo-perfil-1">Correo electrónico</Label>
-              <Input id="campo-perfil-1" value={usuario.email} disabled className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400" />
+              <Input id="campo-perfil-1" value={usuario.email} disabled className="bg-slate-50 text-slate-600 dark:bg-slate-900/40 dark:text-slate-300" />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Para cambiar tu correo, pídeselo a la administración.</p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
@@ -176,8 +178,8 @@ export default function Perfil() {
               </div>
             </div>
             <div>
-              <Label htmlFor="campo-perfil-4">Teléfono</Label>
-              <Input id="campo-perfil-4" value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} placeholder="+56 9 1234 5678" />
+              <Label htmlFor="campo-perfil-4">Teléfono (opcional)</Label>
+              <Input id="campo-perfil-4" type="tel" inputMode="tel" maxLength={30} autoComplete="tel" value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} placeholder="+56 9 1234 5678" />
             </div>
             {errorPerfil && <Alert tone="red">{errorPerfil}</Alert>}
             <Button type="submit" className="w-full" loading={guardandoPerfil}>
@@ -186,13 +188,13 @@ export default function Perfil() {
           </form>
         </Card>
 
-        <Card className="h-fit">
-          <CardHeader title="Cambiar contraseña" subtitle="Tu contraseña se guarda cifrada." />
+        <Card plana className="h-fit">
+          <CardHeader nivel={2} title="Cambiar contraseña" subtitle="Usa al menos 8 caracteres. Se guarda cifrada." />
           <form onSubmit={handleCambiarPassword} className="space-y-4 p-5">
             <div>
               <Label htmlFor="campo-perfil-5">Contraseña actual</Label>
               <Input id="campo-perfil-5"
-                type="password"
+                type={verPasswords ? "text" : "password"}
                 required
                 autoComplete="current-password"
                 value={actual}
@@ -202,7 +204,7 @@ export default function Perfil() {
             <div>
               <Label htmlFor="campo-perfil-6">Nueva contraseña</Label>
               <Input id="campo-perfil-6"
-                type="password"
+                type={verPasswords ? "text" : "password"}
                 required
                 minLength={8}
                 autoComplete="new-password"
@@ -213,7 +215,7 @@ export default function Perfil() {
             <div>
               <Label htmlFor="campo-perfil-7">Confirmar nueva contraseña</Label>
               <Input id="campo-perfil-7"
-                type="password"
+                type={verPasswords ? "text" : "password"}
                 required
                 minLength={8}
                 autoComplete="new-password"
@@ -221,6 +223,11 @@ export default function Perfil() {
                 onChange={(e) => setConfirmarNueva(e.target.value)}
               />
             </div>
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+              <input type="checkbox" className="h-5 w-5 accent-brand-600" checked={verPasswords} onChange={(e) => setVerPasswords(e.target.checked)} />
+              Mostrar contraseñas
+            </label>
+            {confirmarNueva && nueva !== confirmarNueva && <p className="text-sm text-amber-700 dark:text-amber-300">Las contraseñas nuevas aún no coinciden.</p>}
             {errorPassword && <Alert tone="red">{errorPassword}</Alert>}
             <Button type="submit" variant="secondary" className="w-full" loading={cambiandoPassword}>
               <LockKey size={16} /> Actualizar contraseña
@@ -229,16 +236,17 @@ export default function Perfil() {
         </Card>
       </div>
 
-      <Card className="h-fit">
+      <Card plana className="h-fit">
         <CardHeader
+          nivel={2}
           title="Notificaciones"
           subtitle="Recíbelas como notificación del sistema, aunque no tengas HabitaSmart abierto. Solo se activan si tú lo autorizas, guardan un identificador de este navegador y se desactivan en este dispositivo al cerrar sesión."
         />
-        <div className="flex items-center justify-between gap-4 p-5">
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                push.habilitado ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400" : "bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500"
+                push.habilitado ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
               }`}
             >
               <BellRinging size={20} weight={push.habilitado ? "fill" : "regular"} />
@@ -272,6 +280,7 @@ export default function Perfil() {
               type="button"
               variant={push.habilitado ? "secondary" : "primary"}
               size="sm"
+              className="shrink-0 max-sm:min-h-11 max-sm:w-full"
               loading={push.cargando}
               onClick={push.habilitado ? handleDesactivarPush : handleActivarPush}
             >
@@ -281,8 +290,8 @@ export default function Perfil() {
         </div>
       </Card>
 
-      <Card className="h-fit">
-        <CardHeader title="Privacidad" subtitle="Qué datos tuyos usa HabitaSmart y cómo pedir acceso, corrección o eliminación." />
+      <Card plana className="h-fit">
+        <CardHeader nivel={2} title="Privacidad" subtitle="Qué datos tuyos usa HabitaSmart y cómo pedir acceso, corrección o eliminación." />
         <div className="p-5">
           <Link
             to="/privacidad"

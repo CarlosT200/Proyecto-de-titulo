@@ -19,6 +19,7 @@ router.post(
   requireRole(Rol.RESIDENTE),
   asyncHandler(controller.generarQrVisitaController)
 );
+router.get("/visitas/:id/qr", requireRole(Rol.RESIDENTE), asyncHandler(controller.verQrVisitaController));
 router.post(
   "/visitas/rapida",
   requireRole(Rol.RESIDENTE),
