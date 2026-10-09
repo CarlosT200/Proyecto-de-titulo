@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
 import {
   CalendarCheck,
+  CaretRight,
   CheckCircle,
   FileText,
   IdentificationBadge,
@@ -11,13 +11,15 @@ import {
   Warning,
   Wrench,
 } from "@phosphor-icons/react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { comunicadosApi, encomiendasApi, gastosComunesApi, incidenciasApi, multasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Badge, Card, CardHeader, EmptyState, Spinner, StatCard, staggerFade } from "../../components/ui";
+import { Card, CardHeader, EmptyState, Spinner } from "../../components/ui";
+import { Cifra } from "../../components/Cifra";
+import { ItemComunicado } from "../../components/Comunicados";
 import { AccesoRapido, ChipHero, HeroBanner, saludoSegunHora } from "../../components/Inicio";
-import { formatFechaHora, formatMonto } from "../../lib/format";
-import { TIPO_COMUNICADO_LABEL } from "../../lib/badges";
+import { formatMonto } from "../../lib/format";
 
 export default function ResidenteInicio() {
   const { usuario } = useAuth();
@@ -89,47 +91,63 @@ export default function ResidenteInicio() {
         <AccesoRapido to="/documentos" icon={FileText} titulo="Documentos" descripcion="Reglamentos" tono="purple" index={3} />
       </section>
 
-      {cargando ? (
+      {cargando && !(multas && incidencias && encomiendas && comunicados && cuenta) ? (
         <Spinner />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <StatCard
-              to="/gastos-comunes"
-              icon={Wallet}
-              label="Gastos comunes por pagar"
-              value={0}
-              valorTexto={formatMonto(saldoGastoComun)}
-              tone={gastoComunVencido > 0 ? "red" : saldoGastoComun > 0 ? "brand" : "green"}
-              index={0}
-            />
-            <StatCard to="/multas" icon={Warning} label="Multas pendientes" value={multasPendientes} tone="amber" index={1} />
-            <StatCard to="/incidencias" icon={Wrench} label="Incidencias abiertas" value={incidenciasAbiertas} tone="brand" index={2} />
-            <StatCard to="/encomiendas" icon={Package} label="Encomiendas por retirar" value={encomiendasPorRetirar} tone="purple" index={3} />
-          </div>
+          <Card plana className="overflow-hidden">
+            <CardHeader nivel={2} title="Tu resumen" subtitle="Toca una cifra para ver el detalle." />
+            <div className="grid grid-cols-2 gap-px bg-slate-100 lg:grid-cols-4 dark:bg-slate-700/60">
+              <Cifra
+                to="/gastos-comunes"
+                icono={Wallet}
+                etiqueta="Gasto común"
+                valor={saldoGastoComun > 0 ? formatMonto(saldoGastoComun) : 0}
+                detalle={gastoComunVencido > 0 ? `${formatMonto(gastoComunVencido)} vencido` : saldoGastoComun > 0 ? "por pagar" : "al día"}
+                alerta={gastoComunVencido > 0}
+              />
+              <Cifra to="/multas" icono={Warning} etiqueta="Multas" valor={multasPendientes} detalle={multasPendientes === 1 ? "pendiente" : "pendientes"} />
+              <Cifra
+                to="/incidencias"
+                icono={Wrench}
+                etiqueta="Incidencias"
+                valor={incidenciasAbiertas}
+                detalle={incidenciasAbiertas === 1 ? "abierta" : "abiertas"}
+              />
+              <Cifra
+                to="/encomiendas"
+                icono={Package}
+                etiqueta="Encomiendas"
+                valor={encomiendasPorRetirar}
+                detalle="por retirar"
+              />
+            </div>
+          </Card>
 
-          <Card>
-            <CardHeader title="Últimos comunicados" subtitle="Avisos de la administración" />
+          <Card plana className="overflow-hidden">
+            <CardHeader
+              nivel={2}
+              title="Últimos comunicados"
+              subtitle="Avisos de la administración"
+              action={
+                <Link
+                  to="/comunicados"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg text-sm font-medium text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:min-h-0 dark:text-brand-400"
+                >
+                  Ver todos <CaretRight size={14} aria-hidden />
+                </Link>
+              }
+            />
             {!comunicados?.length ? (
               <EmptyState icon={Megaphone} title="Sin comunicados recientes" />
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-white/[0.05]">
-                {comunicados.slice(0, 5).map((c, i) => (
-                  <motion.div key={c.id} {...staggerFade(i)} className="flex gap-3 px-5 py-4">
-                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
-                      <Megaphone size={18} weight="duotone" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{c.titulo}</p>
-                        <Badge tone="blue">{TIPO_COMUNICADO_LABEL[c.tipo]}</Badge>
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{c.contenido}</p>
-                      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{formatFechaHora(c.createdAt)}</p>
-                    </div>
-                  </motion.div>
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {comunicados.slice(0, 3).map((c) => (
+                  <li key={c.id}>
+                    <ItemComunicado comunicado={c} />
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </Card>
         </>

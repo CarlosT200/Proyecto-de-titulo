@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Buildings,
   CheckCircle,
@@ -14,14 +13,16 @@ import {
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { useAuth } from "../../context/AuthContext";
-import { Alert, Badge, Button, Card, CardHeader, EmptyState, Spinner, StatCard, staggerFade } from "../../components/ui";
+import clsx from "clsx";
+import { Alert, Button, Card, CardHeader, EmptyState, Spinner } from "../../components/ui";
+import { Cifra } from "../../components/Cifra";
 import { AccesoRapido, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
 import { DetalleAcceso } from "../../components/DetalleAcceso";
 import { ModalAtenderAlerta, unidadDeAlerta } from "../../components/AtenderAlerta";
-import { formatFechaHora } from "../../lib/format";
+import { horaLocal } from "../../lib/dias";
 import { haceCuanto } from "../../lib/tiempo";
 import { ENCOMIENDA_ATRASADA_HORAS } from "../../lib/umbrales";
-import { RESULTADO_ACCESO_LABEL, TIPO_EMERGENCIA_LABEL } from "../../lib/badges";
+import { TIPO_EMERGENCIA_LABEL } from "../../lib/badges";
 import type { AlertaSos } from "../../types";
 
 // Centro de control de conserjeria: las emergencias primero, despues lo pendiente del turno y los
@@ -52,15 +53,13 @@ export default function ConserjeInicio() {
       />
 
       {data && data.sos.alertas.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+        <section
           aria-labelledby="titulo-emergencias"
-          className="overflow-hidden rounded-2xl border border-red-200 bg-red-50 shadow-lg shadow-red-500/10 dark:border-red-500/30 dark:bg-red-500/10"
+          className="animate-aparece overflow-hidden rounded-2xl border-2 border-red-300 bg-red-50 shadow-lg shadow-red-500/10 dark:border-red-500/40 dark:bg-red-500/10"
         >
           <div className="flex items-center gap-2 border-b border-red-200 px-5 py-3 dark:border-red-500/30">
             <span className="relative flex h-3 w-3" aria-hidden>
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75 motion-reduce:animate-none" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-red-600" />
             </span>
             <h2 id="titulo-emergencias" className="font-display text-base font-semibold text-red-800 dark:text-red-200">
@@ -77,9 +76,9 @@ export default function ConserjeInicio() {
                       {TIPO_EMERGENCIA_LABEL[a.tipo]} · {a.usuario.nombre} {a.usuario.apellido}
                       {unidad ? ` (${unidad})` : ""}
                     </p>
-                    <p className="text-xs text-red-700 dark:text-red-300">Activada {haceCuanto(a.createdAt)}</p>
+                    <p className="text-sm text-red-800 dark:text-red-200">Activada {haceCuanto(a.createdAt)}</p>
                   </div>
-                  <Button variant="danger" className="shrink-0 self-start sm:self-center" onClick={() => setAtendiendo(a)}>
+                  <Button variant="danger" className="min-h-12 shrink-0 max-sm:w-full sm:self-center" onClick={() => setAtendiendo(a)}>
                     <CheckCircle size={16} weight="bold" aria-hidden /> Marcar como atendida
                   </Button>
                 </li>
@@ -87,11 +86,11 @@ export default function ConserjeInicio() {
             })}
           </ul>
           {data.sos.activas > data.sos.alertas.length && (
-            <Link to="/alertas-sos" className="block px-5 py-3 text-sm font-medium text-red-700 hover:underline dark:text-red-300">
+            <Link to="/alertas-sos" className="flex min-h-11 items-center px-5 text-sm font-medium text-red-800 hover:underline dark:text-red-200">
               Ver todas las alertas activas
             </Link>
           )}
-        </motion.section>
+        </section>
       )}
 
       <section aria-label="Acciones rápidas" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -136,15 +135,19 @@ export default function ConserjeInicio() {
             ]}
           />
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <StatCard to="/encomiendas?estado=NOTIFICADA" icon={Package} label="Encomiendas por entregar" value={data.encomiendas.pendientes} tone="purple" index={0} />
-            <StatCard to="/alertas-sos" icon={Siren} label="Alertas SOS activas" value={data.sos.activas} tone="red" index={1} />
-            <StatCard to="/accesos?resultado=AUTORIZADO&periodo=hoy" icon={CheckCircle} label="Accesos autorizados hoy" value={data.accesos.hoyAutorizados} tone="green" index={2} />
-            <StatCard to="/accesos?resultado=RECHAZADO&periodo=hoy" icon={WarningCircle} label="Accesos rechazados hoy" value={data.accesos.hoyRechazados} tone="amber" index={3} />
-          </div>
+          <Card plana className="overflow-hidden">
+            <CardHeader nivel={2} title="El turno en cifras" subtitle="Toca una cifra para ver la lista." />
+            <div className="grid grid-cols-2 gap-px bg-slate-100 lg:grid-cols-4 dark:bg-slate-700/60">
+              <Cifra to="/encomiendas?estado=NOTIFICADA" icono={Package} etiqueta="Encomiendas" valor={data.encomiendas.pendientes} detalle="por entregar" />
+              <Cifra to="/alertas-sos" icono={Siren} etiqueta="Alertas SOS" valor={data.sos.activas} detalle={data.sos.activas === 1 ? "activa" : "activas"} alerta />
+              <Cifra to="/accesos?resultado=AUTORIZADO&periodo=hoy" icono={CheckCircle} etiqueta="Autorizados" valor={data.accesos.hoyAutorizados} detalle="accesos de hoy" />
+              <Cifra to="/accesos?resultado=RECHAZADO&periodo=hoy" icono={WarningCircle} etiqueta="Rechazados" valor={data.accesos.hoyRechazados} detalle="accesos de hoy" alerta />
+            </div>
+          </Card>
 
-          <Card>
+          <Card plana className="overflow-hidden">
             <CardHeader
+              nivel={2}
               title="Accesos recientes"
               action={
                 <Link to="/accesos" className="text-sm font-medium text-brand-600 hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center dark:text-brand-400">
@@ -155,20 +158,33 @@ export default function ConserjeInicio() {
             {data.accesos.recientes.length === 0 ? (
               <EmptyState icon={QrCode} title="Aún no hay accesos registrados" />
             ) : (
-              <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                {data.accesos.recientes.map((a, i) => (
-                  <motion.div key={a.id} {...staggerFade(i)} className="flex items-center justify-between gap-3 px-5 py-3">
-                    <div className="min-w-0">
-                      {a.detalle ? <DetalleAcceso detalle={a.detalle} /> : <p className="text-sm text-slate-700 dark:text-slate-300">{a.motivo}</p>}
-                      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                        {a.detalle && a.resultado === "RECHAZADO" ? `${a.motivo} · ` : ""}
-                        {formatFechaHora(a.createdAt)}
-                      </p>
-                    </div>
-                    <Badge tone={a.resultado === "AUTORIZADO" ? "green" : "red"}>{RESULTADO_ACCESO_LABEL[a.resultado]}</Badge>
-                  </motion.div>
-                ))}
-              </div>
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {data.accesos.recientes.map((a) => {
+                  const ok = a.resultado === "AUTORIZADO";
+                  return (
+                    <li key={a.id} className="flex items-start gap-3 px-5 py-3">
+                      <span
+                        className={clsx(
+                          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                          ok ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+                        )}
+                      >
+                        {ok ? <CheckCircle size={18} weight="fill" aria-hidden /> : <XCircle size={18} weight="fill" aria-hidden />}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          {a.detalle ? <DetalleAcceso detalle={a.detalle} className="min-w-0" /> : <p className="min-w-0 text-sm font-medium text-slate-900 dark:text-slate-100">{a.motivo}</p>}
+                          <span className="shrink-0 text-sm tabular-nums text-slate-600 dark:text-slate-300">{horaLocal(a.createdAt)}</span>
+                        </div>
+                        <p className={clsx("mt-0.5 text-sm", ok ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300")}>
+                          {ok ? "Autorizado" : "Rechazado"}
+                          {a.detalle && !ok ? `: ${a.motivo}` : ""}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </Card>
         </>

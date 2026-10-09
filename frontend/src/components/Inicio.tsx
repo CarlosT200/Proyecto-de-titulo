@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import { Buildings, CaretRight, CheckCircle, Icon as PhosphorIcon, WarningCircle } from "@phosphor-icons/react";
 import { STAT_TONES } from "./ui";
@@ -56,11 +55,10 @@ export function HeroBanner({
     );
   }
 
+  // Sin animacion de entrada: el inicio es la pantalla que mas se abre (DESIGN.md, movimiento solo
+  // para senalar un cambio). Lo expresivo queda en el degrade y la grilla.
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+    <section
       className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-accent-600 p-6 text-white shadow-xl shadow-brand-900/20 sm:p-8"
     >
       <div
@@ -86,7 +84,7 @@ export function HeroBanner({
         {subtitulo && <p className="mt-1 max-w-xl text-sm text-white/85 sm:text-base">{subtitulo}</p>}
         {children && <div className="mt-5">{children}</div>}
       </div>
-    </motion.section>
+    </section>
   );
 }
 
@@ -148,34 +146,30 @@ export function AccesoRapido({
   titulo,
   descripcion,
   tono = "brand",
-  index = 0,
 }: {
   to: string;
   icon: PhosphorIcon;
   titulo: string;
   descripcion?: string;
   tono?: keyof typeof STAT_TONES;
+  /** Ya no se usa (antes escalonaba la entrada); se acepta para no romper llamadas. */
   index?: number;
 }) {
   const colores = STAT_TONES[tono];
+  // Superficie solida con borde; el color vive en el icono. Sin entrada animada; el leve ascenso
+  // al pasar el mouse solo existe con mouse (en el celular quedaba "pegado" tras tocar).
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.1 + index * 0.06, ease: "easeOut" }}
+    <Link
+      to={to}
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50 transition-[transform,box-shadow] duration-150 ease-salida active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:border-white/[0.06] dark:bg-slate-800 dark:shadow-none [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5 [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-lg"
     >
-      <Link
-        to={to}
-        className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm shadow-slate-200/50 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-300/40 active:scale-[0.98] dark:border-white/[0.06] dark:bg-slate-800/80 dark:shadow-black/20"
-      >
-        <div aria-hidden className={clsx("absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl", colores.brillo)} />
-        <div className={clsx("relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg", colores.icono)}>
-          <Icon size={24} weight="fill" />
-        </div>
-        <p className="relative mt-3 text-sm font-semibold text-slate-900 dark:text-white">{titulo}</p>
-        {descripcion && <p className="relative text-xs text-slate-500 dark:text-slate-400">{descripcion}</p>}
-      </Link>
-    </motion.div>
+      <div aria-hidden className={clsx("absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl", colores.brillo)} />
+      <div className={clsx("relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md", colores.icono)}>
+        <Icon size={24} weight="fill" aria-hidden />
+      </div>
+      <p className="relative mt-3 text-sm font-semibold text-slate-900 dark:text-white">{titulo}</p>
+      {descripcion && <p className="relative text-sm text-slate-600 dark:text-slate-300">{descripcion}</p>}
+    </Link>
   );
 }
 
@@ -241,7 +235,7 @@ export function RequiereAtencion({ items }: { items: ItemAtencion[] }) {
                   <CaretRight
                     size={16}
                     weight="bold"
-                    className="text-slate-300 transition-transform duration-150 ease-salida group-hover:text-brand-500 dark:text-slate-600 [@media(hover:hover)_and_(pointer:fine)]:group-hover:translate-x-0.5"
+                    className="text-slate-400 transition-transform duration-150 ease-salida group-hover:text-brand-500 dark:text-slate-500 [@media(hover:hover)_and_(pointer:fine)]:group-hover:translate-x-0.5"
                     aria-hidden
                   />
                 </Link>
