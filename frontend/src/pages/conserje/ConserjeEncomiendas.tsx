@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Package, Plus } from "@phosphor-icons/react";
 import { encomiendasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
@@ -45,6 +44,7 @@ export default function ConserjeEncomiendas() {
   // En celular el formulario esta plegado para que lo primero que se vea sean las encomiendas por
   // entregar; desde 1280 px siempre esta visible a un lado.
   const [formAbierto, setFormAbierto] = useState(false);
+  const [nuevaId, setNuevaId] = useState<string | null>(null);
   const enfocarAlAbrir = useRef(false);
 
   function alternarFormulario() {
@@ -102,7 +102,8 @@ export default function ConserjeEncomiendas() {
       const foto = fotoRef.current?.files?.[0];
       if (foto) datos.append("foto", foto);
 
-      await encomiendasApi.crear(datos);
+      const creada = await encomiendasApi.crear(datos);
+      setNuevaId(creada.id);
       limpiarFormulario();
       setFormAbierto(false);
       toast.success("Encomienda registrada. El residente ya fue notificado.");
@@ -171,7 +172,7 @@ export default function ConserjeEncomiendas() {
               </Select>
             </div>
             {esOtro && (
-              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
+              <div className="animate-aparece">
                 <Label htmlFor="campo-encomiendas-otro">Especifica el remitente</Label>
                 <Input
                   id="campo-encomiendas-otro"
@@ -182,7 +183,7 @@ export default function ConserjeEncomiendas() {
                   onChange={(e) => setOtroRemitente(e.target.value)}
                   placeholder="Ej: Amazon, tienda del barrio, particular…"
                 />
-              </motion.div>
+              </div>
             )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <div>
@@ -238,7 +239,7 @@ export default function ConserjeEncomiendas() {
         </div>
 
         <div className="xl:col-span-2">
-          <ListaEncomiendas data={data} cargando={cargando} error={error} puedeGestionar onActualizada={recargar} />
+          <ListaEncomiendas data={data} cargando={cargando} error={error} puedeGestionar onActualizada={recargar} nuevaId={nuevaId} />
         </div>
       </div>
     </div>

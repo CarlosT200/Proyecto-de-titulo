@@ -1,6 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import { ArrowUUpLeft, HandArrowUp, MapPin, Package, Warning } from "@phosphor-icons/react";
 import { encomiendasApi } from "../api/endpoints";
@@ -8,16 +7,49 @@ import { mensajeError } from "../api/client";
 import { useAsync } from "../hooks/useAsync";
 import { useFiltroUrl } from "../hooks/useFiltroUrl";
 import { useEsCelular } from "../hooks/useEsCelular";
+import { useAcercarAlAparecer } from "../hooks/useAcercarAlAparecer";
+import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
 import { useToast } from "../context/ToastContext";
 import { CeldaResumen } from "./CeldaResumen";
-import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, SearchInput, Select, Spinner, staggerFade, Textarea } from "./ui";
+import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, SearchInput, Select, Spinner, Textarea } from "./ui";
 import { formatFechaHora } from "../lib/format";
 import { fechaEnRango } from "../lib/filters";
 import { esAtrasada, esPorRetirar, ordenarEncomiendas, retiradaHoy } from "../lib/encomiendas";
 import { haceCuanto, nivelAntiguedad } from "../lib/tiempo";
 import { ENCOMIENDA_ATRASADA_HORAS } from "../lib/umbrales";
 import { ESTADO_ENCOMIENDA_LABEL, ESTADO_ENCOMIENDA_TONO } from "../lib/badges";
-import type { Encomienda } from "../types";
+import type { Encomienda, EstadoEncomienda } from "../types";
+
+// Cuando el estado cambia (se entrega o se devuelve) la insignia entra con un movimiento corto para que
+// se note; al cargar la pagina no se mueve.
+export function BadgeEstadoEncomienda({ estado }: { estado: EstadoEncomienda }) {
+  const pulso = usePulsoAlCambiar(estado);
+  return (
+    <span key={pulso} className={clsx("inline-flex", pulso > 0 && "animate-aparece")}>
+      <Badge tone={ESTADO_ENCOMIENDA_TONO[estado]}>{ESTADO_ENCOMIENDA_LABEL[estado]}</Badge>
+    </span>
+  );
+}
+
+// La encomienda recien registrada entra con un movimiento corto y, si quedo fuera de la pantalla
+// (en celular la lista es larga), se acerca para confirmar que quedo registrada.
+function ItemTarjeta({ nueva, children }: { nueva: boolean; children: ReactNode }) {
+  const ref = useAcercarAlAparecer<HTMLLIElement>(nueva, 1279);
+  return (
+    <li ref={ref} className={clsx("space-y-1.5 px-5 py-3.5", nueva && "animate-aparece")}>
+      {children}
+    </li>
+  );
+}
+
+function FilaTabla({ nueva, children }: { nueva: boolean; children: ReactNode }) {
+  const ref = useAcercarAlAparecer<HTMLTableRowElement>(nueva, 1279);
+  return (
+    <tr ref={ref} className={clsx(nueva && "animate-aparece")}>
+      {children}
+    </tr>
+  );
+}
 
 export function unidadDe(usuario: Encomienda["usuario"]): string | null {
   if (!usuario?.departamento) return null;
@@ -106,7 +138,7 @@ export function ModalEncomienda({
       ) : (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
+            <BadgeEstadoEncomienda estado={enc.estado} />
             <AntiguedadEncomienda encomienda={enc} />
           </div>
 
@@ -326,12 +358,15 @@ export function ListaEncomiendas({
   error,
   puedeGestionar,
   onActualizada,
+  nuevaId = null,
 }: {
   data: Encomienda[] | null;
   cargando: boolean;
   error: string | null;
   puedeGestionar: boolean;
   onActualizada: () => void;
+  /** Encomienda recien registrada: entra con movimiento y se acerca a la vista. */
+  nuevaId?: string | null;
 }) {
   const [params, setParams] = useSearchParams();
   const esCelular = useEsCelular();
@@ -440,11 +475,11 @@ export function ListaEncomiendas({
             {/* Celular: una tarjeta compacta por encomienda (quien, de quien, hace cuanto y la accion).
                 Desde 640 px: tabla. */}
             <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
-              {filtradas.map((enc, i) => (
-                <motion.li key={enc.id} {...staggerFade(i)} className="space-y-1.5 px-5 py-3.5">
+              {filtradas.map((enc) => (
+                <ItemTarjeta key={enc.id} nueva={enc.id === nuevaId}>
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">{nombreDe(enc)}</p>
-                    <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
+                    <BadgeEstadoEncomienda estado={enc.estado} />
                   </div>
                   <p className="break-words text-sm text-slate-600 dark:text-slate-300">
                     {[unidadDe(enc.usuario), enc.remitente ?? "Sin especificar", enc.numeroSeguimiento && `N° ${enc.numeroSeguimiento}`]
@@ -459,7 +494,7 @@ export function ListaEncomiendas({
                     )}
                   </p>
                   {accion(enc, "mt-1 w-full")}
-                </motion.li>
+                </ItemTarjeta>
               ))}
             </ul>
 
@@ -477,8 +512,8 @@ export function ListaEncomiendas({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                  {filtradas.map((enc, i) => (
-                    <motion.tr key={enc.id} {...staggerFade(i)}>
+                  {filtradas.map((enc) => (
+                    <FilaTabla key={enc.id} nueva={enc.id === nuevaId}>
                       <td className="px-5 py-3">
                         <span className="font-medium text-slate-900 dark:text-slate-100">{nombreDe(enc)}</span>
                         {unidadDe(enc.usuario) && (
@@ -500,10 +535,10 @@ export function ListaEncomiendas({
                         )}
                       </td>
                       <td className="px-5 py-3">
-                        <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
+                        <BadgeEstadoEncomienda estado={enc.estado} />
                       </td>
                       <td className="px-5 py-3 text-right">{accion(enc)}</td>
-                    </motion.tr>
+                    </FilaTabla>
                   ))}
                 </tbody>
               </table>

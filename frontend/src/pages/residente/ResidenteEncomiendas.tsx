@@ -1,26 +1,24 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Camera, MapPin, Package } from "@phosphor-icons/react";
 import { encomiendasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Badge, Button, Card, CardHeader, EmptyState, PageHeader, Spinner, staggerFade } from "../../components/ui";
-import { AntiguedadEncomienda, ModalEncomienda } from "../../components/Encomiendas";
+import { Alert, Button, Card, CardHeader, EmptyState, PageHeader, Spinner } from "../../components/ui";
+import { AntiguedadEncomienda, BadgeEstadoEncomienda, ModalEncomienda } from "../../components/Encomiendas";
 import { formatFechaHora } from "../../lib/format";
 import { esAtrasada, esPorRetirar, ordenarEncomiendas } from "../../lib/encomiendas";
 import { haceCuanto } from "../../lib/tiempo";
-import { ESTADO_ENCOMIENDA_LABEL, ESTADO_ENCOMIENDA_TONO } from "../../lib/badges";
 import type { Encomienda } from "../../types";
 
 const HISTORIAL_VISIBLE = 5;
 
-function FilaEncomienda({ enc, index, onVer }: { enc: Encomienda; index: number; onVer: () => void }) {
+function FilaEncomienda({ enc, onVer }: { enc: Encomienda; onVer: () => void }) {
   return (
-    <motion.li {...staggerFade(index)} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{enc.remitente ?? "Remitente no especificado"}</p>
-          <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
+          <BadgeEstadoEncomienda estado={enc.estado} />
         </div>
         {enc.estado === "NOTIFICADA" ? (
           <>
@@ -52,7 +50,7 @@ function FilaEncomienda({ enc, index, onVer }: { enc: Encomienda; index: number;
         {enc.tieneFoto && <Camera size={14} aria-hidden />}
         {enc.tieneFoto ? "Ver foto y detalle" : "Ver detalle"}
       </Button>
-    </motion.li>
+    </li>
   );
 }
 
@@ -123,8 +121,8 @@ export default function ResidenteEncomiendas() {
             <Card plana>
               <CardHeader nivel={2} title="Por retirar" />
               <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                {porRetirar.map((enc, i) => (
-                  <FilaEncomienda key={enc.id} enc={enc} index={i} onVer={() => abrir(enc.id)} />
+                {porRetirar.map((enc) => (
+                  <FilaEncomienda key={enc.id} enc={enc} onVer={() => abrir(enc.id)} />
                 ))}
               </ul>
             </Card>
@@ -134,8 +132,8 @@ export default function ResidenteEncomiendas() {
             <Card plana>
               <CardHeader nivel={2} title="Historial" />
               <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                {historialVisible.map((enc, i) => (
-                  <FilaEncomienda key={enc.id} enc={enc} index={i} onVer={() => abrir(enc.id)} />
+                {historialVisible.map((enc) => (
+                  <FilaEncomienda key={enc.id} enc={enc} onVer={() => abrir(enc.id)} />
                 ))}
               </ul>
               {historial.length > HISTORIAL_VISIBLE && (
