@@ -1,0 +1,28 @@
+# Cada hora le pide a HabitaSmart que envie los recordatorios automaticos (gasto comun por vencer o
+# vencido y encomiendas sin retirar). Hace falta porque en el plan gratis de Render el servidor se
+# duerme sin visitas y su revision interna no corre.
+#
+# Para activarla (una sola vez): en GitHub > Settings > Secrets and variables > Actions, crear
+#   HABITASMART_URL = https://habitasmart.onrender.com
+#   TAREAS_TOKEN    = la misma clave que la variable TAREAS_TOKEN del servicio en Render
+# Sin esos secretos, la tarea no hace nada (no falla).
+name: Recordatorios
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  recordatorios:
+    runs-on: ubuntu-latest
+    env:
+      URL: ${{ secrets.HABITASMART_URL }}
+      TOKEN: ${{ secrets.TAREAS_TOKEN }}
+    steps:
+      - name: Pedir el envio de recordatorios
+        if: ${{ env.URL != '' && env.TOKEN != '' }}
+        run: |
+          curl -fsS -X POST "$URL/api/tareas/recordatorios" \
+            -H "x-tarea-token: $TOKEN" \
+            --max-time 120 --retry 3 --retry-delay 30 --retry-all-errors

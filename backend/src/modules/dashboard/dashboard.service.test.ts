@@ -10,6 +10,7 @@ vi.mock("../../lib/prisma", () => ({
     alertaSos: { count: vi.fn(), findMany: vi.fn() },
     accesoLog: { findMany: vi.fn(), groupBy: vi.fn() },
     cobroGastoComun: { aggregate: vi.fn(), groupBy: vi.fn() },
+    comprobantePago: { count: vi.fn() },
   },
 }));
 
@@ -32,6 +33,7 @@ beforeEach(() => {
   p.accesoLog.groupBy.mockResolvedValue([]);
   p.cobroGastoComun.aggregate.mockResolvedValue({ _sum: { montoTotal: null, montoPagado: null } });
   p.cobroGastoComun.groupBy.mockResolvedValue([]);
+  p.comprobantePago.count.mockResolvedValue(0);
 });
 
 describe("filtroReservasProximas", () => {
@@ -101,6 +103,7 @@ describe("obtenerIndicadores: requiere atención", () => {
       multasApeladas: 1,
       encomiendasAtrasadas: 4,
       unidadesMorosas: 2,
+      comprobantesPorRevisar: 0,
     });
     expect(r.gastosComunes).toEqual({ deudaVencida: 250000, unidadesMorosas: 2 });
     // vencido = sin pagar y con vencimiento anterior a hoy en Chile

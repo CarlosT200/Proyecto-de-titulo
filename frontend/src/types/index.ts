@@ -236,6 +236,7 @@ export interface Indicadores {
     multasApeladas: number;
     encomiendasAtrasadas: number;
     unidadesMorosas: number;
+    comprobantesPorRevisar: number;
   };
   incidencias: {
     pendientes: number;
@@ -360,6 +361,31 @@ export interface CobroGastoComunDetalle {
     partidas: PartidaGastoComun[];
   };
   pagos: PagoGastoComun[];
+  comprobantes: ComprobantePago[];
+}
+
+export type EstadoComprobante = "PENDIENTE" | "APROBADO" | "RECHAZADO";
+
+// Pago que informa el residente con su comprobante; suma al saldo solo cuando la administracion lo aprueba.
+export interface ComprobantePago {
+  id: string;
+  monto: number;
+  fechaPago: string;
+  medio: MedioPago;
+  referencia: string | null;
+  estado: EstadoComprobante;
+  motivoRechazo: string | null;
+  revisadoEn: string | null;
+  createdAt: string;
+  informadoPor?: { nombre: string; apellido: string };
+  /** Pago registrado al aprobar (puede ser menor a lo informado). */
+  pago?: { monto: number } | null;
+}
+
+export interface ComprobanteParaRevisar extends ComprobantePago {
+  informadoPor: { nombre: string; apellido: string };
+  revisadoPor: { nombre: string; apellido: string } | null;
+  cobro: { id: string; departamento: UnidadGastoComun; periodo: { anio: number; mes: number }; saldo: number };
 }
 
 export interface UnidadMorosa {
@@ -381,6 +407,7 @@ export interface MiCuentaGastoComun {
     montoPagado: number;
     saldo: number;
     estado: EstadoCobro;
+    comprobantePendiente: boolean;
     periodo: { anio: number; mes: number; fechaVencimiento: string };
   }[];
 }

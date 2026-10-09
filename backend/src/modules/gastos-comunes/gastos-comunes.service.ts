@@ -15,7 +15,7 @@ import {
   repartirMonto,
 } from "../../lib/gastosComunes";
 
-const UNIDAD = { select: { id: true, numero: true, torre: { select: { nombre: true } } } } as const;
+export const UNIDAD = { select: { id: true, numero: true, torre: { select: { nombre: true } } } } as const;
 const RESIDENTES_ACTIVOS = {
   where: { activo: true, rol: Rol.RESIDENTE },
   select: { id: true, nombre: true, apellido: true },
@@ -32,11 +32,11 @@ function compararUnidades(a: Unidad, b: Unidad) {
   );
 }
 
-function aFecha(valor: string) {
+export function aFecha(valor: string) {
   return new Date(`${valor}T00:00:00.000Z`);
 }
 
-async function idsResidentes(departamentoId: string) {
+export async function idsResidentes(departamentoId: string) {
   const residentes = await prisma.usuario.findMany({
     where: { departamentoId, activo: true, rol: Rol.RESIDENTE },
     select: { id: true },
@@ -311,6 +311,27 @@ export async function listarMorosidad(condominioId: string, instante: Date = new
   return [...porUnidad.values()].sort((a, b) => b.deuda - a.deuda || compararUnidades(a.departamento, b.departamento));
 }
 
+// Suma un pago al cobro solo si no supera el saldo, en la misma sentencia: dos registros simultaneos
+// del mismo pago no pueden dejar el cobro pagado de mas. Devuelve el pago creado, o null si no cabe.
+// Se usa al registrar un pago y al aprobar el comprobante que informo un residente.
+export async function sumarPago(
+  tx: Prisma.TransactionClient,
+  cobroId: string,
+  data: { monto: number; fechaPago: Date; medio: MedioPago; referencia?: string | null },
+  registradoPorId: string
+) {
+  const filas = await tx.$executeRaw`
+    UPDATE "cobros_gasto_comun"
+    SET "montoPagado" = "montoPagado" + ${data.monto},
+        "pagado" = ("montoPagado" + ${data.monto} >= "montoTotal"),
+        "updatedAt" = NOW()
+    WHERE "id" = ${cobroId} AND "montoPagado" + ${data.monto} <= "montoTotal"`;
+  if (filas === 0) return null;
+  return tx.pagoGastoComun.create({
+    data: { cobroId, monto: data.monto, fechaPago: data.fechaPago, medio: data.medio, referencia: data.referencia ?? undefined, registradoPorId },
+  });
+}
+
 export async function registrarPago(
   condominioId: string,
   cobroId: string,
@@ -329,19 +350,9 @@ export async function registrarPago(
     throw new AppError("La fecha de pago no puede ser posterior a hoy.", 422);
   }
 
-  // Suma el pago solo si no supera el saldo, en la misma sentencia: dos registros simultaneos del
-  // mismo pago no pueden dejar el cobro pagado de mas.
   const resultado = await prisma.$transaction(async (tx) => {
-    const filas = await tx.$executeRaw`
-      UPDATE "cobros_gasto_comun"
-      SET "montoPagado" = "montoPagado" + ${data.monto},
-          "pagado" = ("montoPagado" + ${data.monto} >= "montoTotal"),
-          "updatedAt" = NOW()
-      WHERE "id" = ${cobroId} AND "montoPagado" + ${data.monto} <= "montoTotal"`;
-    if (filas === 0) return null;
-    await tx.pagoGastoComun.create({
-      data: { cobroId, monto: data.monto, fechaPago, medio: data.medio, referencia: data.referencia, registradoPorId },
-    });
+    const pago = await sumarPago(tx, cobroId, { ...data, fechaPago }, registradoPorId);
+    if (!pago) return null;
     return tx.cobroGastoComun.findUnique({ where: { id: cobroId }, select: { montoTotal: true, montoPagado: true, pagado: true } });
   });
 
@@ -464,12 +475,14 @@ export async function obtenerMiCuenta(usuarioId: string, instante: Date = new Da
       montoPagado: true,
       pagado: true,
       periodo: { select: { anio: true, mes: true, fechaVencimiento: true, instruccionesPago: true } },
+      _count: { select: { comprobantes: { where: { estado: "PENDIENTE" } } } },
     },
     orderBy: [{ periodo: { anio: "desc" } }, { periodo: { mes: "desc" } }],
   });
 
-  const cobros = registros.map(({ periodo, pagado, ...c }) => ({
+  const cobros = registros.map(({ periodo, pagado, _count, ...c }) => ({
     ...c,
+    comprobantePendiente: (_count?.comprobantes ?? 0) > 0,
     periodo: { anio: periodo.anio, mes: periodo.mes, fechaVencimiento: periodo.fechaVencimiento },
     saldo: c.montoTotal - c.montoPagado,
     estado: estadoCobro(pagado, periodo.fechaVencimiento, hoy),
@@ -535,6 +548,22 @@ export async function obtenerCobro(
                 anuladoPor: { select: { nombre: true, apellido: true } },
               }
             : {}),
+        },
+      },
+      comprobantes: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          monto: true,
+          fechaPago: true,
+          medio: true,
+          referencia: true,
+          estado: true,
+          motivoRechazo: true,
+          revisadoEn: true,
+          createdAt: true,
+          informadoPor: { select: { nombre: true, apellido: true } },
+          pago: { select: { monto: true } },
         },
       },
     },

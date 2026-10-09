@@ -37,6 +37,8 @@ const RUTA_POR_ENTIDAD: Record<string, string> = {
   Comunicado: "/comunicados",
   AlertaSos: "/alertas-sos",
   CobroGastoComun: "/gastos-comunes",
+  // aviso a la administracion: comprobante de pago por revisar
+  ComprobantePago: "/gastos-comunes?vista=comprobantes",
 };
 
 export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNode }) {

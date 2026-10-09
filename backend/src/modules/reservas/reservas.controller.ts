@@ -1,12 +1,17 @@
 import { Request, Response } from "express";
 import { Rol } from "@prisma/client";
-import { crearReservaSchema, disponibilidadQuerySchema } from "./reservas.schema";
+import { crearReservaSchema, disponibilidadQuerySchema, ocupacionQuerySchema } from "./reservas.schema";
 import * as reservasService from "./reservas.service";
 import { auditar } from "../auditoria/auditoria.service";
 
 export async function disponibilidadController(req: Request, res: Response) {
   const { espacioComunId, fecha } = disponibilidadQuerySchema.parse(req.query);
   res.json(await reservasService.consultarDisponibilidad(req.auth!.condominioId, espacioComunId, fecha));
+}
+
+export async function ocupacionController(req: Request, res: Response) {
+  const { espacioComunId, desde, hasta } = ocupacionQuerySchema.parse(req.query);
+  res.json(await reservasService.consultarOcupacion(req.auth!.condominioId, espacioComunId, desde, hasta));
 }
 
 export async function crearReservaController(req: Request, res: Response) {

@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { CalendarBlank, CheckCircle, Copy, Wallet, WarningCircle } from "@phosphor-icons/react";
 import { gastosComunesApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Button, Card, CardHeader, EmptyState, PageHeader, Spinner } from "../../components/ui";
+import { Alert, Badge, Button, Card, CardHeader, EmptyState, PageHeader, Spinner } from "../../components/ui";
 import { Cifra } from "../../components/Cifra";
 import { EstadoCobroBadge, ModalCobro } from "../../components/GastosComunes";
 import { useToast } from "../../context/ToastContext";
@@ -111,7 +111,7 @@ export default function ResidenteGastosComunes() {
               <CardHeader
                 nivel={2}
                 title="Cómo pagar"
-                subtitle="Indicaciones de la administración"
+                subtitle="Después de pagar, abre el mes y envía tu comprobante."
                 action={
                   <Button size="sm" variant="secondary" className="shrink-0 max-sm:min-h-11" onClick={() => copiarInstrucciones(data.instruccionesPago!)}>
                     <Copy size={14} aria-hidden /> Copiar
@@ -142,6 +142,7 @@ export default function ResidenteGastosComunes() {
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="font-medium text-slate-900 dark:text-slate-100">{tituloPeriodo(c.periodo.anio, c.periodo.mes)}</span>
                           <EstadoCobroBadge estado={c.estado} />
+                          {c.comprobantePendiente && <Badge tone="amber">Pago en revisión</Badge>}
                         </span>
                         <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-300">
                           {c.estado === "PAGADO" ? `Total ${formatMonto(c.montoTotal)}` : `Vence el ${fechaLarga(c.periodo.fechaVencimiento)}`}

@@ -13,6 +13,7 @@ import {
   Megaphone,
   Package,
   QrCode,
+  Receipt,
   Siren,
   Wallet,
   Warning,
@@ -188,6 +189,14 @@ export default function AdminDashboard() {
             to: "/encomiendas?estado=ATRASADA",
             tono: "amber",
             icono: Package,
+          },
+          {
+            cantidad: data.atencion.comprobantesPorRevisar ?? 0,
+            singular: "comprobante de pago por revisar",
+            plural: "comprobantes de pago por revisar",
+            to: "/gastos-comunes?vista=comprobantes",
+            tono: "amber",
+            icono: Receipt,
           },
           {
             cantidad: data.atencion.unidadesMorosas,

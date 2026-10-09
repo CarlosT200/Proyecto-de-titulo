@@ -65,6 +65,7 @@ beforeEach(() => {
   p.usuario.findMany.mockResolvedValue([{ id: "r-1" }]);
   p.periodoGastoComun.create.mockResolvedValue({});
   p.cobroGastoComun.createMany.mockResolvedValue({ count: 3 });
+  p.pagoGastoComun.create.mockResolvedValue({ id: "pago-nuevo" });
 });
 
 describe("crearPeriodo", () => {

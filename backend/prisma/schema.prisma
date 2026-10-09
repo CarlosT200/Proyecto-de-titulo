@@ -131,6 +131,7 @@ model Condominio {
   auditorias         Auditoria[]
   periodosGastoComun PeriodoGastoComun[]
   cobrosGastoComun   CobroGastoComun[]
+  comprobantesPago   ComprobantePago[]
 
   @@map("condominios")
 }
@@ -214,6 +215,8 @@ model Usuario {
   periodosGastoComunCreados  PeriodoGastoComun[]   @relation("PeriodoGastoComunCreadoPor")
   pagosGastoComunRegistrados PagoGastoComun[]      @relation("PagoGastoComunRegistradoPor")
   pagosGastoComunAnulados    PagoGastoComun[]      @relation("PagoGastoComunAnuladoPor")
+  comprobantesInformados     ComprobantePago[]     @relation("ComprobanteInformadoPor")
+  comprobantesRevisados      ComprobantePago[]     @relation("ComprobanteRevisadoPor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -633,6 +636,7 @@ model CobroGastoComun {
   periodo      PeriodoGastoComun @relation(fields: [periodoId], references: [id], onDelete: Cascade)
   departamento Departamento      @relation(fields: [departamentoId], references: [id])
   pagos        PagoGastoComun[]
+  comprobantes ComprobantePago[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -659,9 +663,59 @@ model PagoGastoComun {
   cobro         CobroGastoComun @relation(fields: [cobroId], references: [id], onDelete: Cascade)
   registradoPor Usuario         @relation("PagoGastoComunRegistradoPor", fields: [registradoPorId], references: [id])
   anuladoPor    Usuario?        @relation("PagoGastoComunAnuladoPor", fields: [anuladoPorId], references: [id], onDelete: SetNull)
+  comprobante   ComprobantePago?
 
   createdAt DateTime @default(now())
 
   @@index([cobroId])
   @@map("pagos_gasto_comun")
+}
+
+enum EstadoComprobante {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+// Pago que informa el residente con su comprobante (foto o PDF de la transferencia). No suma al
+// saldo hasta que la administracion lo aprueba: ahi se crea el PagoGastoComun (pagoId).
+model ComprobantePago {
+  id             String            @id @default(uuid())
+  condominioId   String
+  cobroId        String
+  informadoPorId String
+  monto          Int
+  fechaPago      DateTime          @db.Date
+  medio          MedioPago
+  referencia     String?
+  archivo        String // "data:<tipo>;base64,..." (Render no guarda archivos en disco)
+  estado         EstadoComprobante @default(PENDIENTE)
+  motivoRechazo  String?
+  revisadoPorId  String?
+  revisadoEn     DateTime?
+  pagoId         String?           @unique
+
+  condominio   Condominio      @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  cobro        CobroGastoComun @relation(fields: [cobroId], references: [id], onDelete: Cascade)
+  informadoPor Usuario         @relation("ComprobanteInformadoPor", fields: [informadoPorId], references: [id])
+  revisadoPor  Usuario?        @relation("ComprobanteRevisadoPor", fields: [revisadoPorId], references: [id], onDelete: SetNull)
+  pago         PagoGastoComun? @relation(fields: [pagoId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([condominioId, estado])
+  @@index([cobroId])
+  @@map("comprobantes_pago")
+}
+
+// Recordatorios automaticos ya enviados (gasto comun por vencer o vencido, encomienda sin retirar).
+// La clave es unica: aunque la tarea corra varias veces, cada recordatorio sale una sola vez.
+model RecordatorioEnviado {
+  id    String @id @default(uuid())
+  clave String @unique
+
+  createdAt DateTime @default(now())
+
+  @@map("recordatorios_enviados")
 }

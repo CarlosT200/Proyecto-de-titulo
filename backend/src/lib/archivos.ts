@@ -66,3 +66,19 @@ export function verificarEnlaceDocumento(token: string): { documentoId: string; 
   }
   return { documentoId: payload.doc, condominioId: payload.cnd };
 }
+
+// Mismo mecanismo para los comprobantes de pago, con su propia clave: un enlace de comprobante no
+// abre un documento ni al reves.
+const claveEnlacesComprobante = () => `${env.jwtSecret}:enlace-comprobante`;
+
+export function firmarEnlaceComprobante(comprobanteId: string, condominioId: string): string {
+  return jwt.sign({ cmp: comprobanteId, cnd: condominioId }, claveEnlacesComprobante(), { expiresIn: VIGENCIA_ENLACE_SEGUNDOS });
+}
+
+export function verificarEnlaceComprobante(token: string): { comprobanteId: string; condominioId: string } {
+  const payload = jwt.verify(token, claveEnlacesComprobante()) as { cmp?: unknown; cnd?: unknown };
+  if (typeof payload.cmp !== "string" || typeof payload.cnd !== "string") {
+    throw new Error("Enlace inválido.");
+  }
+  return { comprobanteId: payload.cmp, condominioId: payload.cnd };
+}

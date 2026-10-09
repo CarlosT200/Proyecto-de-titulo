@@ -8,6 +8,7 @@ import { useToast } from "../context/ToastContext";
 import { Alert, Badge, Button, Input, Label, Modal, Select, Spinner, Textarea } from "./ui";
 import { formatFecha, formatMonto, hoyLocal } from "../lib/format";
 import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
+import { FormularioInformarPago, ListaComprobantes } from "./Comprobantes";
 import { ESTADO_COBRO_LABEL, ESTADO_COBRO_TONO, MEDIO_PAGO_LABEL } from "../lib/badges";
 import { fechaLarga, nombrePeriodo, nombreUnidad, nombresResidentes } from "../lib/gastosComunes";
 import type { CobroGastoComunDetalle, EstadoCobro, MedioPago, PagoGastoComun } from "../types";
@@ -276,6 +277,8 @@ export function ModalCobro({
 }) {
   const { data: cobro, cargando, error, recargar } = useAsync(() => gastosComunesApi.cobro(id), [id]);
   const [pagando, setPagando] = useState(iniciarEnPago);
+  const [informando, setInformando] = useState(false);
+  const comprobantePendiente = cobro?.comprobantes?.find((c) => c.estado === "PENDIENTE");
 
   function trasCambio() {
     recargar();
@@ -338,6 +341,28 @@ export function ModalCobro({
             )
           )}
 
+          {!esAdmin && cobro.saldo > 0 && (
+            comprobantePendiente ? (
+              <Alert tone="amber">
+                Tu comprobante de {formatMonto(comprobantePendiente.monto)} está en revisión. Te avisaremos cuando la administración lo apruebe.
+              </Alert>
+            ) : informando ? (
+              <FormularioInformarPago
+                cobroId={cobro.id}
+                saldo={cobro.saldo}
+                onCancelar={() => setInformando(false)}
+                onListo={() => {
+                  setInformando(false);
+                  trasCambio();
+                }}
+              />
+            ) : (
+              <Button className="w-full sm:w-auto" onClick={() => setInformando(true)}>
+                <Receipt size={16} aria-hidden /> Ya pagué: enviar comprobante
+              </Button>
+            )
+          )}
+
           {!esAdmin && cobro.saldo > 0 && cobro.periodo.instruccionesPago && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-900/40">
               <p className="font-medium text-slate-800 dark:text-slate-100">Cómo pagar</p>
@@ -345,8 +370,10 @@ export function ModalCobro({
             </div>
           )}
 
+          <ListaComprobantes comprobantes={cobro.comprobantes ?? []} />
+
           <section className="space-y-2">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Pagos</h4>
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Pagos registrados</h4>
             {cobro.pagos.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">Aún no hay pagos registrados para este mes.</p>
             ) : (

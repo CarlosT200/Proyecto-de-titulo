@@ -34,6 +34,27 @@ export async function consultarDisponibilidad(condominioId: string, espacioComun
   };
 }
 
+// Calendario de un espacio: los horarios ya reservados de cada dia del rango (sin decir quien
+// reservo), para que el residente vea de un vistazo que dias estan libres.
+export async function consultarOcupacion(condominioId: string, espacioComunId: string, desde: string, hasta: string) {
+  const espacio = await prisma.espacioComun.findFirst({
+    where: { id: espacioComunId, condominioId },
+    select: { id: true, nombre: true, horarioInicio: true, horarioFin: true, activo: true },
+  });
+  if (!espacio) throw new NotFoundError("Espacio común no encontrado.");
+
+  const reservas = await prisma.reserva.findMany({
+    where: { espacioComunId, estado: EstadoReserva.CONFIRMADA, fecha: { gte: new Date(desde), lte: new Date(hasta) } },
+    select: { fecha: true, horaInicio: true, horaFin: true },
+    orderBy: [{ fecha: "asc" }, { horaInicio: "asc" }],
+  });
+
+  return {
+    espacio,
+    reservas: reservas.map((r) => ({ fecha: r.fecha.toISOString().slice(0, 10), horaInicio: r.horaInicio, horaFin: r.horaFin })),
+  };
+}
+
 // HU-05: realizar reserva evitando conflictos (RNF-10).
 export async function crearReserva(
   condominioId: string,

@@ -39,6 +39,10 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         value: "mailto:torocarlos029@gmail.com"
+      # Recordatorios cada hora con GitHub Actions (opcional). Pegar aqui la misma clave que el secreto
+      # TAREAS_TOKEN del repositorio (ver .github/workflows/recordatorios.yml).
+      - key: TAREAS_TOKEN
+        sync: false
 
 databases:
   - name: habitasmart-db

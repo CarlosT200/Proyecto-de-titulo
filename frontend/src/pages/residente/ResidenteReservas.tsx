@@ -5,6 +5,7 @@ import { condominioApi, reservasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Select, Spinner } from "../../components/ui";
 import { BadgeEstadoReserva } from "../../components/Reservas";
+import { CalendarioReservas, LineaDelDia } from "../../components/CalendarioReservas";
 import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
 import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { formatFecha, hoyLocal } from "../../lib/format";
@@ -58,6 +59,8 @@ export default function ResidenteReservas() {
   const [ocupados, setOcupados] = useState<{ horaInicio: string; horaFin: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // sube despues de reservar o cancelar para que el calendario vuelva a consultar la ocupacion
+  const [versionCalendario, setVersionCalendario] = useState(0);
   const [verTodasLasAnteriores, setVerTodasLasAnteriores] = useState(false);
   const [nuevaId, setNuevaId] = useState<string | null>(null);
 
@@ -83,6 +86,7 @@ export default function ResidenteReservas() {
     try {
       const creada = await reservasApi.crear({ espacioComunId, fecha, horaInicio, horaFin });
       setNuevaId(creada.id);
+      setVersionCalendario((v) => v + 1);
       toast.success("Reserva confirmada.");
       recargarReservas();
       reservasApi.disponibilidad(espacioComunId, fecha).then((res) => setOcupados(res.horariosOcupados));
@@ -105,6 +109,7 @@ export default function ResidenteReservas() {
       await reservasApi.cancelar(r.id);
       toast.info("Reserva cancelada.");
       recargarReservas();
+      setVersionCalendario((v) => v + 1);
     } catch (err) {
       toast.error(mensajeError(err, "No se pudo cancelar la reserva."));
     }
@@ -159,10 +164,19 @@ export default function ResidenteReservas() {
                 ))}
               </Select>
             </div>
-            <div>
-              <Label htmlFor="campo-reservas-2">Fecha</Label>
-              <Input id="campo-reservas-2" type="date" required min={hoyLocal()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
-            </div>
+            {espacioSeleccionado ? (
+              <div>
+                <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 text-sm">
+                  <span className="font-medium text-slate-700 dark:text-slate-300">Día</span>
+                  <span className="font-medium text-brand-700 dark:text-brand-300">{fechaConDia(fecha)}</span>
+                </p>
+                <CalendarioReservas espacio={espacioSeleccionado} fecha={fecha} onElegir={setFecha} version={versionCalendario} />
+              </div>
+            ) : (
+              <p className="rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
+                Elige un espacio para ver su calendario y qué días están libres.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="campo-reservas-3">Desde</Label>
@@ -181,6 +195,13 @@ export default function ResidenteReservas() {
                   <span className="font-medium tabular-nums">{espacioSeleccionado.horarioInicio}</span> a{" "}
                   <span className="font-medium tabular-nums">{espacioSeleccionado.horarioFin}</span>.
                 </p>
+                <LineaDelDia
+                  espacio={espacioSeleccionado}
+                  ocupados={ocupados}
+                  horaInicio={horaInicio}
+                  horaFin={horaFin}
+                  conflicto={Boolean(aviso)}
+                />
                 <div>
                   <p className="mb-1.5 font-medium">Horarios ya reservados ese día</p>
                   {ocupados.length === 0 ? (

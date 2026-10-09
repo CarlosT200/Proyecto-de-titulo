@@ -43,4 +43,7 @@ export const env = {
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
   vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:soporte@habitasmart.cl",
+  // Clave para que una tarea externa (GitHub Actions) pida enviar los recordatorios cada hora aunque
+  // el servidor este dormido. Opcional: sin ella, los recordatorios corren solo mientras esta encendido.
+  tareasToken: process.env.TAREAS_TOKEN,
 };

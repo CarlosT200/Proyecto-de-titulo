@@ -81,3 +81,24 @@ export const guardarAlicuotasSchema = z.object({
     .min(1, "No hay unidades para actualizar.")
     .max(5000, "Hay demasiadas unidades en un solo envío."),
 });
+
+// Llega como formulario (con el archivo), asi que el monto viene como texto.
+export const informarPagoSchema = z.object({
+  monto: z.preprocess((v) => (typeof v === "string" && v.trim() !== "" ? Number(v) : v), montoEnPesos),
+  fechaPago: fechaCalendario,
+  medio: z.nativeEnum(MedioPago, { errorMap: () => ({ message: "Elige el medio de pago." }) }),
+  referencia: textoOpcional(60, "El número de comprobante puede tener hasta 60 caracteres."),
+});
+
+export const aprobarComprobanteSchema = z.object({
+  // La administracion puede aprobar por un monto menor (por ejemplo, si la transferencia fue parcial).
+  monto: montoEnPesos.optional(),
+});
+
+export const rechazarComprobanteSchema = z.object({
+  motivo: z
+    .string({ required_error: "Indica por qué se rechaza el comprobante." })
+    .trim()
+    .min(5, "Explica en pocas palabras por qué se rechaza (el residente lo verá).")
+    .max(300, "El motivo puede tener hasta 300 caracteres."),
+});

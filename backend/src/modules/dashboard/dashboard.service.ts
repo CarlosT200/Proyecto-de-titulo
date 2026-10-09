@@ -65,6 +65,7 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
     accesosHoyPorResultado,
     deudaVencida,
     unidadesMorosas,
+    comprobantesPorRevisar,
   ] = await Promise.all([
     prisma.incidencia.count({ where: { condominioId, estado: { in: ESTADOS_ABIERTOS } } }),
     prisma.incidencia.count({ where: { condominioId, estado: EstadoIncidencia.RESUELTA } }),
@@ -108,6 +109,7 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
     }),
     prisma.cobroGastoComun.aggregate({ where: cobrosVencidos, _sum: { montoTotal: true, montoPagado: true } }),
     prisma.cobroGastoComun.groupBy({ by: ["departamentoId"], where: cobrosVencidos }),
+    prisma.comprobantePago.count({ where: { condominioId, estado: "PENDIENTE" } }),
   ]);
 
   const multasPorEstadoMap = Object.fromEntries(
@@ -133,6 +135,7 @@ export async function obtenerIndicadores(condominioId: string, instante: Date = 
       multasApeladas: multasPorEstadoMap.APELADA,
       encomiendasAtrasadas,
       unidadesMorosas: unidadesMorosas.length,
+      comprobantesPorRevisar,
     },
     incidencias: {
       pendientes: incidenciasPendientes,

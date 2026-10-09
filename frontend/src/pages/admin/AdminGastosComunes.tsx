@@ -36,12 +36,13 @@ import {
 } from "../../components/ui";
 import { Cifra } from "../../components/Cifra";
 import { BarraAvance, EstadoCobroBadge, ListaPartidas, ModalCobro } from "../../components/GastosComunes";
+import { RevisionComprobantes } from "../../components/Comprobantes";
 import { formatMonto, hoyLocal } from "../../lib/format";
 import { METODO_PRORRATEO_LABEL } from "../../lib/badges";
 import { MESES, fechaIso, fechaLarga, nombrePeriodo, nombreUnidad, nombresResidentes, porcentaje, tituloPeriodo } from "../../lib/gastosComunes";
 import type { AlicuotasGastoComun, MetodoProrrateo, PeriodoGastoComun, PeriodoGastoComunDetalle } from "../../types";
 
-const VISTAS = ["cobros", "atrasadas"] as const;
+const VISTAS = ["cobros", "atrasadas", "comprobantes"] as const;
 const ESTADOS = ["PENDIENTE", "VENCIDO", "PAGADO"] as const;
 const TOLERANCIA_ALICUOTAS = 0.01;
 
@@ -508,6 +509,8 @@ export default function AdminGastosComunes() {
 
   const periodos = useAsync(() => gastosComunesApi.periodos(), []);
   const morosidad = useAsync(() => gastosComunesApi.morosidad(), []);
+  const comprobantes = useAsync(() => gastosComunesApi.comprobantes(), []);
+  const porRevisar = (comprobantes.data ?? []).filter((c) => c.estado === "PENDIENTE").length;
 
   const periodoUrl = params.get("mes");
   const periodoId = periodos.data?.some((p) => p.id === periodoUrl) ? periodoUrl : (periodos.data?.[0]?.id ?? null);
@@ -538,6 +541,7 @@ export default function AdminGastosComunes() {
     periodos.recargar();
     morosidad.recargar();
     detalle.recargar();
+    comprobantes.recargar();
   }
 
   async function eliminarPeriodo(p: PeriodoGastoComunDetalle) {
@@ -639,18 +643,36 @@ export default function AdminGastosComunes() {
         </Card>
       )}
 
-      <div role="tablist" aria-label="Vista" className="inline-grid w-full grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 sm:w-auto dark:bg-slate-800">
+      <div role="tablist" aria-label="Vista" className="inline-grid w-full grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 sm:w-auto dark:bg-slate-800">
         <Pestana activa={vista === "cobros"} onClick={() => setVista("")}>
-          Cobros por mes
+          <span className="sm:hidden">Cobros</span>
+          <span className="hidden sm:inline">Cobros por mes</span>
         </Pestana>
         <Pestana activa={vista === "atrasadas"} onClick={() => setVista("atrasadas")}>
           <span className="sm:hidden">Atrasadas</span>
           <span className="hidden sm:inline">Unidades atrasadas</span>
           {unidadesAtrasadas > 0 ? ` (${unidadesAtrasadas})` : ""}
         </Pestana>
+        <Pestana activa={vista === "comprobantes"} onClick={() => setVista("comprobantes")}>
+          <span className="sm:hidden">Pagos</span>
+          <span className="hidden sm:inline">Comprobantes</span>
+          {porRevisar > 0 && <span className="rounded-full bg-accent-700 px-1.5 text-xs font-semibold tabular-nums text-white">{porRevisar}</span>}
+        </Pestana>
       </div>
 
-      {vista === "cobros" ? (
+      {vista === "comprobantes" ? (
+        <Card plana className="overflow-hidden">
+          {comprobantes.cargando && !comprobantes.data ? (
+            <Spinner />
+          ) : comprobantes.error ? (
+            <div className="p-5">
+              <Alert tone="red">{comprobantes.error}</Alert>
+            </div>
+          ) : (
+            <RevisionComprobantes comprobantes={comprobantes.data ?? []} onRevisado={recargarTodo} />
+          )}
+        </Card>
+      ) : vista === "cobros" ? (
         <Card plana className="overflow-hidden">
           {periodos.cargando && !periodos.data ? (
             <Spinner />

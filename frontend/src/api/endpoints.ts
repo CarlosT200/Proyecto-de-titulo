@@ -1,6 +1,8 @@
 import { api } from "./client";
 import type {
   AlicuotasGastoComun,
+  ComprobantePago,
+  ComprobanteParaRevisar,
   CobroGastoComunDetalle,
   MedioPago,
   MetodoProrrateo,
@@ -96,6 +98,14 @@ export const reservasApi = {
         "/reservas/disponibilidad",
         { params: { espacioComunId, fecha } }
       )
+      .then((r) => r.data),
+  // calendario: horarios reservados de cada dia del rango (hasta dos meses)
+  ocupacion: (espacioComunId: string, desde: string, hasta: string) =>
+    api
+      .get<{
+        espacio: { id: string; nombre: string; horarioInicio: string; horarioFin: string; activo: boolean };
+        reservas: { fecha: string; horaInicio: string; horaFin: string }[];
+      }>("/reservas/ocupacion", { params: { espacioComunId, desde, hasta } })
       .then((r) => r.data),
   crear: (data: { espacioComunId: string; fecha: string; horaInicio: string; horaFin: string }) =>
     api.post<Reserva>("/reservas", data).then((r) => r.data),
@@ -288,4 +298,16 @@ export const gastosComunesApi = {
   guardarAlicuotas: (alicuotas: { departamentoId: string; alicuota: number | null }[]) =>
     api.put<AlicuotasGastoComun>("/gastos-comunes/alicuotas", { alicuotas }).then((r) => r.data),
   miCuenta: () => api.get<MiCuentaGastoComun>("/gastos-comunes/mi-cuenta").then((r) => r.data),
+  // multipart: monto, fechaPago, medio, referencia y el archivo del comprobante
+  informarPago: (cobroId: string, datos: FormData) =>
+    api
+      .post<ComprobantePago>(`/gastos-comunes/cobros/${cobroId}/comprobantes`, datos, { headers: { "Content-Type": "multipart/form-data" } })
+      .then((r) => r.data),
+  comprobantes: () => api.get<ComprobanteParaRevisar[]>("/gastos-comunes/comprobantes").then((r) => r.data),
+  aprobarComprobante: (id: string, monto?: number) =>
+    api
+      .patch<{ monto: number; unidad: string; periodo: string; saldo: number; pagado: boolean }>(`/gastos-comunes/comprobantes/${id}/aprobar`, monto ? { monto } : {})
+      .then((r) => r.data),
+  rechazarComprobante: (id: string, motivo: string) => api.patch(`/gastos-comunes/comprobantes/${id}/rechazar`, { motivo }).then((r) => r.data),
+  enlaceComprobante: (id: string) => api.post<{ url: string }>(`/gastos-comunes/comprobantes/${id}/enlace`).then((r) => r.data),
 };
