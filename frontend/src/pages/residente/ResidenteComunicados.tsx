@@ -17,7 +17,7 @@ export default function ResidenteComunicados() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Megaphone} title="Aún no hay comunicados publicados" />
+          <EmptyState ilustracion="comunicado" title="Aún no hay comunicados" description="Los avisos de la administración aparecerán aquí." />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
             {data.map((c) => (

@@ -21,7 +21,7 @@ export default function ResidenteDocumentos() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={FileText} title="Aún no hay documentos publicados" description="Cuando la administración publique uno, aparecerá aquí." />
+          <EmptyState ilustracion="documento" title="Aún no hay documentos publicados" description="Cuando la administración publique uno, aparecerá aquí." />
         ) : (
           <ListaDocumentos
             docs={data}

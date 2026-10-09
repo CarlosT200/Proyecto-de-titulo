@@ -51,6 +51,16 @@ export function CredencialResidente({
           className="pointer-events-none absolute -right-6 -top-8 text-white/10"
         />
         <div className="absolute -left-8 bottom-0 h-24 w-24 rounded-full bg-accent-400/25 blur-2xl" />
+        {/* Brillo tipo holograma que cruza la franja: una captura de pantalla queda quieta, la credencial
+            real no. Solo en la franja, nunca sobre el QR (no debe entorpecer el escaneo). */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 animate-holograma bg-[length:250%_100%] opacity-70 mix-blend-overlay"
+          style={{
+            backgroundImage:
+              "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 42%, rgba(147,197,253,0.6) 48%, rgba(253,186,116,0.55) 54%, rgba(255,255,255,0.4) 60%, transparent 72%)",
+          }}
+        />
 
         <div className="relative flex items-start justify-between px-5 pt-4">
           <div className="flex items-center gap-2">
@@ -108,16 +118,33 @@ export function CredencialResidente({
           </div>
         </div>
 
-        <div className="mt-4">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-brand-600 to-accent-500 transition-[width] duration-1000 ease-linear"
-              style={{ width: `${progreso}%` }}
+        {/* Anillo que se va cerrando hasta que el codigo se renueva (por seguridad, cada minuto). */}
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden className="-rotate-90">
+            <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3.5" className="stroke-slate-200 dark:stroke-slate-700" />
+            <circle
+              cx="18"
+              cy="18"
+              r="15"
+              fill="none"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              pathLength={100}
+              strokeDasharray="100"
+              strokeDashoffset={100 - progreso}
+              className="stroke-brand-600 transition-[stroke-dashoffset] duration-1000 ease-linear dark:stroke-brand-400"
             />
+          </svg>
+          <div className="text-left">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+              <span className="relative flex h-2 w-2" aria-hidden>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              En vivo
+            </p>
+            <p className="text-xs tabular-nums text-slate-600 dark:text-slate-300">Por tu seguridad, se renueva en {segundosRestantes} s</p>
           </div>
-          <p className="mt-1.5 text-center text-[11px] text-slate-500 dark:text-slate-400">
-            Por tu seguridad, se actualiza en {segundosRestantes}s
-          </p>
         </div>
       </div>
     </div>

@@ -679,7 +679,7 @@ export default function AdminGastosComunes() {
           ) : sinPeriodos ? (
             <div className="p-5">
               <EmptyState
-                icon={Wallet}
+                ilustracion="billetera"
                 title="Aún no hay cobros de gastos comunes"
                 description="Emite el primero con «Nuevo cobro»: registras los gastos del mes y el sistema calcula lo que paga cada unidad."
               />
@@ -892,7 +892,7 @@ export default function AdminGastosComunes() {
             </div>
           ) : unidadesAtrasadas === 0 ? (
             <div className="p-5">
-              <EmptyState icon={CheckCircle} title="No hay unidades con deuda vencida" description="Todas las unidades están al día con los cobros ya vencidos." />
+              <EmptyState ilustracion="todo-en-orden" title="No hay unidades con deuda vencida" description="Todas las unidades están al día con los cobros ya vencidos." />
             </div>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">

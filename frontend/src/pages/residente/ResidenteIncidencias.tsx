@@ -225,7 +225,7 @@ export default function ResidenteIncidencias() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={Wrench} title="Aún no has reportado incidencias" />
+            <EmptyState ilustracion="herramienta" title="Aún no has reportado incidencias" description="Si algo falla en el condominio, cuéntalo con el formulario." />
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
               {data.map((inc) => (

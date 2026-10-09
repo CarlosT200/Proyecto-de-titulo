@@ -6,6 +6,8 @@ import { useAsync } from "../../hooks/useAsync";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Select, Spinner } from "../../components/ui";
 import { BadgeEstadoReserva } from "../../components/Reservas";
 import { CalendarioReservas, LineaDelDia } from "../../components/CalendarioReservas";
+import { ModalReservaConfirmada, type DatosReservaConfirmada } from "../../components/ReservaConfirmada";
+import { useAuth } from "../../context/AuthContext";
 import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
 import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { formatFecha, hoyLocal } from "../../lib/format";
@@ -61,6 +63,8 @@ export default function ResidenteReservas() {
   const [enviando, setEnviando] = useState(false);
   // sube despues de reservar o cancelar para que el calendario vuelva a consultar la ocupacion
   const [versionCalendario, setVersionCalendario] = useState(0);
+  const [confirmada, setConfirmada] = useState<DatosReservaConfirmada | null>(null);
+  const { usuario } = useAuth();
   const [verTodasLasAnteriores, setVerTodasLasAnteriores] = useState(false);
   const [nuevaId, setNuevaId] = useState<string | null>(null);
 
@@ -87,7 +91,14 @@ export default function ResidenteReservas() {
       const creada = await reservasApi.crear({ espacioComunId, fecha, horaInicio, horaFin });
       setNuevaId(creada.id);
       setVersionCalendario((v) => v + 1);
-      toast.success("Reserva confirmada.");
+      setConfirmada({
+        id: creada.id,
+        espacio: espacios?.find((e) => e.id === espacioComunId)?.nombre ?? "Espacio común",
+        fecha,
+        horaInicio,
+        horaFin,
+        condominio: usuario?.condominio?.nombre,
+      });
       recargarReservas();
       reservasApi.disponibilidad(espacioComunId, fecha).then((res) => setOcupados(res.horariosOcupados));
     } catch (err) {
@@ -236,7 +247,7 @@ export default function ResidenteReservas() {
           {cargandoReservas && !misReservas ? (
             <Spinner />
           ) : !misReservas?.length ? (
-            <EmptyState title="Aún no tienes reservas" />
+            <EmptyState ilustracion="calendario" title="Aún no tienes reservas" description="Elige un espacio y un día en el calendario." />
           ) : (
             <div>
               <h3 className="px-5 pt-4 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Próximas</h3>
@@ -275,6 +286,8 @@ export default function ResidenteReservas() {
           )}
         </Card>
       </div>
+
+      <ModalReservaConfirmada reserva={confirmada} onClose={() => setConfirmada(null)} />
     </div>
   );
 }

@@ -332,7 +332,7 @@ export default function AdminMultas() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState title="Aún no hay multas registradas" />
+          <EmptyState ilustracion="todo-en-orden" title="Aún no hay multas registradas" />
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna multa coincide con la búsqueda." />
         ) : (

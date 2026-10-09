@@ -210,7 +210,7 @@ export default function AdminIncidencias() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState title="Aún no hay incidencias reportadas" />
+          <EmptyState ilustracion="herramienta" title="Aún no hay incidencias reportadas" />
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna incidencia coincide con los filtros." />
         ) : (

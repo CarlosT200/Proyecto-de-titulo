@@ -130,7 +130,7 @@ export default function ResidenteMultas() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Warning} title="No tienes multas registradas" />
+          <EmptyState ilustracion="todo-en-orden" title="No tienes multas" description="Todo en orden con tu unidad." />
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
             {data.map((m) => (

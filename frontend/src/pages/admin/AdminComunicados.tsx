@@ -85,7 +85,7 @@ export default function AdminComunicados() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={Megaphone} title="Aún no hay comunicados publicados" />
+            <EmptyState ilustracion="comunicado" title="Aún no hay comunicados publicados" description="Publica el primero con el formulario." />
           ) : !filtrados.length ? (
             <EmptyState title="Sin resultados" description="Ningún comunicado coincide con la búsqueda." />
           ) : (

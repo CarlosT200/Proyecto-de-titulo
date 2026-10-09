@@ -91,7 +91,7 @@ export default function AdminDocumentos() {
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={FileText} title="Aún no hay documentos publicados" description="Publica el reglamento interno con el formulario." />
+            <EmptyState ilustracion="documento" title="Aún no hay documentos publicados" description="Publica el reglamento interno con el formulario." />
           ) : (
             <ListaDocumentos
               docs={data}

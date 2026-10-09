@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "framer-motion";
 import clsx from "clsx";
+import { Ilustracion, type NombreIlustracion } from "./Ilustraciones";
 import { ArrowUpRight, CheckCircle, Icon as PhosphorIcon, MagnifyingGlass, Tray, Warning, WarningCircle, X } from "@phosphor-icons/react";
 
 // Animacion de entrada escalonada para filas de tabla / items de lista.
@@ -405,31 +406,49 @@ export function EmptyState({
   title,
   description,
   icon: Icon = Tray,
+  ilustracion,
 }: {
   title: string;
   description?: string;
   icon?: PhosphorIcon;
+  /** Ilustracion de linea en vez del icono (pantallas vacias principales). */
+  ilustracion?: NombreIlustracion;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col items-center justify-center gap-2 py-12 text-center"
+      className="flex flex-col items-center justify-center gap-2 px-5 py-12 text-center"
     >
-      <div className="relative mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 text-brand-500 ring-1 ring-brand-100 dark:from-brand-500/15 dark:to-accent-500/10 dark:text-brand-300 dark:ring-white/10">
-        <Icon size={26} weight="duotone" />
-      </div>
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{title}</p>
-      {description && <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>}
+      {ilustracion ? (
+        <Ilustracion nombre={ilustracion} />
+      ) : (
+        <div className="relative mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 text-brand-500 ring-1 ring-brand-100 dark:from-brand-500/15 dark:to-accent-500/10 dark:text-brand-300 dark:ring-white/10">
+          <Icon size={26} weight="duotone" />
+        </div>
+      )}
+      <p className={clsx("font-medium text-slate-700 dark:text-slate-200", ilustracion ? "font-display text-base" : "text-sm")}>{title}</p>
+      {description && <p className="max-w-sm text-sm text-slate-600 dark:text-slate-300">{description}</p>}
     </motion.div>
   );
 }
 
-export function Spinner({ className }: { className?: string }) {
+// Mientras carga: bloques grises con la forma de una lista (en vez de un circulo girando), asi la
+// pantalla no salta cuando llega el contenido. Laten suave; con "reducir movimiento" quedan quietos.
+export function Spinner({ className, filas = 3 }: { className?: string; filas?: number }) {
   return (
-    <div className={clsx("flex items-center justify-center py-10", className)}>
-      <span className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+    <div role="status" className={clsx("space-y-4 px-5 py-6", className)}>
+      <span className="sr-only">Cargando…</span>
+      {Array.from({ length: filas }, (_, i) => (
+        <div key={i} aria-hidden className="flex items-center gap-3 motion-safe:animate-pulse">
+          <span className="h-10 w-10 shrink-0 rounded-xl bg-slate-200 dark:bg-slate-700" />
+          <span className="flex-1 space-y-2">
+            <span className="block h-3 rounded-full bg-slate-200 dark:bg-slate-700" style={{ width: `${70 - i * 12}%` }} />
+            <span className="block h-3 rounded-full bg-slate-100 dark:bg-slate-700/60" style={{ width: `${45 + i * 8}%` }} />
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

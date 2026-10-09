@@ -347,7 +347,7 @@ export function RevisionComprobantes({
   return (
     <>
       {pendientes.length === 0 ? (
-        <EmptyState icon={CheckCircle} title="No hay comprobantes por revisar" description="Cuando un residente informe un pago con su comprobante, aparecerá aquí." />
+        <EmptyState ilustracion="todo-en-orden" title="No hay comprobantes por revisar" description="Cuando un residente informe un pago con su comprobante, aparecerá aquí." />
       ) : (
         <>
           <p className="border-b border-slate-100 px-5 py-3 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">

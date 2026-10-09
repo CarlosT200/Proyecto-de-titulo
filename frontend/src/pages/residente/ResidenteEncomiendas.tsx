@@ -81,7 +81,7 @@ export default function ResidenteEncomiendas() {
         <Alert tone="red">{error}</Alert>
       ) : !data?.length ? (
         <Card plana>
-          <EmptyState icon={Package} title="No tienes encomiendas registradas" description="Cuando llegue algo a tu nombre, te avisaremos." />
+          <EmptyState ilustracion="caja" title="No tienes encomiendas registradas" description="Cuando llegue algo a tu nombre, te avisaremos." />
         </Card>
       ) : (
         <>

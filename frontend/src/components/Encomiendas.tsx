@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import clsx from "clsx";
-import { ArrowUUpLeft, HandArrowUp, MapPin, Package, Warning } from "@phosphor-icons/react";
+import { ArrowUUpLeft, HandArrowUp, MapPin, Warning } from "@phosphor-icons/react";
 import { encomiendasApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { useAsync } from "../hooks/useAsync";
@@ -463,7 +463,7 @@ export function ListaEncomiendas({
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState icon={Package} title="Aún no hay encomiendas registradas" />
+          <EmptyState ilustracion="caja" title="Aún no hay encomiendas registradas" description="Registra la primera cuando llegue un paquete." />
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
         ) : (

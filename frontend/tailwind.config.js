@@ -65,6 +65,21 @@ export default {
           "0%, 20%, 100%": { opacity: 0.15 },
           "10%": { opacity: 1 },
         },
+        // Un trazo SVG (pathLength=1) que se dibuja: el check de "listo" en los momentos de logro.
+        dibujar: {
+          "0%": { strokeDashoffset: "1" },
+          "100%": { strokeDashoffset: "0" },
+        },
+        // El circulo del check aparece creciendo un poco.
+        brotar: {
+          "0%": { opacity: 0, transform: "scale(0.8)" },
+          "100%": { opacity: 1, transform: "scale(1)" },
+        },
+        // Brillo tipo holograma que cruza la credencial: una captura de pantalla no lo tiene.
+        holograma: {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-100% 0" },
+        },
       },
       animation: {
         aparece: "aparece 220ms cubic-bezier(0.23, 1, 0.32, 1) both",
@@ -73,6 +88,9 @@ export default {
         "window-glow": "window-glow 5s ease-in-out infinite",
         "horizon-glow": "horizon-glow 12s ease-in-out infinite",
         "beacon-blink": "beacon-blink 4s ease-in-out infinite",
+        dibujar: "dibujar 480ms cubic-bezier(0.23, 1, 0.32, 1) both",
+        brotar: "brotar 260ms cubic-bezier(0.23, 1, 0.32, 1) both",
+        holograma: "holograma 7s linear infinite",
       },
     },
   },

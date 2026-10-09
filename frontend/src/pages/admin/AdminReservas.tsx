@@ -114,7 +114,7 @@ export default function AdminReservas() {
         ) : error ? (
           <Alert tone="red">{error}</Alert>
         ) : !data?.length ? (
-          <EmptyState title="Aún no hay reservas registradas" />
+          <EmptyState ilustracion="calendario" title="Aún no hay reservas registradas" />
         ) : !filtradas.length ? (
           <EmptyState title="Sin resultados" description="Ninguna reserva coincide con los filtros." />
         ) : (

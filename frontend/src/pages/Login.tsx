@@ -177,9 +177,20 @@ export default function Login() {
               className="mb-6 flex flex-col items-center text-center text-white lg:hidden"
             >
               <Wordmark claro />
-              <p className="mt-3 text-base font-medium text-white/85 [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">
+              <p className="mt-3 text-base font-medium text-white/90 [text-shadow:0_1px_12px_rgba(0,0,0,0.5)]">
                 Tu condominio, en la palma de tu mano.
               </p>
+              {/* Lo que ofrece, tambien en el celular (en escritorio esta en la columna de marca). */}
+              <ul className="mt-5 grid w-full grid-cols-4 gap-2" aria-label="Funciones principales">
+                {CARACTERISTICAS.map((c) => (
+                  <li key={c.titulo} className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-950/45 px-1 py-2.5 ring-1 ring-white/15 backdrop-blur-md">
+                    <span className={clsx("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg", c.tono)}>
+                      <c.icon size={18} weight="fill" aria-hidden />
+                    </span>
+                    <span className="text-[11px] font-semibold leading-tight text-white">{c.titulo}</span>
+                  </li>
+                ))}
+              </ul>
             </motion.div>
 
             {/* Tarjeta de login */}
@@ -191,8 +202,8 @@ export default function Login() {
             >
               <div className="h-1.5 bg-gradient-to-r from-brand-600 via-violet-500 to-accent-500" />
               <div className="p-7 sm:p-8">
-                <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">Bienvenido</h2>
-                <p className="mt-1 text-sm text-slate-500">Ingresa con tu correo y contraseña.</p>
+                <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">Te damos la bienvenida</h2>
+                <p className="mt-1 text-sm text-slate-600">Ingresa con tu correo y contraseña.</p>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                   <div>
@@ -235,7 +246,7 @@ export default function Login() {
                         onClick={() => setVerPassword((v) => !v)}
                         aria-label={verPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                         aria-pressed={verPassword}
-                        className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                       >
                         {verPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                       </button>
@@ -261,7 +272,7 @@ export default function Login() {
 
                 {cuentasDemo && (
                 <div className="mt-7">
-                  <div className="flex items-center gap-3 text-xs font-medium text-slate-400">
+                  <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
                     <span className="h-px flex-1 bg-slate-200" />
                     Probar con una cuenta de demostración
                     <span className="h-px flex-1 bg-slate-200" />
@@ -273,14 +284,14 @@ export default function Login() {
                         type="button"
                         disabled={cargando}
                         onClick={() => entrarComo(c.email)}
-                        className="group flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2.5 text-xs font-semibold text-slate-700 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 active:scale-[0.97] disabled:opacity-60"
+                        className="group flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2.5 text-xs font-semibold text-slate-700 transition-[transform,background-color,border-color,color] duration-150 ease-salida hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 active:scale-[0.97] disabled:opacity-60 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5"
                       >
                         <c.icon size={20} weight="duotone" className="text-brand-600" />
                         {c.rol}
                       </button>
                     ))}
                   </div>
-                  <p className="mt-2 text-center text-[11px] text-slate-400">Contraseña de todas: {PASSWORD_DEMO}</p>
+                  <p className="mt-2 text-center text-xs text-slate-500">Contraseña de todas: {PASSWORD_DEMO}</p>
                 </div>
                 )}
               </div>

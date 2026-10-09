@@ -5,7 +5,6 @@ import {
   FileText,
   IdentificationBadge,
   MapPin,
-  Megaphone,
   Package,
   Wallet,
   Warning,
@@ -139,7 +138,7 @@ export default function ResidenteInicio() {
               }
             />
             {!comunicados?.length ? (
-              <EmptyState icon={Megaphone} title="Sin comunicados recientes" />
+              <EmptyState ilustracion="comunicado" title="Sin comunicados recientes" />
             ) : (
               <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
                 {comunicados.slice(0, 3).map((c) => (
