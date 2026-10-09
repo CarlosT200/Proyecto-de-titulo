@@ -28,6 +28,14 @@ const SELECT_CONSERJE = {
   departamento: { select: { id: true, numero: true, torre: { select: { nombre: true } } } },
 } as const;
 
+// La unidad tiene que ser del mismo condominio: sin esto, un id de otro condominio dejaria a la
+// persona asociada a una unidad ajena (y a sus cobros de gastos comunes).
+async function validarUnidad(condominioId: string, departamentoId: string | null | undefined) {
+  if (!departamentoId) return;
+  const unidad = await prisma.departamento.findFirst({ where: { id: departamentoId, condominioId }, select: { id: true } });
+  if (!unidad) throw new NotFoundError("La unidad elegida no existe en este condominio.");
+}
+
 // HU-02: registrar y administrar residentes, asociandolos a su unidad.
 export async function crearUsuario(
   condominioId: string,
@@ -46,6 +54,7 @@ export async function crearUsuario(
     throw new ConflictError("Ya existe un usuario registrado con ese correo.");
   }
 
+  await validarUnidad(condominioId, data.departamentoId);
   const passwordHash = await hashPassword(data.password);
 
   return prisma.usuario.create({
@@ -99,6 +108,7 @@ export async function actualizarUsuario(
   }
 ) {
   await obtenerUsuario(condominioId, usuarioId);
+  await validarUnidad(condominioId, data.departamentoId);
   return prisma.usuario.update({
     where: { id: usuarioId },
     data,
