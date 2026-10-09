@@ -1,10 +1,10 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import clsx from "clsx";
 import {
   ChartPieSlice,
   CheckCircle,
+  Coins,
   ListBullets,
   Percent,
   Plus,
@@ -32,11 +32,10 @@ import {
   SearchInput,
   Select,
   Spinner,
-  StatCard,
   Textarea,
-  staggerFade,
 } from "../../components/ui";
-import { EstadoCobroBadge, ListaPartidas, ModalCobro } from "../../components/GastosComunes";
+import { Cifra } from "../../components/Cifra";
+import { BarraAvance, EstadoCobroBadge, ListaPartidas, ModalCobro } from "../../components/GastosComunes";
 import { formatMonto, hoyLocal } from "../../lib/format";
 import { METODO_PRORRATEO_LABEL } from "../../lib/badges";
 import { MESES, fechaIso, fechaLarga, nombrePeriodo, nombreUnidad, nombresResidentes, porcentaje, tituloPeriodo } from "../../lib/gastosComunes";
@@ -288,7 +287,7 @@ function ModalNuevoCobro({
                 onClick={() => setFilas((actuales) => actuales.filter((x) => x.clave !== f.clave))}
                 disabled={filas.length === 1}
                 aria-label={`Quitar el gasto ${i + 1}`}
-                className="flex h-[42px] w-11 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-red-500/10"
+                className="flex min-h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700 disabled:pointer-events-none disabled:opacity-30 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
               >
                 <X size={16} />
               </button>
@@ -326,7 +325,7 @@ function ModalNuevoCobro({
             </p>
           )}
           {alicuotas && unidades === 0 && (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-300">El condominio no tiene unidades. Agrégalas en Condominio antes de emitir.</p>
+            <p className="mt-1 text-xs text-red-700 dark:text-red-300">El condominio no tiene unidades. Agrégalas en Condominio antes de emitir.</p>
           )}
         </div>
 
@@ -455,7 +454,7 @@ function ModalAlicuotas({ onClose }: { onClose: () => void }) {
           <p
             className={clsx(
               "flex items-center gap-1.5 text-sm font-medium",
-              cuadra ? "text-emerald-600 dark:text-emerald-300" : "text-amber-600 dark:text-amber-300"
+              cuadra ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"
             )}
           >
             {cuadra ? <CheckCircle size={16} weight="fill" aria-hidden /> : <WarningCircle size={16} weight="fill" aria-hidden />}
@@ -505,6 +504,7 @@ export default function AdminGastosComunes() {
   const [busqueda, setBusqueda] = useState("");
   const [modal, setModal] = useState<"nuevo" | "alicuotas" | "gastos" | null>(null);
   const [pagarDirecto, setPagarDirecto] = useState(false);
+  const [nuevoPeriodo, setNuevoPeriodo] = useState(false);
 
   const periodos = useAsync(() => gastosComunesApi.periodos(), []);
   const morosidad = useAsync(() => gastosComunesApi.morosidad(), []);
@@ -566,11 +566,18 @@ export default function AdminGastosComunes() {
 
   const cobrosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
-    return (detalle.data?.cobros ?? []).filter((c) => {
-      if (estado && c.estado !== estado) return false;
-      if (!texto) return true;
-      return `${nombreUnidad(c.departamento)} ${nombresResidentes(c.departamento.residentes)}`.toLowerCase().includes(texto);
-    });
+    const prioridad: Record<string, number> = { VENCIDO: 0, PENDIENTE: 1, PAGADO: 2 };
+    return (detalle.data?.cobros ?? [])
+      .filter((c) => {
+        if (estado && c.estado !== estado) return false;
+        if (!texto) return true;
+        return `${nombreUnidad(c.departamento)} ${nombresResidentes(c.departamento.residentes)}`.toLowerCase().includes(texto);
+      })
+      .sort(
+        (a, b) =>
+          (prioridad[a.estado] ?? 3) - (prioridad[b.estado] ?? 3) ||
+          nombreUnidad(a.departamento).localeCompare(nombreUnidad(b.departamento), "es", { numeric: true })
+      );
   }, [detalle.data, estado, busqueda]);
 
   const sinPeriodos = periodos.data?.length === 0;
@@ -582,7 +589,7 @@ export default function AdminGastosComunes() {
         title="Gastos comunes"
         subtitle="Emite el cobro de cada mes, registra los pagos y revisa qué unidades están atrasadas."
         action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button variant="secondary" onClick={() => setModal("alicuotas")}>
               <Percent size={16} aria-hidden /> Alícuotas
             </Button>
@@ -595,46 +602,56 @@ export default function AdminGastosComunes() {
 
       {periodos.error && <Alert tone="red">{periodos.error}</Alert>}
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard icon={Wallet} label="Por cobrar" value={0} valorTexto={formatMonto(porCobrar)} tone="brand" index={0} />
-        <StatCard
-          icon={WarningCircle}
-          label="Deuda vencida"
-          value={0}
-          valorTexto={formatMonto(deudaVencida)}
-          tone={deudaVencida > 0 ? "red" : "green"}
-          index={1}
-          to="/gastos-comunes?vista=atrasadas"
-        />
-        <StatCard
-          icon={Receipt}
-          label={unidadesAtrasadas === 1 ? "Unidad atrasada" : "Unidades atrasadas"}
-          value={unidadesAtrasadas}
-          tone={unidadesAtrasadas > 0 ? "amber" : "green"}
-          index={2}
-          to="/gastos-comunes?vista=atrasadas"
-        />
-        <StatCard
-          icon={ChartPieSlice}
-          label={ultimo ? `Recaudado de ${nombrePeriodo(ultimo.anio, ultimo.mes)}` : "Recaudado del último mes"}
-          value={0}
-          valorTexto={ultimo ? `${porcentaje(ultimo.totalPagado, ultimo.totalCobrado)} %` : "Sin datos"}
-          tone="green"
-          index={3}
-        />
-      </div>
+      {periodos.data && !sinPeriodos && (
+        <Card plana className="overflow-hidden">
+          <div className="grid grid-cols-2 gap-px bg-slate-100 lg:grid-cols-4 dark:bg-slate-700/60">
+            <Cifra icono={Coins} etiqueta="Por cobrar" valor={porCobrar > 0 ? formatMonto(porCobrar) : 0} detalle="saldo de todos los meses" />
+            <Cifra
+              icono={WarningCircle}
+              etiqueta="Vencido"
+              valor={deudaVencida > 0 ? formatMonto(deudaVencida) : 0}
+              detalle="deuda ya vencida"
+              alerta
+              to={deudaVencida > 0 ? "/gastos-comunes?vista=atrasadas" : undefined}
+            />
+            <Cifra
+              icono={Receipt}
+              etiqueta="Atrasadas"
+              valor={unidadesAtrasadas}
+              detalle={unidadesAtrasadas === 1 ? "unidad con meses vencidos" : "unidades con meses vencidos"}
+              alerta
+              to={unidadesAtrasadas > 0 ? "/gastos-comunes?vista=atrasadas" : undefined}
+            />
+            <Cifra
+              icono={ChartPieSlice}
+              etiqueta="Recaudado"
+              valor={ultimo ? `${porcentaje(ultimo.totalPagado, ultimo.totalCobrado)} %` : "Sin datos"}
+              detalle={
+                ultimo ? (
+                  <>
+                    <span className="mb-1.5 block">de {nombrePeriodo(ultimo.anio, ultimo.mes)}</span>
+                    <BarraAvance pagado={ultimo.totalPagado} total={ultimo.totalCobrado} etiqueta={`Recaudado de ${nombrePeriodo(ultimo.anio, ultimo.mes)}`} />
+                  </>
+                ) : undefined
+              }
+            />
+          </div>
+        </Card>
+      )}
 
       <div role="tablist" aria-label="Vista" className="inline-grid w-full grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 sm:w-auto dark:bg-slate-800">
         <Pestana activa={vista === "cobros"} onClick={() => setVista("")}>
           Cobros por mes
         </Pestana>
         <Pestana activa={vista === "atrasadas"} onClick={() => setVista("atrasadas")}>
-          Unidades atrasadas{unidadesAtrasadas > 0 ? ` (${unidadesAtrasadas})` : ""}
+          <span className="sm:hidden">Atrasadas</span>
+          <span className="hidden sm:inline">Unidades atrasadas</span>
+          {unidadesAtrasadas > 0 ? ` (${unidadesAtrasadas})` : ""}
         </Pestana>
       </div>
 
       {vista === "cobros" ? (
-        <Card>
+        <Card plana className="overflow-hidden">
           {periodos.cargando && !periodos.data ? (
             <Spinner />
           ) : sinPeriodos ? (
@@ -650,7 +667,10 @@ export default function AdminGastosComunes() {
               <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-5 dark:border-slate-700/60">
                 <div className="w-full sm:w-52">
                   <Label htmlFor="campo-gastos-mes">Mes</Label>
-                  <Select id="campo-gastos-mes" value={periodoId ?? ""} onChange={(e) => cambiarParam("mes", e.target.value)}>
+                  <Select id="campo-gastos-mes" value={periodoId ?? ""} onChange={(e) => {
+                      setNuevoPeriodo(false);
+                      cambiarParam("mes", e.target.value);
+                    }}>
                     {(periodos.data ?? []).map((p) => (
                       <option key={p.id} value={p.id}>
                         {tituloPeriodo(p.anio, p.mes)}
@@ -672,22 +692,56 @@ export default function AdminGastosComunes() {
               </div>
 
               {detalle.data && (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 text-sm dark:border-slate-700/60">
-                  <p className="text-slate-600 dark:text-slate-300">
-                    Vence el <span className="font-medium text-slate-800 dark:text-slate-100">{fechaLarga(detalle.data.fechaVencimiento)}</span>
-                    {" · "}
-                    Gastos {formatMonto(detalle.data.totalGastos)}
-                    {" · "}
-                    Fondo de reserva {detalle.data.porcentajeFondoReserva}&nbsp;%{" · "}
-                    {METODO_PRORRATEO_LABEL[detalle.data.metodoProrrateo]}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => setModal("gastos")}>
-                      <ListBullets size={14} aria-hidden /> Ver gastos del mes
+                <div
+                  key={detalle.data.id}
+                  className={clsx("space-y-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60", nuevoPeriodo && "animate-aparece")}
+                >
+                  <div>
+                    <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+                      <span className="font-medium text-slate-900 dark:text-white">
+                        Recaudado {formatMonto(detalle.data.cobros.reduce((s, c) => s + c.montoPagado, 0))} de{" "}
+                        {formatMonto(detalle.data.cobros.reduce((s, c) => s + c.montoTotal, 0))}
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        {detalle.data.cobros.filter((c) => c.estado === "PAGADO").length} de {detalle.data.cobros.length} unidades al día
+                      </span>
+                    </div>
+                    <BarraAvance
+                      pagado={detalle.data.cobros.reduce((s, c) => s + c.montoPagado, 0)}
+                      total={detalle.data.cobros.reduce((s, c) => s + c.montoTotal, 0)}
+                      etiqueta={`Recaudado de ${nombrePeriodo(detalle.data.anio, detalle.data.mes)}`}
+                    />
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                    <div>
+                      <dt className="text-slate-600 dark:text-slate-300">Vence</dt>
+                      <dd className="font-medium text-slate-900 dark:text-white">{fechaLarga(detalle.data.fechaVencimiento)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-600 dark:text-slate-300">Gastos del mes</dt>
+                      <dd className="font-medium tabular-nums text-slate-900 dark:text-white">{formatMonto(detalle.data.totalGastos)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-600 dark:text-slate-300">Fondo de reserva</dt>
+                      <dd className="font-medium text-slate-900 dark:text-white">{detalle.data.porcentajeFondoReserva}&nbsp;%</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-600 dark:text-slate-300">Reparto</dt>
+                      <dd className="font-medium text-slate-900 dark:text-white">{METODO_PRORRATEO_LABEL[detalle.data.metodoProrrateo]}</dd>
+                    </div>
+                  </dl>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                    <Button size="sm" variant="secondary" className="max-sm:min-h-11" onClick={() => setModal("gastos")}>
+                      <ListBullets size={14} aria-hidden /> Gastos del mes
                     </Button>
                     {detalle.data.puedeEliminar && (
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" onClick={() => eliminarPeriodo(detalle.data!)}>
-                        <Trash size={14} aria-hidden /> Eliminar
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="text-red-700 max-sm:min-h-11 dark:text-red-300"
+                        onClick={() => eliminarPeriodo(detalle.data!)}
+                      >
+                        <Trash size={14} aria-hidden /> Eliminar mes
                       </Button>
                     )}
                   </div>
@@ -705,64 +759,109 @@ export default function AdminGastosComunes() {
                   <EmptyState title="No hay cobros que coincidan" description="Prueba con otro estado o búsqueda." />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="tabla-movil w-full text-left text-sm">
-                    <thead className="border-b border-slate-100 text-xs uppercase text-slate-400 dark:border-slate-700/60 dark:text-slate-500">
-                      <tr>
-                        <th className="px-5 py-3">Unidad</th>
-                        <th className="px-5 py-3 text-right">Total</th>
-                        <th className="px-5 py-3 text-right">Pagado</th>
-                        <th className="px-5 py-3 text-right">Saldo</th>
-                        <th className="px-5 py-3">Estado</th>
-                        <th className="px-5 py-3">
-                          <span className="sr-only">Acciones</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                      {cobrosFiltrados.map((c, i) => (
-                        <motion.tr key={c.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                          <td data-label="Unidad" className="px-5 py-3">
-                            <div>
-                              <span className="font-medium text-slate-800 dark:text-slate-100">{nombreUnidad(c.departamento)}</span>
+                <>
+                  <p className="border-b border-slate-100 px-5 py-3 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                    Primero los vencidos, luego los por pagar y al final los pagados.
+                  </p>
+                  {/* Celular y tablet: tarjetas (dos columnas desde 640 px). Desde 1280 px: tabla. */}
+                  <ul className="grid gap-px bg-slate-100 sm:grid-cols-2 xl:hidden dark:bg-slate-700/60">
+                    {cobrosFiltrados.map((c) => (
+                      <li key={c.id} className="flex flex-col gap-3 bg-white px-5 py-4 dark:bg-slate-800 sm:[&:last-child:nth-child(odd)]:col-span-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-900 dark:text-white">{nombreUnidad(c.departamento)}</p>
+                            <p className="break-words text-sm text-slate-600 dark:text-slate-300">{nombresResidentes(c.departamento.residentes)}</p>
+                          </div>
+                          <EstadoCobroBadge estado={c.estado} />
+                        </div>
+                        <div>
+                          <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+                            <span className="text-slate-600 dark:text-slate-300">
+                              Saldo{" "}
+                              <span
+                                className={clsx(
+                                  "font-display text-lg font-bold tabular-nums",
+                                  c.saldo === 0 ? "text-emerald-700 dark:text-emerald-300" : c.estado === "VENCIDO" ? "text-red-700 dark:text-red-300" : "text-slate-900 dark:text-white"
+                                )}
+                              >
+                                {formatMonto(c.saldo)}
+                              </span>
+                            </span>
+                            <span className="tabular-nums text-slate-600 dark:text-slate-300">de {formatMonto(c.montoTotal)}</span>
+                          </p>
+                          <BarraAvance pagado={c.montoPagado} total={c.montoTotal} etiqueta={`Pagado de ${nombreUnidad(c.departamento)}`} />
+                        </div>
+                        <div className={clsx("mt-auto grid gap-2", c.saldo > 0 ? "grid-cols-2" : "grid-cols-1")}>
+                          {c.saldo > 0 && (
+                            <Button size="sm" className="min-h-11" onClick={() => abrirCobro(c.id, true)}>
+                              <Receipt size={14} aria-hidden /> Registrar pago
+                            </Button>
+                          )}
+                          <Button size="sm" variant="secondary" className="min-h-11" onClick={() => abrirCobro(c.id)}>
+                            Ver detalle
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="hidden overflow-x-auto xl:block">
+                    <table className="w-full text-left text-sm">
+                      <thead className="border-b border-slate-100 text-xs uppercase text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                        <tr>
+                          <th scope="col" className="px-5 py-3">Unidad</th>
+                          <th scope="col" className="px-5 py-3 text-right">Total</th>
+                          <th scope="col" className="px-5 py-3 text-right">Pagado</th>
+                          <th scope="col" className="px-5 py-3 text-right">Saldo</th>
+                          <th scope="col" className="px-5 py-3">Estado</th>
+                          <th scope="col" className="px-5 py-3">
+                            <span className="sr-only">Acciones</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                        {cobrosFiltrados.map((c) => (
+                          <tr key={c.id}>
+                            <td className="px-5 py-3">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">{nombreUnidad(c.departamento)}</span>
                               <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">{nombresResidentes(c.departamento.residentes)}</span>
-                            </div>
-                          </td>
-                          <td data-label="Total" className="whitespace-nowrap px-5 py-3 text-right text-slate-700 dark:text-slate-200">
-                            {formatMonto(c.montoTotal)}
-                          </td>
-                          <td data-label="Pagado" className="whitespace-nowrap px-5 py-3 text-right text-slate-600 dark:text-slate-300">
-                            {formatMonto(c.montoPagado)}
-                          </td>
-                          <td data-label="Saldo" className="whitespace-nowrap px-5 py-3 text-right font-medium text-slate-800 dark:text-slate-100">
-                            {formatMonto(c.saldo)}
-                          </td>
-                          <td data-label="Estado" className="px-5 py-3">
-                            <EstadoCobroBadge estado={c.estado} />
-                          </td>
-                          <td className="px-5 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              {c.saldo > 0 && (
-                                <Button size="sm" className="whitespace-nowrap" onClick={() => abrirCobro(c.id, true)}>
-                                  <Receipt size={14} aria-hidden /> Registrar pago
-                                </Button>
+                            </td>
+                            <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-700 dark:text-slate-200">{formatMonto(c.montoTotal)}</td>
+                            <td className="whitespace-nowrap px-5 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">{formatMonto(c.montoPagado)}</td>
+                            <td
+                              className={clsx(
+                                "whitespace-nowrap px-5 py-3 text-right font-semibold tabular-nums",
+                                c.saldo === 0 ? "text-emerald-700 dark:text-emerald-300" : c.estado === "VENCIDO" ? "text-red-700 dark:text-red-300" : "text-slate-900 dark:text-white"
                               )}
-                              <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => abrirCobro(c.id)}>
-                                Ver detalle
-                              </Button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            >
+                              {formatMonto(c.saldo)}
+                            </td>
+                            <td className="px-5 py-3">
+                              <EstadoCobroBadge estado={c.estado} />
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <div className="flex justify-end gap-2">
+                                {c.saldo > 0 && (
+                                  <Button size="sm" className="whitespace-nowrap" onClick={() => abrirCobro(c.id, true)}>
+                                    <Receipt size={14} aria-hidden /> Registrar pago
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => abrirCobro(c.id)}>
+                                  Ver detalle
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </>
           )}
         </Card>
       ) : (
-        <Card>
+        <Card plana className="overflow-hidden">
           {morosidad.cargando && !morosidad.data ? (
             <Spinner />
           ) : morosidad.error ? (
@@ -775,40 +874,38 @@ export default function AdminGastosComunes() {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
-              {morosidad.data!.map((u, i) => (
-                <motion.li key={u.departamento.id} {...staggerFade(i)} className="space-y-3 px-5 py-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
+              {morosidad.data!.map((u) => (
+                <li key={u.departamento.id} className="px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <p className="font-medium text-slate-900 dark:text-white">{nombreUnidad(u.departamento)}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{nombresResidentes(u.departamento.residentes)}</p>
+                      <p className="break-words text-sm text-slate-600 dark:text-slate-300">{nombresResidentes(u.departamento.residentes)}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-display text-lg font-bold text-red-600 dark:text-red-300">{formatMonto(u.deuda)}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <div className="shrink-0 text-right">
+                      <p className="font-display text-lg font-bold tabular-nums text-red-700 dark:text-red-300">{formatMonto(u.deuda)}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
                         {u.cobros.length === 1 ? "1 mes vencido" : `${u.cobros.length} meses vencidos`}
                       </p>
                     </div>
                   </div>
-                  <ul className="space-y-2">
+                  {/* Cada mes vencido como una linea con su accion, sin recuadros dentro del recuadro. */}
+                  <ul className="mt-3 divide-y divide-slate-100 border-l-2 border-red-200 pl-3 dark:divide-slate-700/60 dark:border-red-500/40">
                     {u.cobros.map((c) => (
-                      <li
-                        key={c.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700"
-                      >
-                        <div className="text-sm">
-                          <span className="font-medium text-slate-800 dark:text-slate-100">{tituloPeriodo(c.periodo.anio, c.periodo.mes)}</span>
-                          <span className="text-slate-500 dark:text-slate-400"> · venció el {fechaLarga(c.periodo.fechaVencimiento)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="whitespace-nowrap text-sm font-medium text-slate-800 dark:text-slate-100">{formatMonto(c.saldo)}</span>
-                          <Button size="sm" onClick={() => abrirCobro(c.id, true)}>
+                      <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2">
+                        <p className="text-sm">
+                          <span className="font-medium text-slate-900 dark:text-slate-100">{tituloPeriodo(c.periodo.anio, c.periodo.mes)}</span>
+                          <span className="text-slate-600 dark:text-slate-300"> · venció el {fechaLarga(c.periodo.fechaVencimiento)}</span>
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-slate-900 dark:text-white">{formatMonto(c.saldo)}</span>
+                          <Button size="sm" className="max-sm:min-h-11" onClick={() => abrirCobro(c.id, true)}>
                             Registrar pago
                           </Button>
                         </div>
                       </li>
                     ))}
                   </ul>
-                </motion.li>
+                </li>
               ))}
             </ul>
           )}
@@ -821,8 +918,17 @@ export default function AdminGastosComunes() {
           onClose={() => setModal(null)}
           onEmitido={(id) => {
             setModal(null);
-            setVista("");
-            cambiarParam("mes", id);
+            // vista y mes en un solo cambio de la direccion: dos cambios seguidos se pisan
+            setParams(
+              (actuales) => {
+                const siguientes = new URLSearchParams(actuales);
+                siguientes.delete("vista");
+                siguientes.set("mes", id);
+                return siguientes;
+              },
+              { replace: true }
+            );
+            setNuevoPeriodo(true);
             periodos.recargar();
           }}
         />

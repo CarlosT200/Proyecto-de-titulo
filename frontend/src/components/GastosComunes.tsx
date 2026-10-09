@@ -7,18 +7,44 @@ import { useAsync } from "../hooks/useAsync";
 import { useToast } from "../context/ToastContext";
 import { Alert, Badge, Button, Input, Label, Modal, Select, Spinner, Textarea } from "./ui";
 import { formatFecha, formatMonto, hoyLocal } from "../lib/format";
+import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
 import { ESTADO_COBRO_LABEL, ESTADO_COBRO_TONO, MEDIO_PAGO_LABEL } from "../lib/badges";
 import { fechaLarga, nombrePeriodo, nombreUnidad, nombresResidentes } from "../lib/gastosComunes";
 import type { CobroGastoComunDetalle, EstadoCobro, MedioPago, PagoGastoComun } from "../types";
 
+// Cuando el estado cambia (se registra o se anula un pago) la insignia entra con un movimiento corto.
 export function EstadoCobroBadge({ estado }: { estado: EstadoCobro }) {
-  return <Badge tone={ESTADO_COBRO_TONO[estado]}>{ESTADO_COBRO_LABEL[estado]}</Badge>;
+  const pulso = usePulsoAlCambiar(estado);
+  return (
+    <span key={pulso} className={clsx("inline-flex", pulso > 0 && "animate-aparece")}>
+      <Badge tone={ESTADO_COBRO_TONO[estado]}>{ESTADO_COBRO_LABEL[estado]}</Badge>
+    </span>
+  );
+}
+
+// Barra de lo pagado sobre el total (recaudacion del mes o lo pagado de un cobro).
+export function BarraAvance({ pagado, total, etiqueta }: { pagado: number; total: number; etiqueta: string }) {
+  const pct = total > 0 ? Math.min(100, Math.round((pagado / total) * 100)) : 0;
+  return (
+    <div>
+      <div
+        role="progressbar"
+        aria-label={etiqueta}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"
+      >
+        <div className={clsx("h-full rounded-full", pct === 100 ? "bg-emerald-500" : "bg-brand-500")} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
 }
 
 function Dato({ etiqueta, children, destacado = false }: { etiqueta: string; children: ReactNode; destacado?: boolean }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{etiqueta}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{etiqueta}</dt>
       <dd className={clsx("mt-0.5 text-sm text-slate-800 dark:text-slate-100", destacado && "font-display text-lg font-bold")}>{children}</dd>
     </div>
   );
@@ -175,7 +201,7 @@ function FilaPago({
     <li className="px-3 py-2.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={clsx("text-sm font-medium text-slate-800 dark:text-slate-100", anulado && "text-slate-400 line-through dark:text-slate-500")}>
+          <p className={clsx("text-sm font-medium text-slate-800 dark:text-slate-100", anulado && "text-slate-500 line-through dark:text-slate-400")}>
             {formatMonto(pago.monto)}
             <span className="font-normal text-slate-500 dark:text-slate-400">
               {" "}
@@ -188,7 +214,7 @@ function FilaPago({
             {pago.registradoPor ? ` · Registró ${pago.registradoPor.nombre} ${pago.registradoPor.apellido}` : ""}
           </p>
           {anulado && (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-300">
+            <p className="mt-1 text-xs text-red-700 dark:text-red-300">
               Anulado{pago.anuladoPor ? ` por ${pago.anuladoPor.nombre} ${pago.anuladoPor.apellido}` : ""}: {pago.motivoAnulacion}
             </p>
           )}
@@ -271,6 +297,10 @@ export function ModalCobro({
             <span className="text-sm text-slate-500 dark:text-slate-400">Vence el {fechaLarga(cobro.periodo.fechaVencimiento)}</span>
           </div>
 
+          {cobro.montoTotal > 0 && (
+            <BarraAvance pagado={cobro.montoPagado} total={cobro.montoTotal} etiqueta="Pagado del total del mes" />
+          )}
+
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div className="col-span-2 sm:col-span-3">
               <Dato etiqueta="Unidad">
@@ -285,7 +315,7 @@ export function ModalCobro({
             <Dato etiqueta="Total del mes">{formatMonto(cobro.montoTotal)}</Dato>
             <Dato etiqueta="Pagado">{formatMonto(cobro.montoPagado)}</Dato>
             <Dato etiqueta="Saldo" destacado>
-              <span className={cobro.saldo > 0 ? (cobro.estado === "VENCIDO" ? "text-red-600 dark:text-red-300" : "") : "text-emerald-600 dark:text-emerald-300"}>
+              <span className={cobro.saldo > 0 ? (cobro.estado === "VENCIDO" ? "text-red-700 dark:text-red-300" : "") : "text-emerald-700 dark:text-emerald-300"}>
                 {formatMonto(cobro.saldo)}
               </span>
             </Dato>
