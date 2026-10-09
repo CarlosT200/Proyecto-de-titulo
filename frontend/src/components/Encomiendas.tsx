@@ -2,15 +2,18 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
-import { ArrowUUpLeft, HandArrowUp, Package, Warning } from "@phosphor-icons/react";
+import { ArrowUUpLeft, HandArrowUp, MapPin, Package, Warning } from "@phosphor-icons/react";
 import { encomiendasApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { useAsync } from "../hooks/useAsync";
 import { useFiltroUrl } from "../hooks/useFiltroUrl";
+import { useEsCelular } from "../hooks/useEsCelular";
 import { useToast } from "../context/ToastContext";
+import { CeldaResumen } from "./CeldaResumen";
 import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, SearchInput, Select, Spinner, staggerFade, Textarea } from "./ui";
 import { formatFechaHora } from "../lib/format";
 import { fechaEnRango } from "../lib/filters";
+import { esAtrasada, esPorRetirar, ordenarEncomiendas, retiradaHoy } from "../lib/encomiendas";
 import { haceCuanto, nivelAntiguedad } from "../lib/tiempo";
 import { ENCOMIENDA_ATRASADA_HORAS } from "../lib/umbrales";
 import { ESTADO_ENCOMIENDA_LABEL, ESTADO_ENCOMIENDA_TONO } from "../lib/badges";
@@ -27,7 +30,7 @@ export function AntiguedadEncomienda({ encomienda }: { encomienda: Pick<Encomien
   if (encomienda.estado !== "NOTIFICADA") return null;
   const nivel = nivelAntiguedad(encomienda.fechaRecepcion);
   const texto = `Recibida ${haceCuanto(encomienda.fechaRecepcion)}`;
-  if (nivel === "normal") return <span className="text-xs text-slate-500 dark:text-slate-400">{texto}</span>;
+  if (nivel === "normal") return <span className="text-sm text-slate-600 dark:text-slate-300">{texto}</span>;
   return (
     <Badge tone={nivel === "muyAtrasada" ? "red" : "amber"}>
       <Warning size={12} weight="fill" className="mr-1" aria-hidden />
@@ -39,7 +42,7 @@ export function AntiguedadEncomienda({ encomienda }: { encomienda: Pick<Encomien
 function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{etiqueta}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{etiqueta}</dt>
       <dd className="mt-0.5 text-sm text-slate-800 dark:text-slate-100">{children}</dd>
     </div>
   );
@@ -107,6 +110,23 @@ export function ModalEncomienda({
             <AntiguedadEncomienda encomienda={enc} />
           </div>
 
+          {pendiente && enc.ubicacion && (
+            <p className="flex items-start gap-2 rounded-lg bg-brand-50 px-3 py-2.5 text-sm text-slate-800 dark:bg-brand-500/15 dark:text-slate-100">
+              <MapPin size={18} weight="fill" className="mt-0.5 shrink-0 text-brand-600 dark:text-brand-300" aria-hidden />
+              <span>
+                Guardada en <strong className="font-semibold">{enc.ubicacion}</strong>
+              </span>
+            </p>
+          )}
+
+          {enc.fotoUrl && (
+            <img
+              src={enc.fotoUrl}
+              alt="Foto de la encomienda"
+              className="max-h-72 w-full rounded-xl border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-900/40"
+            />
+          )}
+
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {mostrarResidente && enc.usuario && (
               <Dato etiqueta="Residente">
@@ -116,7 +136,7 @@ export function ModalEncomienda({
             )}
             <Dato etiqueta="Remitente">{enc.remitente ?? "Sin especificar"}</Dato>
             {enc.numeroSeguimiento && <Dato etiqueta="N° de seguimiento">{enc.numeroSeguimiento}</Dato>}
-            {enc.ubicacion && <Dato etiqueta="Ubicación en conserjería">{enc.ubicacion}</Dato>}
+            {enc.ubicacion && !pendiente && <Dato etiqueta="Ubicación en conserjería">{enc.ubicacion}</Dato>}
             <Dato etiqueta="Recibida">
               {formatFechaHora(enc.fechaRecepcion)}
               {enc.registradaPor && (
@@ -150,14 +170,6 @@ export function ModalEncomienda({
             <Dato etiqueta="Motivo de la devolución">{enc.motivoDevolucion}</Dato>
           )}
           {enc.observaciones && <Dato etiqueta="Observaciones">{enc.observaciones}</Dato>}
-
-          {enc.fotoUrl && (
-            <img
-              src={enc.fotoUrl}
-              alt="Foto de la encomienda"
-              className="max-h-72 w-full rounded-xl border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-900/40"
-            />
-          )}
 
           {errorAccion && <Alert tone="amber">{errorAccion}</Alert>}
 
@@ -241,15 +253,72 @@ export function ModalEncomienda({
   );
 }
 
-const FILTROS_ESTADO = ["NOTIFICADA", "ATRASADA", "RETIRADA", "DEVUELTA"] as const;
-const ETIQUETA_FILTRO: Record<(typeof FILTROS_ESTADO)[number], string> = {
+const FILTROS_ESTADO = ["NOTIFICADA", "ATRASADA", "RETIRADA_HOY", "RETIRADA", "DEVUELTA"] as const;
+type FiltroEstado = (typeof FILTROS_ESTADO)[number];
+const ETIQUETA_FILTRO: Record<FiltroEstado, string> = {
   NOTIFICADA: "Por retirar",
   ATRASADA: `Por retirar hace más de ${ENCOMIENDA_ATRASADA_HORAS} h`,
+  RETIRADA_HOY: "Retiradas hoy",
+  RETIRADA: "Retiradas",
+  DEVUELTA: "Devueltas",
+};
+// Mas cortas para el selector en un celular (comparte la pantalla con otros campos).
+const ETIQUETA_FILTRO_CORTA: Record<FiltroEstado, string> = {
+  NOTIFICADA: "Por retirar",
+  ATRASADA: "Atrasadas",
+  RETIRADA_HOY: "Retiradas hoy",
   RETIRADA: "Retiradas",
   DEVUELTA: "Devueltas",
 };
 
-// Lista de encomiendas del condominio (conserjeria y administracion): filtros, tabla y detalle.
+function coincideEstado(enc: Encomienda, estado: FiltroEstado | ""): boolean {
+  if (!estado) return true;
+  if (estado === "ATRASADA") return esAtrasada(enc);
+  if (estado === "RETIRADA_HOY") return retiradaHoy(enc);
+  return enc.estado === estado;
+}
+
+// Lo que importa al abrir la pantalla; cada cifra filtra la lista (y se vuelve a tocar para quitar el
+// filtro). Se calcula con todas las encomiendas, no con el filtro.
+function ResumenEncomiendas({
+  encomiendas,
+  filtro,
+  onFiltrar,
+}: {
+  encomiendas: Encomienda[];
+  filtro: FiltroEstado | "";
+  onFiltrar: (estado: FiltroEstado | "") => void;
+}) {
+  const porRetirar = encomiendas.filter(esPorRetirar).length;
+  const atrasadas = encomiendas.filter(esAtrasada);
+  const hayMuyAtrasadas = atrasadas.some((e) => nivelAntiguedad(e.fechaRecepcion) === "muyAtrasada");
+  const hoy = encomiendas.filter(retiradaHoy).length;
+  const alternar = (valor: FiltroEstado) => onFiltrar(filtro === valor ? "" : valor);
+  return (
+    <Card plana className="overflow-hidden">
+      <div className="grid grid-cols-3 gap-px bg-slate-100 dark:bg-slate-700/60">
+        <CeldaResumen titulo="Por retirar" valor={porRetirar} detalle="en conserjería" activa={filtro === "NOTIFICADA"} onToggle={() => alternar("NOTIFICADA")} />
+        <CeldaResumen
+          titulo="Atrasadas"
+          valor={atrasadas.length}
+          detalle={`más de ${ENCOMIENDA_ATRASADA_HORAS} h`}
+          alerta={hayMuyAtrasadas ? "red" : "amber"}
+          activa={filtro === "ATRASADA"}
+          onToggle={() => alternar("ATRASADA")}
+        />
+        <CeldaResumen
+          titulo="Entregadas"
+          valor={hoy}
+          detalle="hoy"
+          activa={filtro === "RETIRADA_HOY"}
+          onToggle={() => alternar("RETIRADA_HOY")}
+        />
+      </div>
+    </Card>
+  );
+}
+
+// Lista de encomiendas del condominio (conserjeria y administracion): resumen, filtros, lista y detalle.
 // El filtro de estado y la encomienda abierta viajan en la direccion (?estado=... y ?ver=...).
 export function ListaEncomiendas({
   data,
@@ -265,6 +334,7 @@ export function ListaEncomiendas({
   onActualizada: () => void;
 }) {
   const [params, setParams] = useSearchParams();
+  const esCelular = useEsCelular();
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useFiltroUrl("estado", FILTROS_ESTADO);
   const [fechaDesde, setFechaDesde] = useState("");
@@ -283,151 +353,168 @@ export function ListaEncomiendas({
     );
   }
 
-  const filtradas = (data ?? []).filter((enc) => {
-    const texto = [
-      enc.usuario?.nombre,
-      enc.usuario?.apellido,
-      unidadDe(enc.usuario),
-      enc.remitente,
-      enc.numeroSeguimiento,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    const coincideTexto = !busqueda || texto.includes(busqueda.toLowerCase());
-    const coincideEstado =
-      !estado ||
-      (estado === "ATRASADA"
-        ? enc.estado === "NOTIFICADA" && nivelAntiguedad(enc.fechaRecepcion) !== "normal"
-        : enc.estado === estado);
-    return coincideTexto && coincideEstado && fechaEnRango(enc.fechaRecepcion, fechaDesde, fechaHasta);
-  });
+  const filtradas = ordenarEncomiendas(
+    (data ?? []).filter((enc) => {
+      const texto = [enc.usuario?.nombre, enc.usuario?.apellido, unidadDe(enc.usuario), enc.remitente, enc.numeroSeguimiento]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const coincideTexto = !busqueda || texto.includes(busqueda.toLowerCase());
+      return coincideTexto && coincideEstado(enc, estado) && fechaEnRango(enc.fechaRecepcion, fechaDesde, fechaHasta);
+    })
+  );
 
   const hayFiltros = Boolean(busqueda || estado || fechaDesde || fechaHasta);
+  const etiquetas = esCelular ? ETIQUETA_FILTRO_CORTA : ETIQUETA_FILTRO;
+
+  const nombreDe = (enc: Encomienda) => (enc.usuario ? `${enc.usuario.nombre} ${enc.usuario.apellido}` : "—");
+  const accion = (enc: Encomienda, className?: string) =>
+    puedeGestionar && enc.estado === "NOTIFICADA" ? (
+      <Button size="sm" className={clsx("whitespace-nowrap", className)} onClick={() => abrir(enc.id)}>
+        <HandArrowUp size={14} aria-hidden /> Entregar
+      </Button>
+    ) : (
+      <Button size="sm" variant="secondary" className={clsx("whitespace-nowrap", className)} onClick={() => abrir(enc.id)}>
+        Ver detalle
+      </Button>
+    );
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-5 dark:border-slate-700/60">
-        <div className="w-full sm:max-w-[16rem]">
-          <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por residente, unidad o remitente..." />
-        </div>
-        <div className="w-full sm:w-56">
-          <Label htmlFor="campo-encomiendas-estado">Estado</Label>
-          <Select id="campo-encomiendas-estado" value={estado} onChange={(e) => setEstado(e.target.value as typeof estado)}>
-            <option value="">Todas</option>
-            {FILTROS_ESTADO.map((valor) => (
-              <option key={valor} value={valor}>
-                {ETIQUETA_FILTRO[valor]}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="w-full sm:w-40">
-          <Label htmlFor="campo-encomiendas-desde">Recibidas desde</Label>
-          <Input id="campo-encomiendas-desde" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
-        </div>
-        <div className="w-full sm:w-40">
-          <Label htmlFor="campo-encomiendas-hasta">Hasta</Label>
-          <Input id="campo-encomiendas-hasta" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
-        </div>
-        {hayFiltros && (
-          <button
-            type="button"
-            onClick={() => {
-              setBusqueda("");
-              setEstado("");
-              setFechaDesde("");
-              setFechaHasta("");
-            }}
-            className="text-xs text-brand-600 hover:underline max-sm:min-h-11 dark:text-brand-400"
-          >
-            Limpiar filtros
-          </button>
-        )}
-      </div>
+    <div className="space-y-6">
+      {data && data.length > 0 && <ResumenEncomiendas encomiendas={data} filtro={estado} onFiltrar={setEstado} />}
 
-      {cargando && !data ? (
-        <Spinner />
-      ) : error ? (
-        <Alert tone="red">{error}</Alert>
-      ) : !data?.length ? (
-        <EmptyState icon={Package} title="Aún no hay encomiendas registradas" />
-      ) : !filtradas.length ? (
-        <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="tabla-movil w-full text-left text-sm">
-            <thead className="border-b border-slate-100 text-xs uppercase text-slate-400 dark:border-slate-700/60 dark:text-slate-500">
-              <tr>
-                <th className="px-5 py-3">Residente</th>
-                <th className="px-5 py-3">Remitente</th>
-                <th className="px-5 py-3">Recepción</th>
-                <th className="px-5 py-3">Estado</th>
-                <th className="px-5 py-3">
-                  <span className="sr-only">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-              {filtradas.map((enc, i) => (
-                <motion.tr key={enc.id} {...staggerFade(i)} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-700/60">
-                  <td data-label="Residente" className="px-5 py-3">
-                    <div>
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
-                        {enc.usuario ? `${enc.usuario.nombre} ${enc.usuario.apellido}` : "—"}
-                      </span>
-                      {unidadDe(enc.usuario) && (
-                        <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">{unidadDe(enc.usuario)}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td data-label="Remitente" className="px-5 py-3 text-slate-600 dark:text-slate-300">
-                    <div>
-                      <span>{enc.remitente ?? "Sin especificar"}</span>
-                      {enc.numeroSeguimiento && (
-                        <span className="block text-xs text-slate-500 dark:text-slate-400">N° {enc.numeroSeguimiento}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td data-label="Recepción" className="px-5 py-3 text-slate-600 dark:text-slate-300">
-                    <div>
-                      <span className="whitespace-nowrap">{formatFechaHora(enc.fechaRecepcion)}</span>
-                      {enc.estado === "NOTIFICADA" && (
-                        <span className="block pt-0.5">
-                          <AntiguedadEncomienda encomienda={enc} />
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td data-label="Estado" className="px-5 py-3">
-                    <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {puedeGestionar && enc.estado === "NOTIFICADA" ? (
-                      <Button size="sm" className="whitespace-nowrap" onClick={() => abrir(enc.id)}>
-                        <HandArrowUp size={14} aria-hidden /> Entregar
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={() => abrir(enc.id)}>
-                        Ver detalle
-                      </Button>
-                    )}
-                  </td>
-                </motion.tr>
+      <Card plana>
+        <div className="grid grid-cols-2 items-end gap-3 border-b border-slate-100 p-5 dark:border-slate-700/60 sm:flex sm:flex-wrap">
+          <div className="col-span-2 sm:w-64">
+            <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por residente, unidad o remitente..." />
+          </div>
+          <div className="col-span-2 sm:w-56">
+            <Label htmlFor="campo-encomiendas-estado">Estado</Label>
+            <Select id="campo-encomiendas-estado" value={estado} onChange={(e) => setEstado(e.target.value as typeof estado)}>
+              <option value="">Todas</option>
+              {FILTROS_ESTADO.map((valor) => (
+                <option key={valor} value={valor}>
+                  {etiquetas[valor]}
+                </option>
               ))}
-            </tbody>
-          </table>
+            </Select>
+          </div>
+          <div className="sm:w-40">
+            <Label htmlFor="campo-encomiendas-desde">Recibidas desde</Label>
+            <Input id="campo-encomiendas-desde" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+          </div>
+          <div className="sm:w-40">
+            <Label htmlFor="campo-encomiendas-hasta">Hasta</Label>
+            <Input id="campo-encomiendas-hasta" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+          </div>
+          {hayFiltros && (
+            <button
+              type="button"
+              onClick={() => {
+                setBusqueda("");
+                setEstado("");
+                setFechaDesde("");
+                setFechaHasta("");
+              }}
+              className="col-span-2 inline-flex items-center justify-center rounded-lg text-sm font-medium text-brand-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 max-sm:min-h-11 dark:text-brand-400 sm:col-span-1"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
-      )}
 
-      {abiertaId && (
-        <ModalEncomienda
-          id={abiertaId}
-          puedeGestionar={puedeGestionar}
-          onClose={() => abrir(null)}
-          onActualizada={onActualizada}
-        />
-      )}
-    </Card>
+        {cargando && !data ? (
+          <Spinner />
+        ) : error ? (
+          <Alert tone="red">{error}</Alert>
+        ) : !data?.length ? (
+          <EmptyState icon={Package} title="Aún no hay encomiendas registradas" />
+        ) : !filtradas.length ? (
+          <EmptyState title="Sin resultados" description="Ninguna encomienda coincide con los filtros." />
+        ) : (
+          <>
+            <p className="border-b border-slate-100 px-5 py-3 text-xs text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+              Primero las que siguen por retirar, de la más antigua a la más reciente; después las anteriores.
+            </p>
+
+            {/* Celular: una tarjeta compacta por encomienda (quien, de quien, hace cuanto y la accion).
+                Desde 640 px: tabla. */}
+            <ul className="divide-y divide-slate-100 sm:hidden dark:divide-slate-700/60">
+              {filtradas.map((enc, i) => (
+                <motion.li key={enc.id} {...staggerFade(i)} className="space-y-1.5 px-5 py-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">{nombreDe(enc)}</p>
+                    <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
+                  </div>
+                  <p className="break-words text-sm text-slate-600 dark:text-slate-300">
+                    {[unidadDe(enc.usuario), enc.remitente ?? "Sin especificar", enc.numeroSeguimiento && `N° ${enc.numeroSeguimiento}`]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  <p className="text-sm">
+                    {enc.estado === "NOTIFICADA" ? (
+                      <AntiguedadEncomienda encomienda={enc} />
+                    ) : (
+                      <span className="text-slate-600 dark:text-slate-300">Recibida {formatFechaHora(enc.fechaRecepcion)}</span>
+                    )}
+                  </p>
+                  {accion(enc, "mt-1 w-full")}
+                </motion.li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-100 text-xs uppercase text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
+                  <tr>
+                    <th scope="col" className="px-5 py-3">Residente</th>
+                    <th scope="col" className="px-5 py-3">Remitente</th>
+                    <th scope="col" className="px-5 py-3">Recepción</th>
+                    <th scope="col" className="px-5 py-3">Estado</th>
+                    <th scope="col" className="px-5 py-3">
+                      <span className="sr-only">Acciones</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                  {filtradas.map((enc, i) => (
+                    <motion.tr key={enc.id} {...staggerFade(i)}>
+                      <td className="px-5 py-3">
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{nombreDe(enc)}</span>
+                        {unidadDe(enc.usuario) && (
+                          <span className="block text-xs font-normal text-slate-500 dark:text-slate-400">{unidadDe(enc.usuario)}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-slate-600 dark:text-slate-300">
+                        <span>{enc.remitente ?? "Sin especificar"}</span>
+                        {enc.numeroSeguimiento && (
+                          <span className="block text-xs text-slate-500 dark:text-slate-400">N° {enc.numeroSeguimiento}</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-slate-600 dark:text-slate-300">
+                        <span className="whitespace-nowrap">{formatFechaHora(enc.fechaRecepcion)}</span>
+                        {enc.estado === "NOTIFICADA" && (
+                          <span className="block pt-0.5">
+                            <AntiguedadEncomienda encomienda={enc} />
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge tone={ESTADO_ENCOMIENDA_TONO[enc.estado]}>{ESTADO_ENCOMIENDA_LABEL[enc.estado]}</Badge>
+                      </td>
+                      <td className="px-5 py-3 text-right">{accion(enc)}</td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {abiertaId && (
+          <ModalEncomienda id={abiertaId} puedeGestionar={puedeGestionar} onClose={() => abrir(null)} onActualizada={onActualizada} />
+        )}
+      </Card>
+    </div>
   );
 }

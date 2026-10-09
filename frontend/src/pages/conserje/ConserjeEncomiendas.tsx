@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package } from "@phosphor-icons/react";
+import { Package, Plus } from "@phosphor-icons/react";
 import { encomiendasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Button, Card, CardHeader, Input, Label, PageHeader, Select, Textarea } from "../../components/ui";
@@ -41,12 +42,28 @@ export default function ConserjeEncomiendas() {
   const residenteRef = useRef<HTMLSelectElement>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // En celular el formulario esta plegado para que lo primero que se vea sean las encomiendas por
+  // entregar; desde 1280 px siempre esta visible a un lado.
+  const [formAbierto, setFormAbierto] = useState(false);
+  const enfocarAlAbrir = useRef(false);
 
-  // Desde el inicio ("Registrar encomienda") se llega con ?registrar=1: el foco va directo al formulario.
+  function alternarFormulario() {
+    enfocarAlAbrir.current = !formAbierto;
+    setFormAbierto((v) => !v);
+  }
+
   useEffect(() => {
-    if (params.get("registrar") !== "1") return;
+    if (!formAbierto || !enfocarAlAbrir.current) return;
+    enfocarAlAbrir.current = false;
     residenteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     residenteRef.current?.focus({ preventScroll: true });
+  }, [formAbierto]);
+
+  // Desde el inicio ("Registrar encomienda") se llega con ?registrar=1: se abre el formulario y el foco va a el.
+  useEffect(() => {
+    if (params.get("registrar") !== "1") return;
+    enfocarAlAbrir.current = true;
+    setFormAbierto(true);
     setParams(
       (actuales) => {
         const siguientes = new URLSearchParams(actuales);
@@ -87,6 +104,7 @@ export default function ConserjeEncomiendas() {
 
       await encomiendasApi.crear(datos);
       limpiarFormulario();
+      setFormAbierto(false);
       toast.success("Encomienda registrada. El residente ya fue notificado.");
       recargar();
     } catch (err) {
@@ -101,8 +119,26 @@ export default function ConserjeEncomiendas() {
       <PageHeader icon={Package} title="Encomiendas" subtitle="Registra lo que llega y entrégalo a cada residente." />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="h-fit">
-          <CardHeader title="Registrar encomienda" subtitle="El residente recibe un aviso al instante." />
+        <div className="h-fit space-y-3">
+          <Button
+            type="button"
+            variant={formAbierto ? "secondary" : "primary"}
+            className="w-full xl:hidden"
+            aria-expanded={formAbierto}
+            aria-controls="formulario-encomienda"
+            onClick={alternarFormulario}
+          >
+            {formAbierto ? (
+              "Cerrar formulario"
+            ) : (
+              <>
+                <Plus size={16} weight="bold" aria-hidden /> Registrar encomienda
+              </>
+            )}
+          </Button>
+          <div id="formulario-encomienda" className={clsx(!formAbierto && "max-xl:hidden")}>
+          <Card plana>
+          <CardHeader nivel={2} title="Registrar encomienda" subtitle="El residente recibe un aviso al instante." />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
               <Label htmlFor="campo-encomiendas-residente">Residente</Label>
@@ -197,7 +233,9 @@ export default function ConserjeEncomiendas() {
               Registrar y notificar
             </Button>
           </form>
-        </Card>
+          </Card>
+          </div>
+        </div>
 
         <div className="xl:col-span-2">
           <ListaEncomiendas data={data} cargando={cargando} error={error} puedeGestionar onActualizada={recargar} />
