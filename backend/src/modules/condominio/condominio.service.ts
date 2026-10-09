@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma";
-import { NotFoundError } from "../../lib/errors";
+import { ConflictError, NotFoundError } from "../../lib/errors";
 
 // HU-03: gestionar estructura del condominio (torres, departamentos, espacios comunes).
 
@@ -34,8 +34,20 @@ export async function crearDepartamento(
   condominioId: string,
   data: { numero: string; torreId?: string | null }
 ) {
+  const torreId = data.torreId ?? null;
+  // La torre tiene que ser de este condominio, y la misma unidad no se registra dos veces.
+  if (torreId) {
+    const torre = await prisma.torre.findFirst({ where: { id: torreId, condominioId }, select: { id: true } });
+    if (!torre) throw new NotFoundError("La torre elegida no existe en este condominio.");
+  }
+  const numero = data.numero.trim();
+  const repetida = await prisma.departamento.findFirst({
+    where: { condominioId, torreId, numero: { equals: numero, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (repetida) throw new ConflictError(`La unidad ${numero} ya existe${torreId ? " en esa torre" : ""}.`);
   return prisma.departamento.create({
-    data: { condominioId, numero: data.numero, torreId: data.torreId ?? null },
+    data: { condominioId, numero, torreId },
   });
 }
 
