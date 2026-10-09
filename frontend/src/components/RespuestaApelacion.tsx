@@ -1,5 +1,5 @@
 import { Badge } from "./ui";
-import { formatFecha } from "../lib/format";
+import { formatDia } from "../lib/format";
 import type { Multa } from "../types";
 
 // La respuesta de la administracion a una apelacion, con su decision. La ven el residente y la
@@ -9,7 +9,7 @@ export function RespuestaApelacion({ multa, className }: { multa: Multa; classNa
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center gap-2">
-        <p className="font-semibold">Respuesta de la administración{multa.respondidaEn ? ` (${formatFecha(multa.respondidaEn)})` : ""}</p>
+        <p className="font-semibold">Respuesta de la administración{multa.respondidaEn ? ` (${formatDia(multa.respondidaEn)})` : ""}</p>
         {multa.apelacionAceptada !== null && multa.apelacionAceptada !== undefined && (
           <Badge tone={multa.apelacionAceptada ? "green" : "red"}>{multa.apelacionAceptada ? "Apelación aceptada" : "Apelación rechazada"}</Badge>
         )}

@@ -1,14 +1,21 @@
 import { FormEvent, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, FileText, Trash } from "@phosphor-icons/react";
+import { FileText, UploadSimple } from "@phosphor-icons/react";
 import { documentosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, SearchInput, Spinner, staggerFade } from "../../components/ui";
-import { formatFecha } from "../../lib/format";
+import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Spinner } from "../../components/ui";
+import { ListaDocumentos, categoriasDe } from "../../components/Documentos";
 import { abrirDocumento } from "../../lib/documentos";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import type { Documento } from "../../types";
+
+// Mismo limite que el servidor (middleware/upload.ts): se avisa antes de subir para no esperar en vano.
+const MAXIMO_BYTES = 8 * 1024 * 1024;
+
+function tamanoLegible(bytes: number): string {
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toLocaleString("es-CL", { maximumFractionDigits: 1 })} MB`;
+}
 
 export default function AdminDocumentos() {
   const toast = useToast();
@@ -17,22 +24,20 @@ export default function AdminDocumentos() {
   const [titulo, setTitulo] = useState("");
   const [categoria, setCategoria] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [archivo, setArchivo] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
+  const [nuevoId, setNuevoId] = useState<string | null>(null);
 
-  const filtrados = (data ?? []).filter(
-    (doc) => !busqueda || `${doc.titulo} ${doc.categoria ?? ""}`.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  async function handleEliminar(id: string, titulo: string) {
-    const ok = await confirmar(`¿Eliminar el documento "${titulo}"? Ya no estará disponible para los residentes.`, {
+  async function handleEliminar(doc: Documento) {
+    const ok = await confirmar(`¿Eliminar el documento "${doc.titulo}"? Ya no estará disponible para los residentes.`, {
       titulo: "Eliminar documento",
       textoConfirmar: "Eliminar",
+      textoCancelar: "Volver",
     });
     if (!ok) return;
     try {
-      await documentosApi.eliminar(id);
+      await documentosApi.eliminar(doc.id);
       toast.info("Documento eliminado.");
       recargar();
     } catch (err) {
@@ -40,29 +45,30 @@ export default function AdminDocumentos() {
     }
   }
 
-  function handleAbrir(id: string) {
-    abrirDocumento(id).catch((err) => toast.error(mensajeError(err, "No se pudo abrir el documento.")));
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
-    const archivo = fileRef.current?.files?.[0];
     if (!archivo) {
       setFormError("Selecciona un archivo.");
+      return;
+    }
+    if (archivo.size > MAXIMO_BYTES) {
+      setFormError(`El archivo pesa ${tamanoLegible(archivo.size)}; el máximo es 8 MB.`);
       return;
     }
     setEnviando(true);
     try {
       const formData = new FormData();
-      formData.append("titulo", titulo);
-      if (categoria) formData.append("categoria", categoria);
+      formData.append("titulo", titulo.trim());
+      if (categoria.trim()) formData.append("categoria", categoria.trim());
       formData.append("archivo", archivo);
-      await documentosApi.crear(formData);
+      const creado = await documentosApi.crear(formData);
       setTitulo("");
       setCategoria("");
+      setArchivo(null);
       if (fileRef.current) fileRef.current.value = "";
-      toast.success("Documento publicado correctamente.");
+      setNuevoId(creado.id);
+      toast.success("Documento publicado. Los residentes ya pueden verlo.");
       recargar();
     } catch (err) {
       setFormError(mensajeError(err));
@@ -71,82 +77,84 @@ export default function AdminDocumentos() {
     }
   }
 
+  const categorias = categoriasDe(data ?? []).filter((c) => c !== "General");
+
   return (
     <div className="space-y-6">
-      <PageHeader icon={FileText} title="Repositorio de documentos" subtitle="Reglamentos y documentos informativos." />
+      <PageHeader icon={FileText} title="Repositorio de documentos" subtitle="Reglamentos, actas y documentos para los residentes." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Documentos publicados"
-            action={<SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar..." className="w-48" />}
-          />
-          {cargando ? (
+        <Card plana className="overflow-hidden lg:col-span-2">
+          <CardHeader nivel={2} title="Documentos publicados" subtitle={data?.length ? `${data.length} ${data.length === 1 ? "documento" : "documentos"}` : undefined} />
+          {cargando && !data ? (
             <Spinner />
           ) : error ? (
             <Alert tone="red">{error}</Alert>
           ) : !data?.length ? (
-            <EmptyState icon={FileText} title="Aún no hay documentos publicados" />
-          ) : !filtrados.length ? (
-            <EmptyState title="Sin resultados" description="Ningún documento coincide con la búsqueda." />
+            <EmptyState icon={FileText} title="Aún no hay documentos publicados" description="Publica el reglamento interno con el formulario." />
           ) : (
-            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-              {filtrados.map((doc, i) => (
-                <motion.div
-                  key={doc.id}
-                  {...staggerFade(i)}
-                  className="group flex items-center justify-between gap-2 px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
-                >
-                  <button type="button" onClick={() => handleAbrir(doc.id)} className="min-w-0 flex-1 text-left max-sm:min-h-11">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{doc.titulo}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                      {doc.categoria ?? "General"} · {formatFecha(doc.createdAt)}
-                    </p>
-                  </button>
-                  <div className="flex shrink-0 items-center gap-1 max-sm:gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleAbrir(doc.id)}
-                      className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 transition-transform group-hover:translate-x-0.5 max-sm:min-h-11"
-                    >
-                      Ver <ArrowRight size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEliminar(doc.id, doc.titulo)}
-                      className="rounded-lg p-1.5 max-sm:p-3.5 text-slate-400 transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                      aria-label="Eliminar documento"
-                      title="Eliminar documento"
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            <ListaDocumentos
+              docs={data}
+              nuevoId={nuevoId}
+              onEliminar={handleEliminar}
+              onAbrir={(doc) => abrirDocumento(doc.id).catch((err) => toast.error(mensajeError(err, "No se pudo abrir el documento.")))}
+            />
           )}
         </Card>
 
-        <Card className="h-fit">
-          <CardHeader title="Publicar documento" />
+        <Card plana className="h-fit max-lg:order-first">
+          <CardHeader nivel={2} title="Publicar documento" subtitle="Los residentes lo verán en su sección Documentos." />
           <form onSubmit={handleSubmit} className="space-y-3 p-5">
             <div>
               <Label htmlFor="campo-documentos-1">Título</Label>
-              <Input id="campo-documentos-1" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+              <Input id="campo-documentos-1" required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ej: Reglamento interno 2026" />
             </div>
             <div>
-              <Label htmlFor="campo-documentos-2">Categoría</Label>
-              <Input id="campo-documentos-2" value={categoria} onChange={(e) => setCategoria(e.target.value)} placeholder="Reglamento" />
-            </div>
-            <div>
-              <Label htmlFor="campo-documentos-archivo">Archivo (PDF, imagen)</Label>
-              <input
-                id="campo-documentos-archivo"
-                ref={fileRef}
-                type="file"
-                accept=".pdf,image/*"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:text-slate-300 dark:file:bg-brand-500/15 dark:file:text-brand-200"
+              <Label htmlFor="campo-documentos-2">Categoría (opcional)</Label>
+              <Input
+                id="campo-documentos-2"
+                list="categorias-documentos"
+                maxLength={60}
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                placeholder="Ej: Reglamento, Actas, Seguros"
               />
+              {/* sugiere las categorias ya usadas, para no tener "Reglamento" y "reglamentos" */}
+              <datalist id="categorias-documentos">
+                {categorias.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <Label htmlFor="campo-documentos-archivo">Archivo (PDF o imagen, hasta 8 MB)</Label>
+              <label
+                htmlFor="campo-documentos-archivo"
+                className="flex min-h-[4.5rem] cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm transition-colors hover:border-brand-400 hover:bg-brand-50/50 focus-within:border-brand-500 dark:border-slate-600 dark:hover:border-brand-400 dark:hover:bg-brand-500/10"
+              >
+                <UploadSimple size={24} className="shrink-0 text-brand-600 dark:text-brand-300" aria-hidden />
+                <span className="min-w-0">
+                  {archivo ? (
+                    <>
+                      <span className="block break-all font-medium text-slate-900 dark:text-slate-100">{archivo.name}</span>
+                      <span className="text-slate-600 dark:text-slate-300">{tamanoLegible(archivo.size)} · toca para cambiarlo</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-700 dark:text-slate-200">Toca para elegir el archivo</span>
+                  )}
+                </span>
+                <input
+                  id="campo-documentos-archivo"
+                  ref={fileRef}
+                  type="file"
+                  accept=".pdf,image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    setArchivo(e.target.files?.[0] ?? null);
+                    setFormError(null);
+                  }}
+                />
+              </label>
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>

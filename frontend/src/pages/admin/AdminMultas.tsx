@@ -8,7 +8,7 @@ import { Alert, Button, Card, EmptyState, Input, Label, Modal, PageHeader, Searc
 import { BadgeEstadoMulta } from "../../components/Multas";
 import { CeldaResumen } from "../../components/CeldaResumen";
 import { RespuestaApelacion } from "../../components/RespuestaApelacion";
-import { formatFecha, formatMonto, hoyLocal } from "../../lib/format";
+import { formatFecha, formatMonto, hoyLocal, formatDia } from "../../lib/format";
 import { ESTADO_MULTA_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -73,7 +73,7 @@ function Apelacion({ multa }: { multa: Multa }) {
   return (
     <div className="mt-1 space-y-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
       <p className="break-words">
-        <span className="font-semibold">Apelación del residente{multa.apeladaEn ? ` (${formatFecha(multa.apeladaEn)})` : ""}:</span>{" "}
+        <span className="font-semibold">Apelación del residente{multa.apeladaEn ? ` (${formatDia(multa.apeladaEn)})` : ""}:</span>{" "}
         {multa.apelacion}
       </p>
       <RespuestaApelacion multa={multa} className="border-t border-slate-200 pt-2 dark:border-slate-700" />
@@ -137,7 +137,7 @@ function ModalResponderApelacion({
           </p>
           <p className="break-words text-slate-700 dark:text-slate-300">{multa.motivo}</p>
           <p className="break-words border-t border-slate-200 pt-2 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-300">
-            <span className="font-semibold">Apelación{multa.apeladaEn ? ` (${formatFecha(multa.apeladaEn)})` : ""}:</span> {multa.apelacion}
+            <span className="font-semibold">Apelación{multa.apeladaEn ? ` (${formatDia(multa.apeladaEn)})` : ""}:</span> {multa.apelacion}
           </p>
         </div>
 

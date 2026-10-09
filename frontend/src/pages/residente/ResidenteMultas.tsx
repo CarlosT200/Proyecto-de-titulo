@@ -8,7 +8,7 @@ import { useToast } from "../../context/ToastContext";
 import { Alert, Button, Card, EmptyState, Label, Modal, PageHeader, Spinner, Textarea } from "../../components/ui";
 import { BadgeEstadoMulta } from "../../components/Multas";
 import { RespuestaApelacion } from "../../components/RespuestaApelacion";
-import { formatFecha, formatMonto } from "../../lib/format";
+import { formatFecha, formatMonto, formatDia } from "../../lib/format";
 import type { Multa } from "../../types";
 
 const MIN_APELACION = 10;
@@ -153,7 +153,7 @@ export default function ResidenteMultas() {
                 {m.observaciones && <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">{m.observaciones}</p>}
                 {m.apelacion && (
                   <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-                    <p className="font-semibold">Tu apelación{m.apeladaEn ? ` (${formatFecha(m.apeladaEn)})` : ""}</p>
+                    <p className="font-semibold">Tu apelación{m.apeladaEn ? ` (${formatDia(m.apeladaEn)})` : ""}</p>
                     <p className="mt-0.5 break-words">{m.apelacion}</p>
                     {m.estado === "APELADA" && <p className="mt-1 text-slate-500 dark:text-slate-400">En revisión por la administración. Te avisaremos su decisión.</p>}
                     <RespuestaApelacion multa={m} className="mt-2 border-t border-slate-200 pt-2 dark:border-slate-700" />
