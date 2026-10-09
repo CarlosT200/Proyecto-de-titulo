@@ -87,7 +87,7 @@ export default function ConserjeInicio() {
             })}
           </ul>
           {data.sos.activas > data.sos.alertas.length && (
-            <Link to="/alertas-sos?estado=ACTIVA" className="block px-5 py-3 text-sm font-medium text-red-700 hover:underline dark:text-red-300">
+            <Link to="/alertas-sos" className="block px-5 py-3 text-sm font-medium text-red-700 hover:underline dark:text-red-300">
               Ver todas las alertas activas
             </Link>
           )}
@@ -113,7 +113,7 @@ export default function ConserjeInicio() {
                 cantidad: data.sos.activas,
                 singular: "alerta SOS activa",
                 plural: "alertas SOS activas",
-                to: "/alertas-sos?estado=ACTIVA",
+                to: "/alertas-sos",
                 tono: "red",
                 icono: Siren,
               },
@@ -138,7 +138,7 @@ export default function ConserjeInicio() {
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatCard to="/encomiendas?estado=NOTIFICADA" icon={Package} label="Encomiendas por entregar" value={data.encomiendas.pendientes} tone="purple" index={0} />
-            <StatCard to="/alertas-sos?estado=ACTIVA" icon={Siren} label="Alertas SOS activas" value={data.sos.activas} tone="red" index={1} />
+            <StatCard to="/alertas-sos" icon={Siren} label="Alertas SOS activas" value={data.sos.activas} tone="red" index={1} />
             <StatCard to="/accesos?resultado=AUTORIZADO&periodo=hoy" icon={CheckCircle} label="Accesos autorizados hoy" value={data.accesos.hoyAutorizados} tone="green" index={2} />
             <StatCard to="/accesos?resultado=RECHAZADO&periodo=hoy" icon={WarningCircle} label="Accesos rechazados hoy" value={data.accesos.hoyRechazados} tone="amber" index={3} />
           </div>

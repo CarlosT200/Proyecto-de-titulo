@@ -153,7 +153,7 @@ export default function AdminDashboard() {
             cantidad: data.atencion.sosActivas,
             singular: "alerta SOS activa",
             plural: "alertas SOS activas",
-            to: "/alertas-sos?estado=ACTIVA",
+            to: "/alertas-sos",
             tono: "red",
             icono: Siren,
           },
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
             etiqueta="Alertas SOS activas"
             valor={data.sos.activas}
             alerta
-            to="/alertas-sos?estado=ACTIVA"
+            to="/alertas-sos"
           />
           <Cifra
             icono={Package}
