@@ -168,12 +168,15 @@ export function CalendarioReservas({
         })}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300" aria-hidden>
+      <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+        La barra bajo cada día muestra cuánto de su horario ya está reservado. Sin barra: día libre.
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300" aria-hidden>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-1.5 w-4 rounded-full bg-brand-500" /> Algunas reservas
+          <span className="h-1.5 w-4 rounded-full bg-brand-500" /> Menos de la mitad
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-1.5 w-4 rounded-full bg-accent-500" /> Muy ocupado
+          <span className="h-1.5 w-4 rounded-full bg-accent-500" /> La mitad o más
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-1.5 w-4 rounded-full bg-slate-400" /> Lleno
