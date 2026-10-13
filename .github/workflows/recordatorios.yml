@@ -10,12 +10,15 @@ name: Recordatorios
 
 on:
   schedule:
-    - cron: "5 * * * *"
+    # Solo en horas utiles de Chile (9:00 a 21:00; fuera de ese horario el servidor no envia nada y
+    # despertarlo seria gastar minutos en vano). Hora de verano de Chile = UTC-3.
+    - cron: "5 12-23,0,1 * * *"
   workflow_dispatch:
 
 jobs:
   recordatorios:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     env:
       URL: ${{ secrets.HABITASMART_URL }}
       TOKEN: ${{ secrets.TAREAS_TOKEN }}
@@ -23,6 +26,16 @@ jobs:
       - name: Pedir el envio de recordatorios
         if: ${{ env.URL != '' && env.TOKEN != '' }}
         run: |
+          URL="${URL%/}"
+          # El plan gratis de Render duerme el servidor sin visitas y despertarlo puede tardar mas de
+          # un minuto: primero se le toca la puerta y se espera a que responda.
+          despierto=0
+          for intento in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 75 "$URL/health" > /dev/null; then despierto=1; break; fi
+            echo "El servidor aun no responde (intento $intento de 6)"
+            sleep 10
+          done
+          if [ "$despierto" -ne 1 ]; then echo "El servidor no desperto a tiempo"; exit 1; fi
           curl -fsS -X POST "$URL/api/tareas/recordatorios" \
             -H "x-tarea-token: $TOKEN" \
-            --max-time 120 --retry 3 --retry-delay 30 --retry-all-errors
+            --max-time 60 --retry 2 --retry-delay 15 --retry-all-errors
