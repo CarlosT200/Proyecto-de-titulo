@@ -6,6 +6,7 @@ import { encomiendasApi, usuariosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Button, Card, CardHeader, Input, Label, PageHeader, Select, Textarea } from "../../components/ui";
 import { ListaEncomiendas } from "../../components/Encomiendas";
+import { CapturaFoto } from "../../components/CapturaFoto";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 
@@ -37,7 +38,7 @@ export default function ConserjeEncomiendas() {
   const [numeroSeguimiento, setNumeroSeguimiento] = useState("");
   const [ubicacion, setUbicacion] = useState("");
   const [observaciones, setObservaciones] = useState("");
-  const fotoRef = useRef<HTMLInputElement>(null);
+  const [foto, setFoto] = useState<File | null>(null);
   const residenteRef = useRef<HTMLSelectElement>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -85,7 +86,7 @@ export default function ConserjeEncomiendas() {
     setNumeroSeguimiento("");
     setUbicacion("");
     setObservaciones("");
-    if (fotoRef.current) fotoRef.current.value = "";
+    setFoto(null);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -99,7 +100,6 @@ export default function ConserjeEncomiendas() {
       if (numeroSeguimiento.trim()) datos.append("numeroSeguimiento", numeroSeguimiento.trim());
       if (ubicacion.trim()) datos.append("ubicacion", ubicacion.trim());
       if (observaciones.trim()) datos.append("observaciones", observaciones.trim());
-      const foto = fotoRef.current?.files?.[0];
       if (foto) datos.append("foto", foto);
 
       const creada = await encomiendasApi.crear(datos);
@@ -219,15 +219,8 @@ export default function ConserjeEncomiendas() {
               />
             </div>
             <div>
-              <Label htmlFor="campo-encomiendas-foto">Foto (opcional)</Label>
-              <input
-                id="campo-encomiendas-foto"
-                ref={fotoRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:text-slate-300 dark:file:bg-brand-500/15 dark:file:text-brand-200"
-              />
+              <Label>Foto (opcional)</Label>
+              <CapturaFoto foto={foto} onFoto={setFoto} />
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>

@@ -111,6 +111,7 @@ export default function ResidenteQR() {
       `Tu código de acceso a ${usuario?.condominio?.nombre ?? "el condominio"}. Muéstralo en conserjería. Vigente hasta ${formatFechaHora(visitaQr.expiraEn)}.`
     );
     if (resultado === "descargado") toast.success("Imagen del QR descargada. Envíasela a tu visita.");
+    else if (resultado === "abierto") toast.info("Se abrió el código QR. Mantén presionada la imagen para guardarla o compartirla con tu visita.");
   }
 
   // Vigentes primero (lo que se puede usar), luego el resto, cada grupo del mas reciente al mas antiguo.
