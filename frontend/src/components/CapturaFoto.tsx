@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Camera, ArrowClockwise, Trash, Image as ImagenIcon, Check } from "@phosphor-icons/react";
 import { Alert, Button } from "./ui";
 
@@ -25,9 +25,20 @@ export function CapturaFoto({ foto, onFoto }: { foto: File | null; onFoto: (f: F
   const [camaraActiva, setCamaraActiva] = useState(false);
   const [abriendo, setAbriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Callback ref: conecta la cámara EXACTAMENTE cuando el <video> se monta en el DOM. En iOS, hacerlo
+  // antes (con requestAnimationFrame) dejaba la primera apertura en negro, porque el elemento aún no
+  // existía y había que cancelar y reintentar.
+  const montarVideo = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && streamRef.current) {
+      el.srcObject = streamRef.current;
+      el.play().catch(() => {});
+    }
+  }, []);
 
   // La vista previa se genera con un data URL (FileReader) en vez de un blob URL: en iOS Safari un
   // blob URL a veces no se muestra dentro de una etiqueta <img>, y aparecía solo el texto alterno.
@@ -60,13 +71,12 @@ export function CapturaFoto({ foto, onFoto }: { foto: File | null; onFoto: (f: F
         video: { facingMode: { ideal: "environment" } }, audio: false,
       });
       streamRef.current = stream;
+      // El <video> se conecta solo al montarse (ver montarVideo). Si ya estuviera montado, también.
       setCamaraActiva(true);
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+      }
     } catch {
       setError("No se pudo abrir la cámara. Revisa los permisos del navegador o elige una foto de la galería.");
     } finally {
@@ -107,7 +117,7 @@ export function CapturaFoto({ foto, onFoto }: { foto: File | null; onFoto: (f: F
   if (camaraActiva) {
     return (
       <div className="overflow-hidden rounded-xl border border-slate-300 bg-slate-900 dark:border-slate-600">
-        <video ref={videoRef} playsInline muted autoPlay className="block max-h-72 w-full bg-black object-contain" />
+        <video ref={montarVideo} playsInline muted autoPlay className="block max-h-72 w-full bg-black object-contain" />
         <div className="flex gap-2 bg-slate-900 p-2">
           <Button type="button" variant="secondary" className="flex-1" onClick={cerrarCamara}>Cancelar</Button>
           <Button type="button" className="flex-1" onClick={capturar}>
