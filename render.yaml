@@ -2,7 +2,9 @@ services:
   - type: web
     name: habitasmart
     runtime: node
-    plan: free
+    # Plan pago "Starter": el servicio queda siempre encendido (no se duerme ni hay arranque en frio).
+    # Para volver al gratuito, cambiar a "free".
+    plan: starter
     branch: main
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start
@@ -46,6 +48,9 @@ services:
 
 databases:
   - name: habitasmart-db
-    plan: free
+    # Plan pago mas economico (256 MB, permanente, no vence como el gratuito).
+    # El almacenamiento se cobra aparte (~0,30 USD por GB al mes).
+    # Para mas capacidad: basic-1gb o basic-4gb. Para volver al gratuito: free.
+    plan: basic-256mb
     databaseName: habitasmart
     user: habitasmart
