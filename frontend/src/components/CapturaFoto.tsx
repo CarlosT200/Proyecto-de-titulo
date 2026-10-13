@@ -2,6 +2,20 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Camera, ArrowClockwise, Trash, Image as ImagenIcon, Check } from "@phosphor-icons/react";
 import { Alert, Button } from "./ui";
 
+// Convierte un data URL en File de forma síncrona (sin fetch/await).
+function dataUrlAFile(dataUrl: string, nombre: string): File | null {
+  try {
+    const [cabecera, datos] = dataUrl.split(",");
+    const mime = /:(.*?);/.exec(cabecera)?.[1] ?? "image/jpeg";
+    const binario = atob(datos);
+    const bytes = new Uint8Array(binario.length);
+    for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+    return new File([bytes], nombre, { type: mime });
+  } catch {
+    return null;
+  }
+}
+
 // Captura de una foto directamente desde la pagina: abre la camara del dispositivo dentro de la
 // propia pantalla (sin salir a la app de camara) y toma la foto, o permite elegir una de la galeria.
 // Pensado sobre todo para el celular del conserje. getUserMedia requiere HTTPS (produccion) o
@@ -15,11 +29,15 @@ export function CapturaFoto({ foto, onFoto }: { foto: File | null; onFoto: (f: F
   const fileRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // La vista previa se genera con un data URL (FileReader) en vez de un blob URL: en iOS Safari un
+  // blob URL a veces no se muestra dentro de una etiqueta <img>, y aparecía solo el texto alterno.
   useEffect(() => {
     if (!foto) { setPreview(null); return; }
-    const url = URL.createObjectURL(foto);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
+    let activo = true;
+    const lector = new FileReader();
+    lector.onload = () => { if (activo) setPreview(typeof lector.result === "string" ? lector.result : null); };
+    lector.readAsDataURL(foto);
+    return () => { activo = false; };
   }, [foto]);
 
   // Detener la camara al desmontar para no dejar el LED/sensor encendido.
@@ -72,10 +90,11 @@ export function CapturaFoto({ foto, onFoto }: { foto: File | null; onFoto: (f: F
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((blob) => {
-      if (blob) onFoto(new File([blob], `encomienda-${Date.now()}.jpg`, { type: "image/jpeg" }));
-      cerrarCamara();
-    }, "image/jpeg", 0.85);
+    // toDataURL es más confiable que toBlob en iOS; convertimos a File de forma síncrona.
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    const archivo = dataUrlAFile(dataUrl, `encomienda-${Date.now()}.jpg`);
+    if (archivo) onFoto(archivo);
+    cerrarCamara();
   }
 
   function elegirArchivo(e: ChangeEvent<HTMLInputElement>) {
