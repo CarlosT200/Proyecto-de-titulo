@@ -36,6 +36,14 @@ jobs:
             sleep 10
           done
           if [ "$despierto" -ne 1 ]; then echo "El servidor no desperto a tiempo"; exit 1; fi
-          curl -fsS -X POST "$URL/api/tareas/recordatorios" \
-            -H "x-tarea-token: $TOKEN" \
-            --max-time 60 --retry 2 --retry-delay 15 --retry-all-errors
+          echo "Largo de la clave guardada en GitHub: ${#TOKEN} caracteres (deben ser 48)"
+          codigo=$(curl -sS -o respuesta.txt -w "%{http_code}" -X POST "$URL/api/tareas/recordatorios" \
+            -H "x-tarea-token: $TOKEN" --max-time 60 --retry 2 --retry-delay 15 --retry-all-errors || true)
+          echo "Respuesta del servidor: HTTP $codigo"
+          cat respuesta.txt; echo
+          case "$codigo" in
+            2*) ;;
+            401) echo "La clave TAREAS_TOKEN de GitHub no coincide con la de Render"; exit 1 ;;
+            404) echo "El servidor no tiene TAREAS_TOKEN configurada (o la URL esta mal)"; exit 1 ;;
+            *) exit 1 ;;
+          esac
