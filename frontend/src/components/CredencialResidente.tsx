@@ -118,9 +118,11 @@ export function CredencialResidente({
           </div>
         </div>
 
-        {/* Anillo que se va cerrando hasta que el codigo se renueva (por seguridad, cada minuto). */}
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden className="-rotate-90">
+        {/* Anillo que se va cerrando hasta que el codigo se renueva (por seguridad, cada minuto).
+            Alineado a la izquierda y con el texto acotado: en el celular el boton flotante de SOS
+            ocupa siempre la esquina inferior derecha, asi el estado no queda nunca tapado por el. */}
+        <div className="mt-4 flex items-center justify-start gap-3">
+          <svg viewBox="0 0 36 36" width="36" height="36" aria-hidden className="shrink-0 -rotate-90">
             <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3.5" className="stroke-slate-200 dark:stroke-slate-700" />
             <circle
               cx="18"
@@ -135,7 +137,7 @@ export function CredencialResidente({
               className="stroke-brand-600 transition-[stroke-dashoffset] duration-1000 ease-linear dark:stroke-brand-400"
             />
           </svg>
-          <div className="text-left">
+          <div className="min-w-0 text-left">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
               <span className="relative flex h-2 w-2" aria-hidden>
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:animate-none" />
@@ -143,7 +145,7 @@ export function CredencialResidente({
               </span>
               En vivo
             </p>
-            <p className="text-xs tabular-nums text-slate-600 dark:text-slate-300">Por tu seguridad, se renueva en {segundosRestantes} s</p>
+            <p className="max-w-[8.5rem] text-xs tabular-nums text-slate-600 dark:text-slate-300">Por tu seguridad, se renueva en {segundosRestantes} s</p>
           </div>
         </div>
       </div>
