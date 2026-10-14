@@ -15,6 +15,7 @@ const MESES_ADELANTE = 3;
 const aMinutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
 const dos = (n: number) => String(n).padStart(2, "0");
 const iso = (anio: number, mes: number, dia: number) => `${anio}-${dos(mes)}-${dos(dia)}`;
+const hhmm = (min: number) => `${dos(Math.floor(min / 60))}:${dos(min % 60)}`;
 
 // Minutos reservados dentro del horario del espacio, sobre los minutos que esta abierto (0 a 1).
 function proporcionOcupada(espacio: EspacioComun, reservas: Ocupado[]): number {
@@ -183,6 +184,124 @@ export function CalendarioReservas({
         </span>
       </div>
       {error && <p className="mt-2 text-sm text-red-700 dark:text-red-300">No se pudo cargar la ocupación del mes. Puedes elegir el día igual.</p>}
+    </div>
+  );
+}
+
+// Selector visual de franjas horarias (bloques de 1 hora) del espacio para el dia elegido. Muestra
+// TODAS las horas; las ya reservadas aparecen tachadas y no se pueden tocar, y las que ya pasaron (si
+// el dia es hoy) quedan deshabilitadas. El residente toca la hora de inicio y luego la de termino.
+export function SelectorHoras({
+  espacio,
+  fecha,
+  ocupados,
+  horaInicio,
+  horaFin,
+  onCambio,
+}: {
+  espacio: EspacioComun;
+  fecha: string;
+  ocupados: Ocupado[];
+  horaInicio: string;
+  horaFin: string;
+  onCambio: (inicio: string, fin: string) => void;
+}) {
+  const abre = aMinutos(espacio.horarioInicio);
+  const cierra = aMinutos(espacio.horarioFin);
+  const ahora = new Date();
+  const nowMin = fecha === hoyLocal() ? ahora.getHours() * 60 + ahora.getMinutes() : -1;
+
+  const franjas = useMemo(() => {
+    const lista: { iniMin: number; finMin: number; ini: string; fin: string; ocupado: boolean; pasado: boolean }[] = [];
+    for (let t = abre; t < cierra; t += 60) {
+      const finMin = Math.min(t + 60, cierra);
+      const ocupado = ocupados.some((o) => t < aMinutos(o.horaFin) && finMin > aMinutos(o.horaInicio));
+      const pasado = nowMin >= 0 && t <= nowMin;
+      lista.push({ iniMin: t, finMin, ini: hhmm(t), fin: hhmm(finMin), ocupado, pasado });
+    }
+    return lista;
+  }, [abre, cierra, ocupados, nowMin]);
+
+  const selIni = horaInicio ? aMinutos(horaInicio) : -1;
+  const selFin = horaFin ? aMinutos(horaFin) : -1;
+  const haySeleccion = selIni >= 0 && selFin > selIni;
+
+  // Primer toque: fija el inicio (bloque de 1 hora). Segundo toque: fija el término y arma el rango.
+  // Tercer toque: empieza de nuevo. Al cambiar de día o espacio se reinicia el anclaje.
+  const [ancla, setAncla] = useState<number | null>(null);
+  useEffect(() => {
+    setAncla(null);
+  }, [espacio.id, fecha]);
+
+  function elegir(f: (typeof franjas)[number]) {
+    if (f.ocupado || f.pasado) return;
+    if (ancla === null) {
+      setAncla(f.iniMin);
+      onCambio(f.ini, f.fin);
+      return;
+    }
+    const anclaFin = Math.min(ancla + 60, cierra);
+    const lo = Math.min(ancla, f.iniMin);
+    const hi = Math.max(anclaFin, f.finMin);
+    // Si entre el inicio y el término hay alguna franja ocupada o pasada, no se puede: reinicia ahí.
+    const bloqueada = franjas.some((s) => s.iniMin >= lo && s.finMin <= hi && (s.ocupado || s.pasado));
+    if (bloqueada) {
+      setAncla(f.iniMin);
+      onCambio(f.ini, f.fin);
+    } else {
+      onCambio(hhmm(lo), hhmm(hi));
+      setAncla(null);
+    }
+  }
+
+  if (franjas.length === 0) return null;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Elige el horario</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Toca inicio y término</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" role="group" aria-label="Horarios disponibles">
+        {franjas.map((f) => {
+          const noDisponible = f.ocupado || f.pasado;
+          const seleccionada = haySeleccion && !noDisponible && f.iniMin >= selIni && f.finMin <= selFin;
+          return (
+            <button
+              key={f.iniMin}
+              type="button"
+              disabled={noDisponible}
+              aria-pressed={seleccionada}
+              aria-label={`${f.ini} a ${f.fin}${f.ocupado ? ", reservado" : f.pasado ? ", ya pasó" : seleccionada ? ", elegido" : ", disponible"}`}
+              onClick={() => elegir(f)}
+              className={clsx(
+                "flex min-h-[54px] flex-col items-center justify-center rounded-lg border px-1 py-1.5 text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                seleccionada && "border-brand-600 bg-brand-600 font-semibold text-white shadow-sm",
+                !seleccionada && !noDisponible &&
+                  "border-slate-200 bg-white text-slate-800 hover:border-brand-300 hover:bg-brand-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-brand-500/60 dark:hover:bg-brand-500/10",
+                f.ocupado && "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 line-through dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-500",
+                f.pasado && !f.ocupado && "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-70 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500"
+              )}
+            >
+              <span>{f.ini}</span>
+              <span className={clsx("text-[11px]", seleccionada ? "text-white/85" : "opacity-70")}>
+                {f.ocupado ? "Reservado" : f.pasado ? "—" : `a ${f.fin}`}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-sm border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800" /> Disponible
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-sm bg-brand-600" /> Tu elección
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-sm bg-slate-200 dark:bg-slate-700" /> Reservado
+        </span>
+      </div>
     </div>
   );
 }
