@@ -7,6 +7,7 @@ import { useAsync } from "../../hooks/useAsync";
 import { Alert, Button, Card, CardHeader, Input, Label, PageHeader, Select, Textarea } from "../../components/ui";
 import { ListaEncomiendas } from "../../components/Encomiendas";
 import { CapturaFoto } from "../../components/CapturaFoto";
+import { leerEtiqueta, emparejarResidente } from "../../lib/ocrEncomienda";
 import { mensajeError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 
@@ -39,6 +40,8 @@ export default function ConserjeEncomiendas() {
   const [ubicacion, setUbicacion] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
+  const [analizando, setAnalizando] = useState(false);
+  const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   const residenteRef = useRef<HTMLSelectElement>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -87,6 +90,42 @@ export default function ConserjeEncomiendas() {
     setUbicacion("");
     setObservaciones("");
     setFoto(null);
+    setOcrMsg(null);
+  }
+
+  // Lee la etiqueta de la encomienda con OCR (en el dispositivo) y rellena los campos que estén
+  // vacíos; el conserje siempre puede corregir antes de registrar. No pisa lo ya escrito a mano.
+  async function analizarEtiqueta(file: File) {
+    setAnalizando(true);
+    setOcrMsg(null);
+    try {
+      const { texto, numeroSeguimiento: ns, empresa: emp } = await leerEtiqueta(file);
+      const campos: string[] = [];
+      if (ns) {
+        setNumeroSeguimiento((v) => (v.trim() ? v : ns));
+        campos.push("N° de seguimiento");
+      }
+      if (emp) {
+        setEmpresa((v) => (v ? v : emp));
+        campos.push("empresa");
+      }
+      if (residentes?.length) {
+        const r = emparejarResidente(texto, residentes);
+        if (r) {
+          setUsuarioId((v) => (v ? v : r.id));
+          campos.push("residente");
+        }
+      }
+      setOcrMsg(
+        campos.length
+          ? `Datos leídos de la etiqueta: ${campos.join(", ")}. Revísalos antes de registrar.`
+          : "No se pudieron leer datos de la etiqueta. Complétalos a mano."
+      );
+    } catch {
+      setOcrMsg("No se pudo leer la etiqueta automáticamente. Completa los datos a mano.");
+    } finally {
+      setAnalizando(false);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -219,8 +258,22 @@ export default function ConserjeEncomiendas() {
               />
             </div>
             <div>
-              <Label>Foto (opcional)</Label>
-              <CapturaFoto foto={foto} onFoto={setFoto} />
+              <Label>Foto de la etiqueta (opcional)</Label>
+              <CapturaFoto
+                foto={foto}
+                onFoto={(f) => {
+                  setFoto(f);
+                  if (f) analizarEtiqueta(f);
+                  else setOcrMsg(null);
+                }}
+              />
+              {analizando && (
+                <p className="mt-2 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" aria-hidden />
+                  Leyendo la etiqueta…
+                </p>
+              )}
+              {!analizando && ocrMsg && <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{ocrMsg}</p>}
             </div>
             {formError && <Alert tone="red">{formError}</Alert>}
             <Button type="submit" className="w-full" loading={enviando}>
