@@ -5,7 +5,7 @@ import { condominioApi, reservasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Select, Spinner } from "../../components/ui";
 import { BadgeEstadoReserva } from "../../components/Reservas";
-import { CalendarioReservas, LineaDelDia, SelectorHoras } from "../../components/CalendarioReservas";
+import { CalendarioReservas, SelectorHoras } from "../../components/CalendarioReservas";
 import { ModalReservaConfirmada, type DatosReservaConfirmada } from "../../components/ReservaConfirmada";
 import { useAuth } from "../../context/AuthContext";
 import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
@@ -208,25 +208,6 @@ export default function ResidenteReservas() {
                   horaFin={horaFin}
                   onCambio={(i, f) => { setHoraInicio(i); setHoraFin(f); }}
                 />
-
-                <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
-                  <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <span>
-                      <span className="font-medium">Tu reserva:</span>{" "}
-                      <span className="font-medium tabular-nums text-brand-700 dark:text-brand-300">{horaInicio} - {horaFin}</span>
-                    </span>
-                    <span>
-                      Horario del espacio: <span className="tabular-nums">{espacioSeleccionado.horarioInicio}–{espacioSeleccionado.horarioFin}</span>
-                    </span>
-                  </p>
-                  <LineaDelDia
-                    espacio={espacioSeleccionado}
-                    ocupados={ocupados}
-                    horaInicio={horaInicio}
-                    horaFin={horaFin}
-                    conflicto={Boolean(aviso)}
-                  />
-                </div>
 
                 <details className="rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
                   <summary className="cursor-pointer select-none text-sm text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white">
