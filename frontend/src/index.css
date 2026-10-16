@@ -33,6 +33,41 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Autocompletado del navegador: Chrome/Safari pintan los campos rellenados con un fondo propio
+   (gris/amarillo) que tapa el blanco y se ve translucido. Con un box-shadow interior forzamos el
+   fondo correcto y el color del texto. La transicion larga evita el parpadeo del color al enfocar. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  transition: background-color 9999s ease-in-out 0s;
+}
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #1e293b inset;
+  box-shadow: 0 0 0 1000px #1e293b inset;
+  -webkit-text-fill-color: #f1f5f9;
+  caret-color: #f1f5f9;
+}
+/* El formulario de login siempre es claro (tarjeta blanca), aunque el tema sea oscuro: sus campos
+   mantienen fondo blanco al autocompletarse. */
+.dark input.campo-login:-webkit-autofill,
+.dark input.campo-login:-webkit-autofill:hover,
+.dark input.campo-login:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+}
+
 /* Fecha y hora: Safari de iPhone las dibuja con su propio estilo (valor centrado, ancho y alto
    propios) y no se parecian a los demas campos. Con appearance none respetan el ancho y el alto de
    la clase y el valor va a la izquierda; al tocarlas iOS sigue abriendo su selector nativo. */

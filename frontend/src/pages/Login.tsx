@@ -43,7 +43,7 @@ const PASSWORD_DEMO = "Habita2026!";
 
 // 16px en celular: con menos, Safari de iPhone hace zoom al enfocar el campo.
 const CAMPO =
-  "w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 text-base text-slate-900 placeholder:text-slate-400 transition-shadow focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 sm:text-sm";
+  "campo-login w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 text-base text-slate-900 placeholder:text-slate-400 transition-shadow focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 sm:text-sm";
 
 function Wordmark({ claro = false }: { claro?: boolean }) {
   return (
