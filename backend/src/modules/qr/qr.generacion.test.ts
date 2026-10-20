@@ -3,23 +3,26 @@ import { EstadoVisita } from "@prisma/client";
 
 vi.mock("../../lib/prisma", () => ({
   prisma: {
-    qrToken: { create: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
+    qrToken: { create: vi.fn(), updateMany: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
     visita: { findFirst: vi.fn() },
   },
 }));
 
 import { prisma } from "../../lib/prisma";
-import { esTokenCorto } from "../../lib/qrToken";
+import { esCodigoManual, esTokenCorto } from "../../lib/qrToken";
 import { generarQrResidente, generarQrVisita } from "./qr.service";
 
 const crear = prisma.qrToken.create as unknown as Mock;
 const revocarTodos = prisma.qrToken.updateMany as unknown as Mock;
 const buscarVisita = prisma.visita.findFirst as unknown as Mock;
+const buscarToken = prisma.qrToken.findUnique as unknown as Mock;
 
 beforeEach(() => {
   vi.clearAllMocks();
   revocarTodos.mockResolvedValue({ count: 0 });
   crear.mockResolvedValue({});
+  // El codigo manual se confirma unico consultando la base: null = libre.
+  buscarToken.mockResolvedValue(null);
 });
 
 // La columna "token" es unica. Antes cada QR se creaba con token "" y despues se actualizaba: dos
@@ -36,6 +39,8 @@ describe("generacion de QR", () => {
     // codigo corto y opaco: el QR queda pequeno y legible para la camara de un celular
     expect(esTokenCorto(data.token)).toBe(true);
     expect(data.token).not.toContain(data.id);
+    // Codigo corto y legible para la validacion manual en porteria.
+    expect(esCodigoManual(data.codigoManual)).toBe(true);
   });
 
   it("dos QR simultaneos reciben tokens distintos (no chocan en la columna unica)", async () => {

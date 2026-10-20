@@ -38,13 +38,13 @@ export default function ResidenteQR() {
   const toast = useToast();
   const confirmar = useConfirm();
   const { usuario } = useAuth();
-  const [qrResidente, setQrResidente] = useState<{ qrDataUrl: string; expiraEn: string } | null>(null);
+  const [qrResidente, setQrResidente] = useState<{ qrDataUrl: string; expiraEn: string; codigoManual: string } | null>(null);
   const [errorQr, setErrorQr] = useState<string | null>(null);
   const [segundosRestantes, setSegundosRestantes] = useState(ROTACION_SEGUNDOS);
 
   const { data: visitas, cargando, error, recargar } = useAsync(() => qrApi.misVisitas(), []);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [visitaQr, setVisitaQr] = useState<{ nombre: string; qrDataUrl: string; expiraEn: string } | null>(null);
+  const [visitaQr, setVisitaQr] = useState<{ nombre: string; qrDataUrl: string; expiraEn: string; codigoManual: string | null } | null>(null);
   const [modalInvitadoAbierto, setModalInvitadoAbierto] = useState(false);
   const [nombreInvitado, setNombreInvitado] = useState("");
   const [generandoInvitado, setGenerandoInvitado] = useState(false);
@@ -66,7 +66,7 @@ export default function ResidenteQR() {
     setGenerandoInvitado(true);
     try {
       const res = await qrApi.crearVisitaRapida(nombreInvitado || undefined);
-      setVisitaQr({ nombre: res.nombreVisita, qrDataUrl: res.qrDataUrl, expiraEn: res.expiraEn });
+      setVisitaQr({ nombre: res.nombreVisita, qrDataUrl: res.qrDataUrl, expiraEn: res.expiraEn, codigoManual: res.codigoManual });
       setModalInvitadoAbierto(false);
       setNombreInvitado("");
       recargar();
@@ -147,6 +147,7 @@ export default function ResidenteQR() {
                 qrDataUrl={qrResidente.qrDataUrl}
                 segundosRestantes={segundosRestantes}
                 rotacionSegundos={ROTACION_SEGUNDOS}
+                codigo={qrResidente.codigoManual}
               />
             ) : (
               !errorQr && <Spinner />
@@ -258,6 +259,15 @@ export default function ResidenteQR() {
         {visitaQr && (
           <div className="flex flex-col items-center gap-4">
             <img src={visitaQr.qrDataUrl} alt={`Código QR de acceso de ${visitaQr.nombre}`} className="h-60 w-60 rounded-xl bg-white p-2 ring-1 ring-slate-200" />
+            {visitaQr.codigoManual && (
+              <div className="text-center">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Código para conserjería</p>
+                <p className="mt-0.5 font-display text-xl font-bold tracking-[0.25em] tabular-nums text-slate-800 dark:text-white">
+                  {visitaQr.codigoManual.length === 6 ? `${visitaQr.codigoManual.slice(0, 3)}-${visitaQr.codigoManual.slice(3)}` : visitaQr.codigoManual}
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">Si no pueden escanear el QR, dicta este código.</p>
+              </div>
+            )}
             <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Vigente hasta {formatFechaHora(visitaQr.expiraEn)}</p>
             <Button className="w-full" onClick={compartir}>
               <ShareNetwork size={18} aria-hidden /> Enviar a mi visita

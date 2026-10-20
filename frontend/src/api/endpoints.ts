@@ -177,7 +177,8 @@ export const comunicadosApi = {
 
 // --- QR / Visitas (HU-17 a HU-21) ---
 export const qrApi = {
-  generarQrResidente: () => api.post<{ qrDataUrl: string; expiraEn: string }>("/qr/residente").then((r) => r.data),
+  generarQrResidente: () =>
+    api.post<{ qrDataUrl: string; expiraEn: string; codigoManual: string }>("/qr/residente").then((r) => r.data),
   crearVisita: (data: {
     nombreVisita: string;
     fecha: string;
@@ -188,12 +189,13 @@ export const qrApi = {
   }) => api.post<Visita>("/qr/visitas", data).then((r) => r.data),
   misVisitas: () => api.get<Visita[]>("/qr/visitas/mias").then((r) => r.data),
   generarQrVisita: (visitaId: string) =>
-    api.post<{ qrDataUrl: string; expiraEn: string }>(`/qr/visitas/${visitaId}/qr`).then((r) => r.data),
+    api.post<{ qrDataUrl: string; expiraEn: string; codigoManual: string }>(`/qr/visitas/${visitaId}/qr`).then((r) => r.data),
   // vuelve a mostrar el QR ya generado (no crea uno nuevo)
-  verQrVisita: (id: string) => api.get<{ qrDataUrl: string; expiraEn: string }>(`/qr/visitas/${id}/qr`).then((r) => r.data),
+  verQrVisita: (id: string) =>
+    api.get<{ qrDataUrl: string; expiraEn: string; codigoManual: string | null }>(`/qr/visitas/${id}/qr`).then((r) => r.data),
   crearVisitaRapida: (nombreVisita?: string) =>
     api
-      .post<{ visitaId: string; nombreVisita: string; qrDataUrl: string; expiraEn: string }>("/qr/visitas/rapida", {
+      .post<{ visitaId: string; nombreVisita: string; qrDataUrl: string; expiraEn: string; codigoManual: string }>("/qr/visitas/rapida", {
         nombreVisita,
       })
       .then((r) => r.data),

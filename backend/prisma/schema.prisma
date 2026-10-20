@@ -428,6 +428,10 @@ model QrToken {
   id             String      @id @default(uuid())
   tipo           TipoQrToken
   token          String      @unique // codigo opaco de 22 caracteres (o el JWT firmado de los QR anteriores)
+  // Codigo corto y legible (ej. ABJ-K7P) que el residente ve bajo su QR y que el conserje puede
+  // teclear en la validacion manual cuando la camara no puede leer el QR. Opcional: los QR emitidos
+  // antes de esta funcion no lo tienen.
+  codigoManual   String?     @unique @map("codigo_manual")
   usuarioId      String?
   visitaId       String?     @unique
   expiraEn       DateTime

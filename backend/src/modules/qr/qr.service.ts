@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import sharp from "sharp";
 import { EstadoVisita, ResultadoAcceso, TipoQrToken } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
-import { esTokenCorto, nuevoTokenQr, verifyQrToken } from "../../lib/qrToken";
+import { esCodigoManual, esTokenCorto, normalizarCodigoManual, nuevoCodigoManual, nuevoTokenQr, verifyQrToken } from "../../lib/qrToken";
 import { ConflictError, NotFoundError } from "../../lib/errors";
 import { env } from "../../config/env";
 import { QR_LOGO_SVG } from "../../lib/qrLogo";
@@ -48,6 +48,17 @@ async function generarImagenQr(token: string): Promise<string> {
   return `data:image/png;base64,${compuesto.toString("base64")}`;
 }
 
+// Genera un codigo manual que no choque con otro ya guardado (indice unico). En la practica
+// siempre acierta al primer intento; el bucle es un resguardo.
+async function codigoManualUnico(): Promise<string> {
+  for (let i = 0; i < 6; i++) {
+    const codigo = nuevoCodigoManual();
+    const existe = await prisma.qrToken.findUnique({ where: { codigoManual: codigo }, select: { id: true } });
+    if (!existe) return codigo;
+  }
+  return nuevoCodigoManual();
+}
+
 // HU-17: generar QR de residente. El token es un JWT sin datos personales, con expiracion (RNF-08, RNF-09).
 export async function generarQrResidente(condominioId: string, usuarioId: string) {
   await prisma.qrToken.updateMany({
@@ -58,11 +69,12 @@ export async function generarQrResidente(condominioId: string, usuarioId: string
   const expiraEn = new Date(Date.now() + VIGENCIA_QR_RESIDENTE_HORAS * 60 * 60 * 1000);
   const id = randomUUID();
   const token = nuevoTokenQr();
+  const codigoManual = await codigoManualUnico();
   await prisma.qrToken.create({
-    data: { id, tipo: TipoQrToken.RESIDENTE, usuarioId, expiraEn, token },
+    data: { id, tipo: TipoQrToken.RESIDENTE, usuarioId, expiraEn, token, codigoManual },
   });
 
-  return { qrDataUrl: await generarImagenQr(token), expiraEn };
+  return { qrDataUrl: await generarImagenQr(token), expiraEn, codigoManual };
 }
 
 // HU-19: registrar visita.
@@ -116,6 +128,7 @@ export async function generarQrVisita(condominioId: string, residenteId: string,
 
   const id = randomUUID();
   const token = nuevoTokenQr();
+  const codigoManual = await codigoManualUnico();
   await prisma.qrToken.create({
     data: {
       id,
@@ -124,10 +137,11 @@ export async function generarQrVisita(condominioId: string, residenteId: string,
       expiraEn: visita.periodoFin,
       usosMaximos: visita.soloUnUso ? 1 : null,
       token,
+      codigoManual,
     },
   });
 
-  return { qrDataUrl: await generarImagenQr(token), expiraEn: visita.periodoFin };
+  return { qrDataUrl: await generarImagenQr(token), expiraEn: visita.periodoFin, codigoManual };
 }
 
 // Volver a mostrar el QR ya generado de una visita (por ejemplo, para reenviarlo si se perdio el
@@ -142,7 +156,11 @@ export async function verQrVisita(condominioId: string, residenteId: string, vis
   if (visita.estado !== EstadoVisita.VIGENTE || visita.qrToken.revocado || visita.periodoFin.getTime() < Date.now()) {
     throw new ConflictError("El código de esta visita ya no está vigente.");
   }
-  return { qrDataUrl: await generarImagenQr(visita.qrToken.token), expiraEn: visita.periodoFin };
+  return {
+    qrDataUrl: await generarImagenQr(visita.qrToken.token),
+    expiraEn: visita.periodoFin,
+    codigoManual: visita.qrToken.codigoManual,
+  };
 }
 
 // Vigencia por defecto de una visita "rapida": pensada para alguien que ya
@@ -226,12 +244,17 @@ export async function validarQr(
 ): Promise<ResultadoValidacion> {
   let registro;
   try {
-    // Codigo corto (formato actual): se busca directo por el codigo. Si no, se intenta como JWT
-    // (formato anterior, de los QR ya emitidos): verifica la firma y busca por el id del registro.
-    // Cualquier otro texto lanza y se rechaza como invalido.
-    registro = esTokenCorto(tokenCrudo)
-      ? await prisma.qrToken.findUnique({ where: { token: tokenCrudo }, include: INCLUDE_VALIDACION })
-      : await prisma.qrToken.findUnique({ where: { id: verifyQrToken(tokenCrudo).jti }, include: INCLUDE_VALIDACION });
+    const entrada = tokenCrudo.trim();
+    const codigo = normalizarCodigoManual(entrada);
+    // Prioridad: token corto del QR (formato actual) -> codigo manual que teclea el conserje ->
+    // JWT (formato anterior, de los QR ya emitidos). Cualquier otro texto lanza y se rechaza.
+    if (esTokenCorto(entrada)) {
+      registro = await prisma.qrToken.findUnique({ where: { token: entrada }, include: INCLUDE_VALIDACION });
+    } else if (esCodigoManual(codigo)) {
+      registro = await prisma.qrToken.findUnique({ where: { codigoManual: codigo }, include: INCLUDE_VALIDACION });
+    } else {
+      registro = await prisma.qrToken.findUnique({ where: { id: verifyQrToken(entrada).jti }, include: INCLUDE_VALIDACION });
+    }
   } catch {
     return registrarResultado(condominioId, validadoPorId, null, ResultadoAcceso.RECHAZADO, "Código QR inválido o expirado.");
   }

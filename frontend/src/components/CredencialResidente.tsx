@@ -17,16 +17,24 @@ const ROL_LABEL: Record<string, string> = {
 // progreso es la senal visual de esa vigencia corta, pensada como medida de
 // seguridad (si alguien capturara el QR en una foto, deja de servir apenas
 // rota, no se queda valido por horas).
+// Formato legible del codigo manual: dos grupos de tres (ABJ-K7P).
+function formatearCodigo(codigo: string): string {
+  return codigo.length === 6 ? `${codigo.slice(0, 3)}-${codigo.slice(3)}` : codigo;
+}
+
 export function CredencialResidente({
   usuario,
   qrDataUrl,
   segundosRestantes,
   rotacionSegundos,
+  codigo,
 }: {
   usuario: Usuario;
   qrDataUrl: string;
   segundosRestantes: number;
   rotacionSegundos: number;
+  /** Codigo corto para teclear en la validacion manual de porteria. */
+  codigo?: string | null;
 }) {
   const unidad = usuario.departamento
     ? `${usuario.departamento.torre?.nombre ?? ""} ${usuario.departamento.numero}`.trim()
@@ -117,6 +125,16 @@ export function CredencialResidente({
             <img src={qrDataUrl} alt="Código QR de acceso" className="h-36 w-36 rounded-lg" />
           </div>
         </div>
+
+        {codigo && (
+          <div className="mt-3 text-center">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Código para conserjería</p>
+            <p className="mt-0.5 font-display text-xl font-bold tracking-[0.25em] tabular-nums text-slate-800 dark:text-slate-100">
+              {formatearCodigo(codigo)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">Si no pueden escanear el QR, dicta este código.</p>
+          </div>
+        )}
 
         {/* Anillo que se va cerrando hasta que el codigo se renueva (por seguridad, cada minuto).
             Alineado a la izquierda y con el texto acotado: en el celular el boton flotante de SOS

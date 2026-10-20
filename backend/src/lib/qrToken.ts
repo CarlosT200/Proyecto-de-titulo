@@ -21,6 +21,33 @@ export function esTokenCorto(token: string): boolean {
   return token.length === LARGO_TOKEN_CORTO && FORMATO_TOKEN_CORTO.test(token);
 }
 
+// Codigo corto y legible para la validacion manual (cuando la camara no puede leer el QR). Se
+// muestra bajo el QR del residente y de la visita. Alfabeto sin caracteres ambiguos (sin O, 0, I,
+// 1, L) para que no se confundan al leerlo o teclearlo. 6 caracteres = 30^6 (~729 millones) de
+// combinaciones; la unicidad la garantiza el indice unico de la base al generarlo.
+const ALFABETO_CODIGO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+export function nuevoCodigoManual(): string {
+  const bytes = randomBytes(6);
+  let codigo = "";
+  for (let i = 0; i < 6; i++) codigo += ALFABETO_CODIGO[bytes[i] % ALFABETO_CODIGO.length];
+  return codigo;
+}
+
+// Limpia lo que teclea el conserje: mayusculas y solo letras/numeros (se sacan guiones y espacios).
+export function normalizarCodigoManual(entrada: string): string {
+  return entrada.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+export function esCodigoManual(valor: string): boolean {
+  return valor.length === 6 && [...valor].every((c) => ALFABETO_CODIGO.includes(c));
+}
+
+// Formato para mostrar: dos grupos de tres (ABJ-K7P) para que sea mas facil de leer y dictar.
+export function formatearCodigoManual(codigo: string): string {
+  return codigo.length === 6 ? `${codigo.slice(0, 3)}-${codigo.slice(3)}` : codigo;
+}
+
 // --- Formato anterior (JWT) ---
 // Los QR emitidos antes del cambio (24 h para residentes, hasta el fin del periodo para visitas)
 // siguen siendo validos: validarQr acepta ambos formatos. signQrToken ya no se usa para generar

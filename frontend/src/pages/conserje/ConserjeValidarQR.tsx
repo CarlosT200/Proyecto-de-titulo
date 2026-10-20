@@ -189,11 +189,18 @@ export default function ConserjeValidarQR() {
         </Card>
 
         <Card plana>
-          <CardHeader title="Validación manual" subtitle="Si no hay cámara disponible, pega el código QR" />
+          <CardHeader title="Validación manual" subtitle="Si no puedes escanear, escribe el código que el residente ve bajo su QR" />
           <form onSubmit={handleManualSubmit} className="space-y-3 p-5">
             <div>
               <Label htmlFor="campo-validarqr-1">Código</Label>
-              <Input id="campo-validarqr-1" value={tokenManual} onChange={(e) => setTokenManual(e.target.value)} placeholder="Pega el contenido del QR" />
+              <Input
+                id="campo-validarqr-1"
+                value={tokenManual}
+                onChange={(e) => setTokenManual(e.target.value)}
+                placeholder="Ej. ABJ-K7P"
+                autoCapitalize="characters"
+                autoComplete="off"
+              />
             </div>
             <Button type="submit" className="w-full" loading={validandoManual} disabled={!tokenManual.trim()}>
               Validar
