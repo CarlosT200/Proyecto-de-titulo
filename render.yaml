@@ -10,10 +10,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # La base de datos ahora vive en Supabase (fuera de Render). El valor de DATABASE_URL se
+      # gestiona a mano en el dashboard de Render (Environment); con sync: false el blueprint no lo
+      # sobrescribe en cada despliegue, asi un push de codigo no lo revierte a la base antigua.
       - key: DATABASE_URL
-        fromDatabase:
-          name: habitasmart-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
