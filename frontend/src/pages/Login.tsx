@@ -43,7 +43,7 @@ const PASSWORD_DEMO = "Habita2026!";
 
 // 16px en celular: con menos, Safari de iPhone hace zoom al enfocar el campo.
 const CAMPO =
-  "campo-login w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 text-base text-slate-900 placeholder:text-slate-400 transition-shadow focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 sm:text-sm";
+  "campo-login w-full rounded-xl border border-white/15 bg-white/[0.06] py-3 pl-11 text-base text-white placeholder:text-slate-400 transition focus:border-brand-400 focus:bg-white/10 focus:outline-none focus:ring-4 focus:ring-brand-500/25 sm:text-sm";
 
 function Wordmark({ claro = false }: { claro?: boolean }) {
   return (
@@ -193,21 +193,37 @@ export default function Login() {
               </ul>
             </motion.div>
 
-            {/* Tarjeta de login */}
+            {/* Tarjeta de login — vidrio oscuro: panel esmerilado sobre la ciudad al atardecer */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-              className="overflow-hidden rounded-3xl bg-white/95 shadow-2xl shadow-black/40 ring-1 ring-white/40 backdrop-blur-xl"
+              className="login-card relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/80 shadow-[0_35px_70px_-20px_rgba(2,6,23,0.8)] backdrop-blur-2xl"
             >
-              <div className="h-1.5 bg-gradient-to-r from-brand-600 via-violet-500 to-accent-500" />
-              <div className="p-7 sm:p-8">
-                <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">Te damos la bienvenida</h2>
-                <p className="mt-1 text-sm text-slate-600">Ingresa con tu correo y contraseña.</p>
+              {/* Filo superior en degradé de marca (azul -> naranja): la firma llamativa del panel */}
+              <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-500 via-brand-400 to-accent-500" />
+              {/* Reflejo fino del borde del vidrio */}
+              <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[3px] h-px bg-white/15" />
+              {/* Brillo cálido del atardecer que se cuela por el vidrio, arriba a la derecha */}
+              <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.38),transparent_70%)] blur-2xl" />
+              {/* Halo azul suave abajo a la izquierda, para que el vidrio no se vea plano */}
+              <div aria-hidden className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.3),transparent_70%)] blur-2xl" />
+
+              <div className="relative p-7 sm:p-8">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-900/50 ring-1 ring-white/20">
+                    <Buildings size={24} weight="fill" />
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-accent-500 ring-2 ring-slate-900" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white">Te damos la bienvenida</h2>
+                    <p className="mt-0.5 text-sm text-slate-300">Ingresa con tu correo y contraseña.</p>
+                  </div>
+                </div>
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                   <div>
-                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+                    <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">
                       Correo electrónico
                     </label>
                     <div className="relative">
@@ -226,7 +242,7 @@ export default function Login() {
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+                    <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">
                       Contraseña
                     </label>
                     <div className="relative">
@@ -246,7 +262,7 @@ export default function Login() {
                         onClick={() => setVerPassword((v) => !v)}
                         aria-label={verPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                         aria-pressed={verPassword}
-                        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
                       >
                         {verPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                       </button>
@@ -258,7 +274,7 @@ export default function Login() {
                       role="alert"
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
+                      className="flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/15 px-3 py-2.5 text-sm text-red-200"
                     >
                       <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0" />
                       {error}
@@ -272,10 +288,10 @@ export default function Login() {
 
                 {cuentasDemo && (
                 <div className="mt-7">
-                  <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
-                    <span className="h-px flex-1 bg-slate-200" />
+                  <div className="flex items-center gap-3 text-xs font-medium text-slate-400">
+                    <span className="h-px flex-1 bg-white/15" />
                     Probar con una cuenta de demostración
-                    <span className="h-px flex-1 bg-slate-200" />
+                    <span className="h-px flex-1 bg-white/15" />
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {CUENTAS_DEMO.map((c) => (
@@ -284,14 +300,14 @@ export default function Login() {
                         type="button"
                         disabled={cargando}
                         onClick={() => entrarComo(c.email)}
-                        className="group flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2.5 text-xs font-semibold text-slate-700 transition-[transform,background-color,border-color,color] duration-150 ease-salida hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 active:scale-[0.97] disabled:opacity-60 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5"
+                        className="group flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-2.5 text-xs font-semibold text-slate-200 transition-[transform,background-color,border-color,color] duration-150 ease-salida hover:border-brand-400/50 hover:bg-brand-500/15 hover:text-white active:scale-[0.97] disabled:opacity-60 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-0.5"
                       >
-                        <c.icon size={20} weight="duotone" className="text-brand-600" />
+                        <c.icon size={20} weight="duotone" className="text-brand-300" />
                         {c.rol}
                       </button>
                     ))}
                   </div>
-                  <p className="mt-2 text-center text-xs text-slate-500">Contraseña de todas: {PASSWORD_DEMO}</p>
+                  <p className="mt-2 text-center text-xs text-slate-400">Contraseña de todas: {PASSWORD_DEMO}</p>
                 </div>
                 )}
               </div>

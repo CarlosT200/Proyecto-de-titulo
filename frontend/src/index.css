@@ -57,15 +57,28 @@ select:-webkit-autofill {
   -webkit-text-fill-color: #f1f5f9;
   caret-color: #f1f5f9;
 }
-/* El formulario de login siempre es claro (tarjeta blanca), aunque el tema sea oscuro: sus campos
-   mantienen fondo blanco al autocompletarse. */
-.dark input.campo-login:-webkit-autofill,
-.dark input.campo-login:-webkit-autofill:hover,
-.dark input.campo-login:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  box-shadow: 0 0 0 1000px #ffffff inset;
-  -webkit-text-fill-color: #0f172a;
-  caret-color: #0f172a;
+/* El login es una tarjeta de vidrio oscuro (campos translucidos): al autocompletar, el fondo y el
+   texto se mantienen oscuros/claros en vez del blanco por defecto del navegador, en cualquier tema. */
+input.campo-login:-webkit-autofill,
+input.campo-login:-webkit-autofill:hover,
+input.campo-login:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #1e293b inset;
+  box-shadow: 0 0 0 1000px #1e293b inset;
+  -webkit-text-fill-color: #f8fafc;
+  caret-color: #93c5fd;
+}
+
+/* Detalles finos de la tarjeta de login (vidrio oscuro): la seleccion de texto, el cursor y los
+   controles nativos usan el azul de marca en vez de los colores por defecto del navegador. */
+.login-card {
+  accent-color: #3b82f6;
+}
+.login-card ::selection {
+  background-color: rgba(37, 99, 235, 0.45);
+  color: #ffffff;
+}
+.login-card input {
+  caret-color: #93c5fd;
 }
 
 /* Fecha y hora: Safari de iPhone las dibuja con su propio estilo (valor centrado, ancho y alto
