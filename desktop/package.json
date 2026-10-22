@@ -1,0 +1,52 @@
+{
+  "name": "habitasmart-desktop",
+  "version": "1.0.0",
+  "description": "HabitaSmart - aplicacion de escritorio para conserjeria y administracion",
+  "author": "HabitaSmart (Felipe Valdez, Gabriel Salvo, Carlos Toro)",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icono": "node scripts/make-icon.js",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^2.1.8"
+  },
+  "build": {
+    "appId": "cl.habitasmart.desktop",
+    "productName": "HabitaSmart",
+    "copyright": "HabitaSmart",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "loading.html",
+      "offline.html",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HabitaSmart",
+      "artifactName": "HabitaSmart-Instalador-${version}.${ext}"
+    }
+  }
+}

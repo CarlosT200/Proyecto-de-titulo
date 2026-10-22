@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>HabitaSmart</title>
+    <style>
+      :root {
+        --azul: #2563eb;
+        --azul-oscuro: #1e3a8a;
+        --naranja: #f97316;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+        color: #e2e8f0;
+        background: radial-gradient(1200px 700px at 50% -10%, #1e3a8a 0%, #0f172a 60%);
+        user-select: none;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .cuadro {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, var(--azul) 0%, var(--azul-oscuro) 60%);
+        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
+      }
+      .cuadro svg { width: 30px; height: 30px; }
+      .marca { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+      .marca span { color: var(--naranja); }
+      .spinner {
+        width: 34px;
+        height: 34px;
+        border: 3px solid rgba(255, 255, 255, 0.18);
+        border-top-color: var(--naranja);
+        border-radius: 50%;
+        animation: girar 0.8s linear infinite;
+      }
+      @keyframes girar { to { transform: rotate(360deg); } }
+      .texto { font-size: 14px; color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <div class="logo">
+      <div class="cuadro">
+        <svg viewBox="0 0 256 256" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+          <path d="M232 216h-16V120a16 16 0 0 0-16-16h-40V40a16 16 0 0 0-23.1-14.3l-96 48A16 16 0 0 0 32 88v128H16a8 8 0 0 0 0 16h216a8 8 0 0 0 0-16ZM80 176a8 8 0 1 1 8-8 8 8 0 0 1-8 8Zm0-48a8 8 0 1 1 8-8 8 8 0 0 1-8 8Zm40 48a8 8 0 1 1 8-8 8 8 0 0 1-8 8Zm0-48a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+        </svg>
+      </div>
+      <div class="marca">Habita<span>Smart</span></div>
+    </div>
+    <div class="spinner"></div>
+    <div class="texto">Conectando con el servidor&hellip;</div>
+  </body>
+</html>

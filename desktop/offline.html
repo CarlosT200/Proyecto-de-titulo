@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>HabitaSmart - Sin conexion</title>
+    <style>
+      :root {
+        --azul: #2563eb;
+        --naranja: #f97316;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        padding: 24px;
+        text-align: center;
+        font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+        color: #e2e8f0;
+        background: radial-gradient(1200px 700px at 50% -10%, #1e3a8a 0%, #0f172a 60%);
+        user-select: none;
+      }
+      .icono {
+        width: 72px; height: 72px;
+        border-radius: 20px;
+        display: grid; place-items: center;
+        background: rgba(249, 115, 22, 0.15);
+        color: var(--naranja);
+      }
+      .icono svg { width: 40px; height: 40px; }
+      h1 { margin: 0; font-size: 22px; color: #fff; }
+      p { margin: 0; max-width: 420px; font-size: 14px; color: #94a3b8; line-height: 1.5; }
+      button {
+        margin-top: 6px;
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--azul);
+        cursor: pointer;
+        transition: filter 0.15s ease;
+      }
+      button:hover { filter: brightness(1.1); }
+    </style>
+  </head>
+  <body>
+    <div class="icono">
+      <svg viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M53.9 34.6a8 8 0 0 0-11.8 10.8l19.2 21.1C25 88.8 2.6 123.2 1.7 124.6a8 8 0 0 0 0 8.5c.5.8 12.4 19.3 37.3 34.8C70.3 187.4 103 198 136 198a151 151 0 0 0 42.3-6l23.8 26.2a8 8 0 1 0 11.8-10.8ZM128 160a32 32 0 0 1-30.2-42.8l40.2 44.2A32 32 0 0 1 128 160Z" />
+        <path d="M254.3 124.6c-.6-1-15.3-23.6-42.7-39.9a8 8 0 0 0-8.2 13.7 151 151 0 0 1 32.5 29.6c-5.1 6.3-15.5 18-30.1 28a8 8 0 1 0 9 13.2c25-17 38.5-37.3 39-38.1a8 8 0 0 0 .5-6.5Z" />
+        <path d="M128 58a98 98 0 0 1 20 2 8 8 0 0 0 3.3-15.7A114 114 0 0 0 128 42a8 8 0 0 0 0 16Z" />
+      </svg>
+    </div>
+    <h1>Sin conexion a internet</h1>
+    <p>No se pudo conectar con el servidor de HabitaSmart. Revisa tu conexion a internet y vuelve a intentarlo.</p>
+    <button id="reintentar">Reintentar</button>
+    <script>
+      // La URL del sitio llega como parametro ?u= desde main.js.
+      var params = new URLSearchParams(location.search);
+      var url = params.get("u");
+      document.getElementById("reintentar").addEventListener("click", function () {
+        if (url) location.href = url;
+        else location.reload();
+      });
+    </script>
+  </body>
+</html>
