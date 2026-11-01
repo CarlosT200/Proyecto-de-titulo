@@ -56,6 +56,10 @@ export const env = {
   mostrarCuentasDemo: process.env.MOSTRAR_CUENTAS_DEMO
     ? process.env.MOSTRAR_CUENTAS_DEMO === "true"
     : process.env.NODE_ENV !== "production",
+  // Modo demostración del botón SOS, INDEPENDIENTE de las cuentas demo (mostrarCuentasDemo). En true,
+  // el SOS avisa a conserjería/administración pero NO abre la llamada a un número de emergencia real.
+  // Explícito y separado para no atar una medida de seguridad (no llamar de verdad) al flag de demo.
+  sosModoDemo: process.env.SOS_MODO_DEMO === "true",
   // Web Push: si faltan, el modulo push queda deshabilitado en silencio (ver
   // push.service.ts) en vez de tumbar el servidor -- es una funcionalidad
   // adicional (notificaciones aunque la app este cerrada), no el nucleo de
