@@ -1,0 +1,22 @@
+# Configuración de gitleaks para HabitaSmart.
+#
+# Mantiene TODAS las reglas por defecto activas (useDefault = true) y solo añade una excepción
+# PUNTUAL y concreta: los dos valores FICTICIOS que usa el job de CI como JWT_SECRET y QR_TOKEN_SECRET
+# (ver .github/workflows/ci.yml). No son secretos reales —los reales viven únicamente en Render— pero
+# gitleaks los marca por su entropía con la regla genérica "generic-api-key".
+#
+# La exclusión es por COINCIDENCIA CONCRETA (el texto exacto de cada valor ficticio), no por carpeta
+# ni por regla: cualquier otro secreto, en este o en otro archivo, se sigue detectando.
+
+title = "HabitaSmart gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valores ficticios del job de CI (no son secretos reales; ver .github/workflows/ci.yml)"
+regexTarget = "secret"
+regexes = [
+  '''clave-ficticia-de-integracion-continua-32chars''',
+  '''otra-clave-ficticia-de-integracion-32chars''',
+]
