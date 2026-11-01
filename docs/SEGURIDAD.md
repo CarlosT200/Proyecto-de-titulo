@@ -22,3 +22,23 @@ dedicada con su propia batería de pruebas. Cada una tiene una mitigación vigen
 **Plan:** abordar `zod` 4 primero (es la única alta) en una rama propia, migrando los esquemas y
 corriendo toda la suite; luego `react-router` 7. `uuid` queda como riesgo bajo aceptado mientras el
 backend sea CommonJS.
+
+## Sesión / JWT en `localStorage` (riesgo documentado, tarea prioritaria)
+
+Hoy el token de sesión (JWT) se guarda en `localStorage` (`frontend/src/api/client.ts`) y se envía en
+la cabecera `Authorization: Bearer`. Es un patrón común, pero con un riesgo conocido: cualquier script
+que llegue a ejecutarse en la página (un XSS, o una dependencia de frontend comprometida) puede leer
+`localStorage` y robarse el token.
+
+Mitigaciones vigentes: el backend invalida las sesiones al cambiar la contraseña y **verifica la
+cuenta en cada petición** (una cuenta deshabilitada queda fuera de inmediato); las sesiones de personal
+(admin/conserje) duran 8 h; helmet aplica una Content-Security-Policy por defecto.
+
+**No se migra en esta Fase 1** porque pasar a cookies `HttpOnly` + sesiones revocables del lado del
+servidor es un cambio mayor (autenticación por cookie, protección CSRF, almacenamiento de sesiones,
+ajustes de CORS) que merece su propia rama y batería de pruebas.
+
+**Tarea prioritaria (Fase 2 — alta):** migrar el JWT a una cookie `HttpOnly`, `Secure`,
+`SameSite=strict`, con **sesiones revocables** (lista de sesiones por usuario y cierre de sesión real
+del lado del servidor) y protección CSRF. Hasta entonces, el riesgo depende de que no haya XSS:
+mantener la CSP de helmet y el escape del contenido que se muestra.
