@@ -8,7 +8,12 @@ import { ConflictError, NotFoundError } from "../../lib/errors";
 import { env } from "../../config/env";
 import { QR_LOGO_SVG } from "../../lib/qrLogo";
 
-const VIGENCIA_QR_RESIDENTE_HORAS = 24;
+// Vigencia REAL del QR del residente en el servidor. La credencial rota en pantalla cada ~60s (ver
+// ResidenteQR.tsx) y cada rotación revoca el QR anterior; pero si el residente cierra la app o pierde
+// internet, deja de rotar. Por eso el servidor también caduca el último QR por sí solo en ~90s: una
+// captura de pantalla del código no sirve pasado ese minuto y medio, pase lo que pase en el teléfono.
+// 90s da ~30s de margen sobre la rotación de 60s para la latencia de red.
+const VIGENCIA_QR_RESIDENTE_SEGUNDOS = 90;
 // Pixeles por modulo del QR (entero, para que los bordes salgan nitidos: con un ancho fijo cada
 // modulo medía 3,7 px con bordes borrosos). El codigo es corto (22 caracteres), asi que el QR es
 // de ~41 modulos y la imagen de ~390 px.
@@ -59,14 +64,15 @@ async function codigoManualUnico(): Promise<string> {
   return nuevoCodigoManual();
 }
 
-// HU-17: generar QR de residente. El token es un JWT sin datos personales, con expiracion (RNF-08, RNF-09).
+// HU-17: generar QR de residente. Token opaco sin datos personales (RNF-09) y con vigencia corta en
+// el servidor (~90s, RNF-08): el código caduca solo aunque el teléfono quede sin conexión.
 export async function generarQrResidente(condominioId: string, usuarioId: string) {
   await prisma.qrToken.updateMany({
     where: { usuarioId, tipo: TipoQrToken.RESIDENTE, revocado: false },
     data: { revocado: true },
   });
 
-  const expiraEn = new Date(Date.now() + VIGENCIA_QR_RESIDENTE_HORAS * 60 * 60 * 1000);
+  const expiraEn = new Date(Date.now() + VIGENCIA_QR_RESIDENTE_SEGUNDOS * 1000);
   const id = randomUUID();
   const token = nuevoTokenQr();
   const codigoManual = await codigoManualUnico();
