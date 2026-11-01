@@ -1,0 +1,87 @@
+name: CI
+
+# Verifica en cada Pull Request (y en cada push a main) que el proyecto pase lint, pruebas, build,
+# auditoría de dependencias de producción y detección de secretos antes de integrar. Así un cambio
+# que rompe la compilación, una prueba, o que filtra un secreto, no llega a main ni a Render.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Permisos mínimos: el workflow solo necesita leer el código. No publica, no escribe en el repo.
+permissions:
+  contents: read
+
+# Si se empuja dos veces seguidas a la misma rama, cancela la corrida anterior (ahorra minutos).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Lint, pruebas, build y auditoría
+    runs-on: ubuntu-latest
+
+    # Valores ficticios solo para que la validación de variables (config/env.ts), "prisma generate" y
+    # "prisma validate" no fallen en el runner. NO son secretos reales: aquí no hay base de datos ni
+    # despliegue, solo se compila y se corren las pruebas (que usan una base simulada). Los secretos
+    # reales viven en Render. Las claves ficticias miden >= 32 caracteres a propósito, para no gatillar
+    # el nuevo chequeo de secretos fuertes.
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+      JWT_SECRET: clave-ficticia-de-integracion-continua-32chars
+      QR_TOKEN_SECRET: otra-clave-ficticia-de-integracion-32chars
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar el cliente de Prisma
+        run: npm run prisma:generate
+
+      - name: Validar el esquema de Prisma
+        run: npx prisma validate --schema backend/prisma/schema.prisma
+
+      - name: Lint (frontend)
+        run: npm run lint
+
+      - name: Pruebas (backend)
+        run: npm run test:backend
+
+      - name: Build (frontend + backend)
+        run: npm run build
+
+      # Auditoría de dependencias de PRODUCCIÓN (sin devDependencies). La informativa muestra el
+      # detalle completo en el log sin bloquear (hay vulnerabilidades documentadas que se difieren por
+      # requerir cambios mayores: ver docs/SEGURIDAD.md). El gate sí bloquea si aparece una CRÍTICA.
+      - name: Auditoría de producción (informativa)
+        run: npm audit --omit=dev
+        continue-on-error: true
+
+      - name: Auditoría de producción (bloquea críticas)
+        run: npm audit --omit=dev --audit-level=critical
+
+  escaneo-secretos:
+    name: Detección de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio (historial completo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Escanear secretos con gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

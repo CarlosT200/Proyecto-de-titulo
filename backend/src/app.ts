@@ -44,7 +44,9 @@ app.use("/uploads", express.static(UPLOADS_DIR));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 // Configuracion publica que necesita la pantalla de login antes de que haya sesion.
-app.get("/api/config", (_req, res) => res.json({ cuentasDemo: env.mostrarCuentasDemo }));
+app.get("/api/config", (_req, res) =>
+  res.json({ cuentasDemo: env.mostrarCuentasDemo, sosModoDemo: env.sosModoDemo })
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/usuarios", usuariosRoutes);
