@@ -12,14 +12,20 @@ vi.mock("../notificaciones/notificaciones.service", () => ({
   crearNotificacionesMasivas: vi.fn(),
 }));
 
+vi.mock("../push/push.service", () => ({
+  enviarPushAUsuarios: vi.fn(),
+}));
+
 import { prisma } from "../../lib/prisma";
 import { crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
+import { enviarPushAUsuarios } from "../push/push.service";
 import { crearAlerta } from "./sos.service";
 
 const findUniqueUsuario = prisma.usuario.findUnique as unknown as Mock;
 const findManyUsuario = prisma.usuario.findMany as unknown as Mock;
 const crearAlertaSos = prisma.alertaSos.create as unknown as Mock;
 const notificarMasivo = crearNotificacionesMasivas as unknown as Mock;
+const enviarPush = enviarPushAUsuarios as unknown as Mock;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -50,7 +56,8 @@ describe("crearAlerta (SOS)", () => {
         tipo: "SOS_BOMBEROS",
         entidadTipo: "AlertaSos",
         entidadId: "alerta-1",
-      })
+      }),
+      { urgencia: "high" }
     );
   });
 
@@ -69,7 +76,8 @@ describe("crearAlerta (SOS)", () => {
       ["admin-1"],
       expect.objectContaining({
         mensaje: "Roberto Residente (Torre A 101) activó una alerta de Ambulancia.",
-      })
+      }),
+      { urgencia: "high" }
     );
   });
 
@@ -79,6 +87,25 @@ describe("crearAlerta (SOS)", () => {
     findManyUsuario.mockResolvedValue([]);
 
     await expect(crearAlerta("condo-1", "residente-1", TipoEmergenciaSos.CARABINEROS)).resolves.toBeDefined();
-    expect(notificarMasivo).toHaveBeenCalledWith([], expect.anything());
+    expect(notificarMasivo).toHaveBeenCalledWith([], expect.anything(), { urgencia: "high" });
+  });
+
+  // Confiabilidad: una emergencia no puede fallarle al residente. Aunque el aviso en la app falle
+  // (p. ej. un problema puntual de base de datos), la alerta ya quedó registrada, así que crearAlerta
+  // igual devuelve la alerta y, como respaldo, intenta el push (el canal que llega con la app cerrada).
+  it("si falla el aviso en la app, la alerta igual se crea y se intenta el push", async () => {
+    findUniqueUsuario.mockResolvedValue({ nombre: "Roberto", apellido: "Residente", departamento: null });
+    crearAlertaSos.mockResolvedValue({ id: "alerta-4" });
+    findManyUsuario.mockResolvedValue([{ id: "admin-1" }, { id: "conserje-1" }]);
+    notificarMasivo.mockRejectedValue(new Error("base de datos no disponible"));
+
+    const alerta = await crearAlerta("condo-1", "residente-1", TipoEmergenciaSos.BOMBEROS);
+
+    expect(alerta).toEqual({ id: "alerta-4" });
+    expect(enviarPush).toHaveBeenCalledWith(
+      ["admin-1", "conserje-1"],
+      expect.objectContaining({ tipo: "SOS_BOMBEROS", entidadId: "alerta-4" }),
+      { urgencia: "high" }
+    );
   });
 });

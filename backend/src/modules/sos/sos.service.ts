@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { ConflictError, NotFoundError } from "../../lib/errors";
 import { horaEnChile } from "../../lib/fechas";
 import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
+import { enviarPushAUsuarios } from "../push/push.service";
 
 const EMERGENCIA_LABEL: Record<TipoEmergenciaSos, string> = {
   CARABINEROS: "Carabineros",
@@ -36,18 +37,29 @@ export async function crearAlerta(condominioId: string, usuarioId: string, tipo:
     ? ` (${[usuario.departamento.torre?.nombre, usuario.departamento.numero].filter(Boolean).join(" ")})`
     : "";
 
-  await crearNotificacionesMasivas(
-    destinatarios.map((d) => d.id),
-    {
-      tipo: `SOS_${tipo}`,
-      titulo: `🚨 Alerta SOS: ${EMERGENCIA_LABEL[tipo]}`,
-      mensaje: usuario
-        ? `${usuario.nombre} ${usuario.apellido}${unidad} activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`
-        : `Se activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`,
-      entidadTipo: "AlertaSos",
-      entidadId: alerta.id,
-    }
-  );
+  const idsDestino = destinatarios.map((d) => d.id);
+  const aviso = {
+    tipo: `SOS_${tipo}`,
+    titulo: `🚨 Alerta SOS: ${EMERGENCIA_LABEL[tipo]}`,
+    mensaje: usuario
+      ? `${usuario.nombre} ${usuario.apellido}${unidad} activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`
+      : `Se activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`,
+    entidadTipo: "AlertaSos",
+    entidadId: alerta.id,
+  };
+
+  // Notificar es "mejor esfuerzo": la alerta YA quedó registrada (arriba) y es visible para
+  // conserjería/administración en su lista de alertas activas. En una emergencia, un fallo
+  // transitorio al avisar no debe hacer que el residente crea que su SOS no salió. El push va con
+  // urgencia alta para que llegue de inmediato aunque la app esté cerrada. Si falla guardar el aviso
+  // en la app (p. ej. un problema puntual de base de datos), igual se intenta el push, que es el
+  // canal que llega con la app cerrada.
+  try {
+    await crearNotificacionesMasivas(idsDestino, aviso, { urgencia: "high" });
+  } catch (err) {
+    console.error("SOS: falló el aviso en la app; se intenta solo el push.", err);
+    await enviarPushAUsuarios(idsDestino, aviso, { urgencia: "high" });
+  }
 
   return alerta;
 }

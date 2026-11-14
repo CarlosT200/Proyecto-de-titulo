@@ -61,4 +61,16 @@ describe("generacion de QR", () => {
     expect(data.usosMaximos).toBe(1);
     expect(esTokenCorto(data.token)).toBe(true);
   });
+
+  // Seguridad del QR del residente: la rotación en pantalla no basta. Si el residente cierra la app o
+  // pierde internet, deja de rotar, así que el SERVIDOR debe caducar el último QR por sí solo en ~90s.
+  it("el QR del residente caduca en el servidor en ~90s (no en horas), aunque cierre la app", async () => {
+    const antes = Date.now();
+    await generarQrResidente("condo-1", "u-1");
+
+    const { data } = crear.mock.calls[0][0];
+    const vigenciaMs = data.expiraEn.getTime() - antes;
+    expect(vigenciaMs).toBeGreaterThan(60_000); // más que la rotación visual de 60s
+    expect(vigenciaMs).toBeLessThanOrEqual(95_000); // y a lo sumo ~90s
+  });
 });
