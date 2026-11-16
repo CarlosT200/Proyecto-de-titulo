@@ -17,7 +17,8 @@
     "crear-condominio": "ts-node scripts/crear-condominio.ts",
     "deshabilitar-demo": "ts-node scripts/deshabilitar-demo.ts",
     "vaciar-demo": "ts-node scripts/vaciar-demo.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integracion": "vitest run -c vitest.integracion.config.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
