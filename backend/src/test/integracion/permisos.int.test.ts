@@ -183,6 +183,7 @@ describe("matriz de permisos por rol", () => {
     }
     const publicas = new Set([
       "GET /health",
+      "GET /ready",
       "GET /api/config",
       "POST /api/auth/login",
       "GET /api/push/vapid-public-key",

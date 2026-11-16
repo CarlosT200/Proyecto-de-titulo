@@ -8,7 +8,7 @@ import { NotFoundError } from "../lib/errors";
 
 function responder(err: unknown) {
   const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
-  errorHandler(err, {} as Request, res as unknown as Response, vi.fn());
+  errorHandler(err, { requestId: "req-123", originalUrl: "/api/x?token=1" } as unknown as Request, res as unknown as Response, vi.fn());
   return { status: res.status.mock.calls[0][0], body: res.json.mock.calls[0][0] };
 }
 
@@ -46,11 +46,27 @@ describe("errorHandler", () => {
     expect(status).toBe(400);
   });
 
-  it("nunca filtra el detalle interno de un error desconocido", () => {
-    const consola = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("nunca filtra el detalle interno de un error desconocido y entrega el código de referencia", () => {
+    vi.stubEnv("LOG_LEVEL", "error");
+    const salida = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     const { status, body } = responder(new Error("connection string postgres://usuario:clave@host"));
     expect(status).toBe(500);
-    expect(body.error).not.toMatch(/postgres|clave/);
-    consola.mockRestore();
+    expect(JSON.stringify(body)).not.toMatch(/postgres|clave|stack/);
+    expect(body.referencia).toBe("req-123");
+    // y el log tampoco muestra la contraseña de la base
+    const escrito = salida.mock.calls.map((c) => String(c[0])).join("");
+    expect(escrito).toContain("error no controlado");
+    expect(escrito).not.toContain("clave@");
+    salida.mockRestore();
+    vi.unstubAllEnvs();
+  });
+
+  it("si la base de datos no responde, devuelve 503 (se puede reintentar)", () => {
+    const salida = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const err = new Prisma.PrismaClientKnownRequestError("Can't reach database server", { code: "P1001", clientVersion: "test" });
+    const { status, body } = responder(err);
+    expect(status).toBe(503);
+    expect(body.error).toMatch(/no está disponible/);
+    salida.mockRestore();
   });
 });

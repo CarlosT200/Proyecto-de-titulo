@@ -1,5 +1,6 @@
 import { EstadoEncomienda, Prisma, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../lib/errors";
 import { horaEnChile } from "../../lib/fechas";
 import { crearNotificacion } from "../notificaciones/notificaciones.service";
@@ -107,6 +108,7 @@ export async function listarMisEncomiendas(usuarioId: string) {
     where: { usuarioId },
     select: { ...CAMPOS, cerradaPor: PERSONA },
     orderBy: { fechaRecepcion: "desc" },
+    take: LIMITE_LISTADO,
   });
   return conMarcaDeFoto(encomiendas);
 }
@@ -116,6 +118,7 @@ export async function listarEncomiendasCondominio(condominioId: string, filtros:
     where: { condominioId, estado: filtros.estado },
     select: CAMPOS_CON_PERSONAS,
     orderBy: { fechaRecepcion: "desc" },
+    take: LIMITE_LISTADO,
   });
   return conMarcaDeFoto(encomiendas);
 }

@@ -1,5 +1,6 @@
 import { Rol, TipoComunicado } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { NotFoundError } from "../../lib/errors";
 
@@ -40,6 +41,7 @@ export async function listarComunicados(condominioId: string) {
     where: { condominioId },
     include: { autor: { select: { id: true, nombre: true, apellido: true } } },
     orderBy: { createdAt: "desc" },
+    take: LIMITE_LISTADO,
   });
 }
 

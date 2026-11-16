@@ -86,9 +86,13 @@ export function mensajeError(error: unknown, fallback = "Ocurrió un error. Inte
     if (!error.response) {
       return "No se pudo conectar con el servidor. Revisa tu conexión a internet e intenta nuevamente.";
     }
-    const data = error.response.data as { error?: string; detalles?: { campo: string; mensaje: string }[] };
+    const data = error.response.data as { error?: string; referencia?: string; detalles?: { campo: string; mensaje: string }[] };
     if (data?.detalles?.length) {
       return data.detalles.map((d) => d.mensaje).join(" ");
+    }
+    // En un error del servidor se agrega un codigo corto: con el, soporte encuentra el detalle en el log.
+    if (data?.error && error.response.status >= 500 && data.referencia) {
+      return `${data.error} (código ${data.referencia.slice(0, 8)})`;
     }
     if (data?.error) return data.error;
   }

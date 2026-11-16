@@ -36,6 +36,7 @@ export default defineConfig({
       // Las pruebas de SOS corren siempre en modo demostracion: nunca hay una llamada real.
       SOS_MODO_DEMO: "true",
       MOSTRAR_CUENTAS_DEMO: "false",
+      LOG_LEVEL: "silencio",
     },
   },
 });

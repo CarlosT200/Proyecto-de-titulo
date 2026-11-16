@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { api, CABECERA_CSRF, COOKIE_CSRF, haySesionLocal, limpiarTokenAntiguo, olvidarSesionLocal, tokenCsrf } from "./client";
+import { AxiosError, AxiosHeaders } from "axios";
+import { api, CABECERA_CSRF, COOKIE_CSRF, haySesionLocal, limpiarTokenAntiguo, mensajeError, olvidarSesionLocal, tokenCsrf } from "./client";
 
 function ponerCookie(nombre: string, valor: string) {
   document.cookie = `${nombre}=${valor}; path=/`;
@@ -69,5 +70,28 @@ describe("cabecera anti-CSRF", () => {
     expect((await cabeceraEnviada("get")).cabecera).toBeUndefined();
     borrarCookie(COOKIE_CSRF);
     expect((await cabeceraEnviada("post")).cabecera).toBeUndefined();
+  });
+});
+
+describe("mensajeError", () => {
+  function errorHttp(status: number, data: unknown) {
+    const config = { headers: new AxiosHeaders() };
+    return new AxiosError("fallo", "ERR", config, {}, { status, data, statusText: "", headers: {}, config });
+  }
+
+  it("usa el mensaje del servidor y, en errores 5xx, agrega el código de referencia corto", () => {
+    expect(mensajeError(errorHttp(409, { error: "Ya existe." }))).toBe("Ya existe.");
+    expect(mensajeError(errorHttp(500, { error: "Ocurrió un error inesperado.", referencia: "abcdef12-3456-7890" }))).toBe(
+      "Ocurrió un error inesperado. (código abcdef12)"
+    );
+  });
+
+  it("une los detalles de validación", () => {
+    expect(mensajeError(errorHttp(422, { error: "Datos inválidos.", detalles: [{ campo: "a", mensaje: "Uno." }, { campo: "b", mensaje: "Dos." }] }))).toBe("Uno. Dos.");
+  });
+
+  it("sin respuesta del servidor explica que es un problema de conexión (nunca 'credenciales incorrectas')", () => {
+    const sinRespuesta = new AxiosError("Network Error", "ERR_NETWORK");
+    expect(mensajeError(sinRespuesta, "Correo o contraseña incorrectos.")).toMatch(/No se pudo conectar con el servidor/);
   });
 });

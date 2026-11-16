@@ -100,7 +100,7 @@ describe("crearAlerta (SOS)", () => {
     findUniqueUsuario.mockResolvedValue({ nombre: "Roberto", apellido: "Residente", departamento: null });
     crearAlertaSos.mockResolvedValue({ id: "alerta-4" });
     findManyUsuario.mockResolvedValue([{ id: "admin-1" }, { id: "conserje-1" }]);
-    notificarMasivo.mockRejectedValue(new Error("base de datos no disponible"));
+    notificarMasivo.mockRejectedValueOnce(new Error("base de datos no disponible"));
 
     const alerta = await crearAlerta("condo-1", "residente-1", TipoEmergenciaSos.BOMBEROS);
 

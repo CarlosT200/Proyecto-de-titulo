@@ -1,5 +1,6 @@
 import { Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_PERSONAS } from "../../lib/limites";
 import { hashPassword } from "../auth/auth.service";
 import { revocarSesionesDeUsuario } from "../../lib/sesiones";
 import { ConflictError, NotFoundError } from "../../lib/errors";
@@ -84,6 +85,7 @@ export async function listarUsuarios(
     where: { condominioId, rol: filtros.rol, activo: filtros.activo },
     select: solicitante === Rol.ADMIN ? SELECT_PUBLICO : SELECT_CONSERJE,
     orderBy: [{ apellido: "asc" }, { nombre: "asc" }],
+    take: LIMITE_PERSONAS,
   });
 }
 

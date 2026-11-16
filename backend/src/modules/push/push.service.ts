@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { prisma } from "../../lib/prisma";
 import { env } from "../../config/env";
+import { logger } from "../../lib/logger";
 
 const habilitado = Boolean(env.vapidPublicKey && env.vapidPrivateKey);
 
@@ -88,6 +89,6 @@ export async function enviarPushAUsuarios(usuarioIds: string[], payload: PushPay
   } catch (err) {
     // Contrato: el push es un complemento, nunca el unico canal. Un fallo aqui (p. ej. al leer las
     // suscripciones) no debe tumbar la accion que lo disparo (una alerta SOS que ya quedo registrada).
-    console.error("Push: no se pudo enviar (se continua; la accion principal no depende de esto).", err);
+    logger.warn("push: no se pudo enviar (la acción principal no depende de esto)", { error: err });
   }
 }

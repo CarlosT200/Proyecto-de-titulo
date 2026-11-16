@@ -13,6 +13,8 @@ export default defineConfig({
       DATABASE_URL: "postgresql://test:test@localhost:5432/habitasmart_test",
       JWT_SECRET: "secreto-de-prueba-jwt",
       QR_TOKEN_SECRET: "secreto-de-prueba-qr",
+      // Sin logs en la salida de las pruebas (las que revisan el log lo activan con vi.stubEnv).
+      LOG_LEVEL: "silencio",
     },
   },
 });

@@ -4,6 +4,7 @@ import { ConflictError, NotFoundError } from "../../lib/errors";
 import { horaEnChile } from "../../lib/fechas";
 import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { enviarPushAUsuarios } from "../push/push.service";
+import { logger } from "../../lib/logger";
 
 const EMERGENCIA_LABEL: Record<TipoEmergenciaSos, string> = {
   CARABINEROS: "Carabineros",
@@ -93,7 +94,7 @@ export async function crearAlerta(
   try {
     await crearNotificacionesMasivas(idsDestino, aviso, { urgencia: "high" });
   } catch (err) {
-    console.error("SOS: falló el aviso en la app; se intenta solo el push.", err);
+    logger.error("SOS: falló el aviso en la app; se intenta solo el push", { alertaId: alerta.id, error: err });
     await enviarPushAUsuarios(idsDestino, aviso, { urgencia: "high" });
   }
 

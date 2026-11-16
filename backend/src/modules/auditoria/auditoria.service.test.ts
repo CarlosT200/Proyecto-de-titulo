@@ -41,13 +41,15 @@ describe("registrarAuditoria", () => {
 
   it("si la base de datos falla, no rompe la accion que ya se hizo", async () => {
     crear.mockRejectedValue(new Error("sin conexion"));
-    const consola = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("LOG_LEVEL", "error");
+    const consola = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     await expect(
       registrarAuditoria({ condominioId: "c", usuarioId: "u", accion: "CREAR", entidad: "Multa", descripcion: "x" })
     ).resolves.toBeUndefined();
     // y deja constancia en el log del servidor
     expect(consola).toHaveBeenCalled();
     consola.mockRestore();
+    vi.unstubAllEnvs();
   });
 });
 
