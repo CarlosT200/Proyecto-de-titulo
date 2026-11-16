@@ -11,8 +11,8 @@ import { RespuestaApelacion } from "../../components/RespuestaApelacion";
 import { formatFecha, formatMonto, hoyLocal, formatDia } from "../../lib/format";
 import { ESTADO_MULTA_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import type { EstadoMulta, Multa } from "../../types";
 
 const ESTADOS: EstadoMulta[] = ["PENDIENTE", "PAGADA", "APELADA", "ANULADA"];

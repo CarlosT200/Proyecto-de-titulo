@@ -8,9 +8,9 @@ import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
 import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, Modal, PageHeader, Select, Spinner, Textarea } from "../../components/ui";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
-import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
+import { useAuth } from "../../context/auth";
 import type { Departamento, EspacioComun, Torre } from "../../types";
 
 const SECCIONES = ["espacios", "unidades", "datos"] as const;

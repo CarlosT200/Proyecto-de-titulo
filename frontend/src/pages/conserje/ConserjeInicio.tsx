@@ -12,13 +12,15 @@ import {
 } from "@phosphor-icons/react";
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import clsx from "clsx";
 import { Alert, Button, Card, CardHeader, EmptyState, Spinner } from "../../components/ui";
 import { Cifra } from "../../components/Cifra";
-import { AccesoRapido, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
+import { AccesoRapido, HeroBanner, RequiereAtencion } from "../../components/Inicio";
+import { saludoSegunHora } from "../../lib/tiempo";
 import { DetalleAcceso } from "../../components/DetalleAcceso";
-import { ModalAtenderAlerta, unidadDeAlerta } from "../../components/AtenderAlerta";
+import { ModalAtenderAlerta } from "../../components/AtenderAlerta";
+import { unidadDeAlerta } from "../../lib/unidades";
 import { horaLocal } from "../../lib/dias";
 import { haceCuanto } from "../../lib/tiempo";
 import { ENCOMIENDA_ATRASADA_HORAS } from "../../lib/umbrales";

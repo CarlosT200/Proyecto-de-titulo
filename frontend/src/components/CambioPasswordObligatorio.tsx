@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { LockKey, SignOut } from "@phosphor-icons/react";
 import { authApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/auth";
+import { useToast } from "../context/toast";
 import { Alert, Button, Input, Label } from "./ui";
 import { PieDePagina } from "./PieDePagina";
 

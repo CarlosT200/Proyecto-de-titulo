@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ShieldCheck } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 import { PieDePagina } from "../components/PieDePagina";
 
 // Aviso de privacidad (Ley N.º 19.628 modificada por la Ley N.º 21.719, vigente desde el 1 de

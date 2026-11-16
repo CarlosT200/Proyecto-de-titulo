@@ -17,7 +17,7 @@ import {
   Warning,
   Wrench,
 } from "@phosphor-icons/react";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/auth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout, NavItem } from "./layouts/AppLayout";
 import { Spinner } from "./components/ui";

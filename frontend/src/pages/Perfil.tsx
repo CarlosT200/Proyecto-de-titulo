@@ -1,8 +1,8 @@
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { BellRinging, Camera, Export as IconoCompartir, LockKey, Pencil, ShieldCheck, UserCircle } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/auth";
+import { useToast } from "../context/toast";
 import { authApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { usePushNotifications } from "../hooks/usePushNotifications";

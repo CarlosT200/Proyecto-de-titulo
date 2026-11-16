@@ -1,3 +1,5 @@
+import type { Documento } from "../types";
+
 // Abre un archivo protegido (documento del condominio o comprobante de pago) en una pestaña nueva.
 //
 // La sesion viaja en la cookie HttpOnly, que el navegador envia sola en la navegacion: la URL no
@@ -24,4 +26,12 @@ export async function abrirDocumento(documentoId: string): Promise<void> {
 
 export async function abrirComprobante(comprobanteId: string): Promise<void> {
   abrirArchivo(urlComprobante(comprobanteId));
+}
+
+// Categoria visible de un documento ("General" si no tiene) y la lista ordenada de categorias.
+const SIN_CATEGORIA = "General";
+export const categoriaDe = (d: Pick<Documento, "categoria">) => d.categoria?.trim() || SIN_CATEGORIA;
+
+export function categoriasDe(docs: Pick<Documento, "categoria">[]): string[] {
+  return [...new Set(docs.map(categoriaDe))].sort((a, b) => a.localeCompare(b, "es"));
 }

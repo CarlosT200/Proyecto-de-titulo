@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Siren, X } from "@phosphor-icons/react";
 import { Modal } from "./ui";
-import { useToast } from "../context/ToastContext";
-import { useConfirm } from "../context/ConfirmContext";
+import { useToast } from "../context/toast";
+import { useConfirm } from "../context/confirmar";
 import { useConfigPublica } from "../context/configPublica";
 import { abrirLlamada, BLOQUEO_TRAS_LLAMADA_MS, enviarAlertaSos, OPCIONES_SOS } from "../lib/sos";
 import type { TipoEmergenciaSos } from "../types";

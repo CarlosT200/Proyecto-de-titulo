@@ -5,7 +5,7 @@ import { Alert, Card, EmptyState, PageHeader, Spinner } from "../../components/u
 import { ListaDocumentos } from "../../components/Documentos";
 import { abrirDocumento } from "../../lib/documentos";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 
 export default function ResidenteDocumentos() {
   const toast = useToast();

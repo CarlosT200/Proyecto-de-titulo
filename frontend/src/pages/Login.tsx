@@ -19,7 +19,7 @@ import {
   Siren,
   WarningCircle,
 } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 import { useConfigPublica } from "../context/configPublica";
 import { mensajeError } from "../api/client";
 import { Button } from "../components/ui";

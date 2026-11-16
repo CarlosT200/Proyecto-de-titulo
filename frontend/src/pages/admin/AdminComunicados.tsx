@@ -6,8 +6,8 @@ import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, 
 import { ItemComunicado } from "../../components/Comunicados";
 import { TIPO_COMUNICADO_LABEL } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import type { TipoComunicado } from "../../types";
 
 const TIPOS: TipoComunicado[] = [

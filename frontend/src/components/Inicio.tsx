@@ -2,14 +2,7 @@ import { ReactNode, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 import { Buildings, CaretRight, CheckCircle, Icon as PhosphorIcon, WarningCircle } from "@phosphor-icons/react";
-import { STAT_TONES } from "./ui";
-
-export function saludoSegunHora(fecha = new Date()): string {
-  const hora = fecha.getHours();
-  if (hora < 12) return "Buenos días";
-  if (hora < 20) return "Buenas tardes";
-  return "Buenas noches";
-}
+import { STAT_TONES } from "../lib/estilos";
 
 // Banner de bienvenida de las paginas de inicio. Mismo lenguaje visual que la
 // credencial digital (degrade marca -> acento, grilla sutil, edificio de marca

@@ -7,14 +7,14 @@ import { Alert, Badge, Button, Card, CardHeader, EmptyState, Input, Label, PageH
 import { BadgeEstadoReserva } from "../../components/Reservas";
 import { CalendarioReservas, SelectorHoras } from "../../components/CalendarioReservas";
 import { ModalReservaConfirmada, type DatosReservaConfirmada } from "../../components/ReservaConfirmada";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { useAcercarAlAparecer } from "../../hooks/useAcercarAlAparecer";
 import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { formatFecha, hoyLocal } from "../../lib/format";
 import { avisoDeHorario, cuandoEs, esProxima, estadoVisible, fechaConDia, ordenarReservas } from "../../lib/reservas";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import type { Reserva } from "../../types";
 
 const ANTERIORES_VISIBLES = 5;

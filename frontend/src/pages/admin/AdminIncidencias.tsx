@@ -24,7 +24,7 @@ import { formatFechaHora } from "../../lib/format";
 import { ESTADO_INCIDENCIA_LABEL, PRIORIDAD_LABEL } from "../../lib/badges";
 import { CATEGORIAS_INCIDENCIA, etiquetaCategoria, normalizarCategoria } from "../../lib/categorias";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import type { EstadoIncidencia, Incidencia, PrioridadIncidencia } from "../../types";
 
 const ESTADOS: EstadoIncidencia[] = ["REPORTADA", "EN_REVISION", "EN_PROCESO", "RESUELTA"];

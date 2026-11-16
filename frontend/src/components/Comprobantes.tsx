@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { CheckCircle, FileArrowUp, Receipt, XCircle } from "@phosphor-icons/react";
 import { gastosComunesApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "../context/toast";
 import { useAcercarAlAparecer } from "../hooks/useAcercarAlAparecer";
 import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
 import { Alert, Badge, Button, EmptyState, Input, Label, Modal, Select, Textarea } from "./ui";

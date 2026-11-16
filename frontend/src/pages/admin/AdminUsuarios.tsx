@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { generarPasswordTemporal } from "../../lib/password";
 import { Copy, Key, MagicWand, PencilSimple, Phone, Prohibit, UserPlus, Users } from "@phosphor-icons/react";
 import { condominioApi, usuariosApi } from "../../api/endpoints";
@@ -12,8 +12,8 @@ import { usePulsoAlCambiar } from "../../hooks/usePulsoAlCambiar";
 import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, PageHeader, SearchInput, Select, Spinner } from "../../components/ui";
 import { CeldaResumen } from "../../components/CeldaResumen";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import type { Rol, Usuario } from "../../types";
 
 const ROL_LABEL: Record<Rol, string> = { ADMIN: "Administración", RESIDENTE: "Residente", CONSERJE: "Conserjería" };
