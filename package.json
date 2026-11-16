@@ -21,9 +21,13 @@
     "test:backend": "npm run test --workspace backend",
     "test:frontend": "npm run test --workspace frontend",
     "test:integracion": "npm run test:integracion --workspace backend",
+    "test:e2e": "playwright test",
     "lint": "npm run lint --workspace frontend",
     "serve": "npm run build --workspace frontend && npm run dev --workspace backend",
     "build": "npm run build --workspace frontend && npm run build --workspace backend",
     "start": "npm run prisma:migrate:deploy --workspace backend && npm run start --workspace backend"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
   }
 }

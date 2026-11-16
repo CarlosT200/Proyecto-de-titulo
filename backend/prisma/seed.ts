@@ -12,12 +12,24 @@ import {
   TipoComunicado,
   TipoQrToken,
 } from "@prisma/client";
+import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { recargoFondoReserva, repartirMonto } from "../src/lib/gastosComunes";
+import { evaluarEntornoSeed } from "../src/lib/guardiaSeed";
+
+// Datos de DEMOSTRACION (todos ficticios). Es idempotente: correrlo dos veces no duplica nada (cada
+// bloque se crea solo si no existe). Para volver al estado inicial: npm run vaciar-demo -- --confirmar
+// y luego npm run prisma:seed. Ver docs/DEMOSTRACION.md.
+const guardia = evaluarEntornoSeed({ databaseUrl: process.env.DATABASE_URL, permiso: process.env.PERMITIR_SEED_DEMO });
+if (!guardia.permitido) {
+  console.error(`Seed de demostración cancelado: ${guardia.motivo}`);
+  process.exit(1);
+}
 
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log(`Seed de demostración (${guardia.motivo}).`);
   const passwordDemo = await bcrypt.hash("Habita2026!", 12);
 
   const condominio = await prisma.condominio.upsert({
