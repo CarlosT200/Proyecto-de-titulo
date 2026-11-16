@@ -133,6 +133,13 @@ async function main() {
     await crearGastosComunesDemo(condominio.id, admin.id);
   }
 
+  // Historial de SOS ficticio (atendido) y notificaciones de ejemplo, para que la pantalla de
+  // alertas y la campana no partan vacias en la demostracion. Solo si aun no hay alertas.
+  const yaTieneSos = (await prisma.alertaSos.count({ where: { condominioId: condominio.id } })) > 0;
+  if (!yaTieneSos) {
+    await crearSosYNotificacionesDemo(condominio.id, residente.id, conserje.id, admin.id);
+  }
+
   console.log("Seed completado. Usuarios de prueba (password: Habita2026!):");
   console.log(" - admin@habitasmart.cl (ADMIN)");
   console.log(" - residente@habitasmart.cl (RESIDENTE)");
@@ -419,6 +426,51 @@ async function crearDatosDemo({ condominioId, torreId, adminId, residenteId, con
       { condominioId, usuarioId: adminId, accion: "CREAR", entidad: "Comunicado", descripcion: "Publicó el comunicado \"Corte de agua programado\".", createdAt: dia(-1, 9) },
       { condominioId, usuarioId: adminId, accion: "CREAR", entidad: "Multa", descripcion: "Registró una multa a Roberto Residente por $25.000.", createdAt: dia(-4, 13) },
       { condominioId, usuarioId: adminId, accion: "ACTUALIZAR", entidad: "Incidencia", descripcion: "Cambió la incidencia \"Filtración en el baño\" a En proceso.", createdAt: dia(-1, 12) },
+    ],
+  });
+}
+
+async function crearSosYNotificacionesDemo(condominioId: string, residenteId: string, conserjeId: string, adminId: string) {
+  const alerta = await prisma.alertaSos.create({
+    data: {
+      condominioId,
+      usuarioId: residenteId,
+      tipo: "AMBULANCIA",
+      estado: "ATENDIDA",
+      atendidaPorId: conserjeId,
+      atendidaEn: dia(-6, 21, 14),
+      observacion: "Ejemplo de demostración: se abrió la reja y se guió a la ambulancia a la torre A.",
+      createdAt: dia(-6, 21, 9),
+    },
+  });
+  await prisma.notificacion.createMany({
+    data: [
+      {
+        usuarioId: residenteId,
+        tipo: "ENCOMIENDA",
+        titulo: "Nueva encomienda",
+        mensaje: "Llegó una encomienda de Chilexpress. Retírala en conserjería (Estante A).",
+        entidadTipo: "Encomienda",
+        createdAt: dia(0, 9, 31),
+      },
+      {
+        usuarioId: residenteId,
+        tipo: "SOS_ATENDIDA",
+        titulo: "Tu alerta SOS fue atendida",
+        mensaje: "Carlos (conserjería) atendió tu alerta de Ambulancia.",
+        entidadTipo: "AlertaSos",
+        entidadId: alerta.id,
+        leida: true,
+        createdAt: dia(-6, 21, 14),
+      },
+      {
+        usuarioId: adminId,
+        tipo: "INCIDENCIA",
+        titulo: "Nueva incidencia",
+        mensaje: "Valentina Rojas reportó «Luz del pasillo quemada».",
+        entidadTipo: "Incidencia",
+        createdAt: dia(-1, 10),
+      },
     ],
   });
 }
