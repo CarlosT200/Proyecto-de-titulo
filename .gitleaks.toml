@@ -24,4 +24,7 @@ regexes = [
   '''secreto-de-prueba-de-integracion-qr-32chars''',
   '''secreto-ficticio-solo-para-pruebas-e2e-32chars''',
   '''otro-secreto-ficticio-solo-para-e2e-32chars''',
+  # Contraseña inventada que una prueba de aislamiento intenta poner a un usuario de OTRO condominio
+  # (backend/src/test/integracion/aislamiento.int.test.ts): el servidor la rechaza con 404.
+  '''Otra-Clave-123''',
 ]
