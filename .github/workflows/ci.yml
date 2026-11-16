@@ -1,8 +1,9 @@
 name: CI
 
-# Verifica en cada Pull Request (y en cada push a main) que el proyecto pase lint, pruebas, build,
-# auditoría de dependencias de producción y detección de secretos antes de integrar. Así un cambio
-# que rompe la compilación, una prueba, o que filtra un secreto, no llega a main ni a Render.
+# Verifica en cada Pull Request (y en cada push a main) que el proyecto pase lint, pruebas (unitarias,
+# frontend, integración HTTP con base de datos y E2E con navegador), build, auditoría de dependencias
+# de producción y detección de secretos antes de integrar. Así un cambio que rompe algo, o que
+# filtra un secreto, no llega a main ni a Render.
 
 on:
   push:
@@ -20,14 +21,14 @@ concurrency:
 
 jobs:
   verificar:
-    name: Lint, pruebas, build y auditoría
+    name: Lint, pruebas unitarias y de frontend, build y auditoría
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     # Valores ficticios solo para que la validación de variables (config/env.ts), "prisma generate" y
-    # "prisma validate" no fallen en el runner. NO son secretos reales: aquí no hay base de datos ni
-    # despliegue, solo se compila y se corren las pruebas (que usan una base simulada). Los secretos
-    # reales viven en Render. Las claves ficticias miden >= 32 caracteres a propósito, para no gatillar
-    # el nuevo chequeo de secretos fuertes.
+    # "prisma validate" no fallen en el runner. NO son secretos reales: este job no usa base de datos
+    # (las pruebas unitarias simulan Prisma). Los secretos reales viven en Render. Las claves
+    # ficticias miden >= 32 caracteres a propósito, para no gatillar el chequeo de secretos fuertes.
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
@@ -41,10 +42,10 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
-      - name: Instalar dependencias
+      - name: Instalar dependencias (reproducible, desde package-lock.json)
         run: npm ci
 
       - name: Generar el cliente de Prisma
@@ -56,21 +57,87 @@ jobs:
       - name: Lint (frontend)
         run: npm run lint
 
-      - name: Pruebas (backend)
+      - name: Pruebas unitarias (backend)
         run: npm run test:backend
+
+      - name: Pruebas de frontend
+        run: npm run test:frontend
 
       - name: Build (frontend + backend)
         run: npm run build
 
       # Auditoría de dependencias de PRODUCCIÓN (sin devDependencies). La informativa muestra el
-      # detalle completo en el log sin bloquear (hay vulnerabilidades documentadas que se difieren por
-      # requerir cambios mayores: ver docs/SEGURIDAD.md). El gate sí bloquea si aparece una CRÍTICA.
+      # detalle completo en el log sin bloquear; el gate sí bloquea si aparece una ALTA o CRÍTICA.
       - name: Auditoría de producción (informativa)
         run: npm audit --omit=dev
         continue-on-error: true
 
-      - name: Auditoría de producción (bloquea críticas)
-        run: npm audit --omit=dev --audit-level=critical
+      - name: Auditoría de producción (bloquea altas y críticas)
+        run: npm audit --omit=dev --audit-level=high
+
+  integracion-y-e2e:
+    name: Integración HTTP y E2E (PostgreSQL de prueba)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Base PostgreSQL efímera SOLO para pruebas (se destruye al terminar el job). Su nombre termina en
+    # "_test": las pruebas se niegan a correr contra cualquier otra base.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: habitasmart_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d habitasmart_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/habitasmart_test?schema=public
+      DATABASE_URL_TEST: postgresql://ci:ci@localhost:5432/habitasmart_test?schema=public
+      JWT_SECRET: clave-ficticia-de-integracion-continua-32chars
+      QR_TOKEN_SECRET: otra-clave-ficticia-de-integracion-32chars
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build (frontend + backend; incluye prisma generate)
+        run: npm run build
+
+      - name: Pruebas de integración HTTP (Express real + PostgreSQL)
+        run: npm run test:integracion
+
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas E2E (SOS en modo demostración)
+        run: npm run test:e2e
+
+      - name: Guardar el informe de Playwright si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
 
   escaneo-secretos:
     name: Detección de secretos

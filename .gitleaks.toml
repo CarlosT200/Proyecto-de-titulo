@@ -1,8 +1,9 @@
 # Configuración de gitleaks para HabitaSmart.
 #
 # Mantiene TODAS las reglas por defecto activas (useDefault = true) y solo añade una excepción
-# PUNTUAL y concreta: los dos valores FICTICIOS que usa el job de CI como JWT_SECRET y QR_TOKEN_SECRET
-# (ver .github/workflows/ci.yml). No son secretos reales —los reales viven únicamente en Render— pero
+# PUNTUAL y concreta: los valores FICTICIOS que usan el job de CI (.github/workflows/ci.yml) y las
+# pruebas de integración y E2E (backend/vitest.integracion.config.ts, playwright.config.ts) como
+# JWT_SECRET y QR_TOKEN_SECRET. No son secretos reales —los reales viven únicamente en Render— pero
 # gitleaks los marca por su entropía con la regla genérica "generic-api-key".
 #
 # La exclusión es por COINCIDENCIA CONCRETA (el texto exacto de cada valor ficticio), no por carpeta
@@ -14,9 +15,13 @@ title = "HabitaSmart gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Valores ficticios del job de CI (no son secretos reales; ver .github/workflows/ci.yml)"
+description = "Valores ficticios de CI y de las pruebas (no son secretos reales)"
 regexTarget = "secret"
 regexes = [
   '''clave-ficticia-de-integracion-continua-32chars''',
   '''otra-clave-ficticia-de-integracion-32chars''',
+  '''secreto-de-prueba-de-integracion-jwt-32chars''',
+  '''secreto-de-prueba-de-integracion-qr-32chars''',
+  '''secreto-ficticio-solo-para-pruebas-e2e-32chars''',
+  '''otro-secreto-ficticio-solo-para-e2e-32chars''',
 ]
