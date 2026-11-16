@@ -82,8 +82,8 @@ HabitaSmart funciona en tres formatos, sobre un mismo backend y los mismos datos
 **Backend:** Node.js · Express · TypeScript · Prisma ORM
 **Base de datos:** PostgreSQL
 **Escritorio:** Electron + electron-builder
-**Calidad:** Vitest (batería de pruebas automatizadas) · ESLint
-**Infraestructura:** Render (servicio web) · Supabase (base de datos) · GitHub Actions (tareas programadas)
+**Calidad:** Vitest · Testing Library · supertest · Playwright + axe (accesibilidad) · ESLint · CodeQL · Dependabot · gitleaks
+**Infraestructura:** Render (servicio web) · Supabase (base de datos) · GitHub Actions (CI y tareas programadas)
 
 ---
 
@@ -94,20 +94,21 @@ Proyecto de Titulo/
 ├── frontend/     Aplicación web (React + Vite)
 ├── backend/      API REST (Express + Prisma)
 ├── desktop/      Aplicación de escritorio (Electron)
-├── docs/         Documentación y recursos
+├── e2e/          Pruebas de punta a punta (Playwright)
+├── docs/         Documentación técnica, de operación y de defensa
 └── README.md
 ```
 
 ## Puesta en marcha (desarrollo)
 
-Requisitos: Node.js 18+ y una base de datos PostgreSQL.
+Requisitos: Node.js 20.19+ (recomendado 22) y PostgreSQL.
 
 ```bash
 # Instalar dependencias (workspaces de frontend y backend)
 npm install
 
 # Configurar variables de entorno
-# backend/.env  -> DATABASE_URL, JWT_SECRET, claves VAPID, etc.
+# backend/.env  -> ver backend/.env.example y docs/ARQUITECTURA.md (§4)
 
 # Preparar la base de datos
 npm run prisma:migrate
@@ -120,9 +121,37 @@ npm run dev:frontend
 
 La app de escritorio se prueba y empaqueta desde [`desktop/`](desktop/) (ver su propio README).
 
+## Pruebas
+
+Cuatro capas, todas en el CI de cada Pull Request:
+
+```bash
+npm run lint                # ESLint (0 errores y 0 warnings)
+npm run test:backend        # unitarias del backend
+npm run test:frontend       # componentes y lógica del frontend
+npm run test:integracion    # API real + PostgreSQL (necesita DATABASE_URL_TEST, base terminada en _test)
+npm run build && npm run test:e2e   # navegador: flujos de los 3 roles y accesibilidad WCAG
+```
+
+Las pruebas de integración y E2E se niegan a correr contra una base cuyo nombre no termine en
+`_test`, y el SOS siempre corre en modo demostración.
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Componentes, matriz de roles, variables de entorno, modelo de amenazas, limitaciones |
+| [`docs/SEGURIDAD.md`](docs/SEGURIDAD.md) | Sesiones, CSRF, límites, dependencias |
+| [`docs/OPERACION.md`](docs/OPERACION.md) | Despliegue, migraciones, rollback, respaldos, RPO/RTO, incidentes |
+| [`docs/PRIVACIDAD.md`](docs/PRIVACIDAD.md) | Datos personales, proveedores, retención y derechos |
+| [`docs/DEMOSTRACION.md`](docs/DEMOSTRACION.md) | Modo demo del SOS, guion y checklists de la defensa |
+| [`docs/PUESTA_EN_MARCHA.md`](docs/PUESTA_EN_MARCHA.md) | Preparar un condominio real |
+| [`docs/FASE_2.md`](docs/FASE_2.md) | Resultados de la Fase 2 y plan de piloto |
+| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura |
+
 ## Despliegue
 
-La plataforma se despliega de forma continua: cada cambio integrado a `main` publica automáticamente la nueva versión (incluidas las migraciones de base de datos). La web se mantiene siempre actualizada y las apps de escritorio y de teléfono, al cargar el servicio en vivo, reflejan esos cambios sin necesidad de reinstalarse.
+La plataforma se despliega de forma continua: cada cambio integrado a `main` (siempre mediante Pull Request con el CI en verde) publica automáticamente la nueva versión (incluidas las migraciones de base de datos). Rollback y verificación posterior: [`docs/OPERACION.md`](docs/OPERACION.md). La web se mantiene siempre actualizada y las apps de escritorio y de teléfono, al cargar el servicio en vivo, reflejan esos cambios sin necesidad de reinstalarse.
 
 ---
 

@@ -90,5 +90,94 @@ del dato, y las actualizaciones usan `updateMany` con condición o verifican per
 | 2K | CI, Dependabot, CodeQL |
 | 2L | Documentación técnica y de defensa |
 
-Los resultados finales (antes/después), las decisiones y los riesgos residuales se completan al
-cierre de la fase, más abajo.
+Los resultados, decisiones y riesgos residuales están a continuación.
+
+
+## 5. Resultados (antes → después)
+
+Medido en local sobre la rama al cierre de la fase (los resultados del CI remoto están en el PR).
+
+| Verificación | Antes (`cb72487`) | Después |
+|---|---|---|
+| Lint (frontend) | 0 errores, 13 warnings | **0 errores, 0 warnings** (sin desactivar reglas) |
+| Pruebas unitarias backend | 230 | **274** |
+| Pruebas de integración HTTP (PostgreSQL real) | no existían | **148** |
+| Pruebas de frontend | no existían | **42** |
+| Pruebas E2E (Playwright, incluye accesibilidad) | no existían | **17** |
+| **Total** | **230** | **481** |
+| Build frontend / backend | correcto | correcto |
+| `prisma validate` | correcto | correcto (18 migraciones) |
+| `npm audit` (todo) | 14 (12 moderadas, 2 altas) | **0 vulnerabilidades** |
+| `npm audit --omit=dev` | 7 (6 moderadas, 1 alta: `zod`) | **0 vulnerabilidades** |
+| Accesibilidad | sin pruebas | axe WCAG 2.2 AA en 30 pantallas + login: 0 violaciones graves; sin desborde en 6 tamaños |
+| Bundle: chunk principal | 534 kB (163 kB gzip) | **138 kB (43 kB gzip)** + `react` 181 kB, `animaciones` 129 kB, `iconos` 250 kB cacheables 1 año |
+| Bundle: `dist` | 1,6 MB, 67 archivos | 1,6 MB, 58 archivos |
+
+## 6. Qué se hizo por bloque
+
+| Bloque | Commit | Resultado |
+|---|---|---|
+| 2A SOS | `4e15bf3` | Idempotencia de 60 s en el servidor, marca `[DEMO]`, candado de doble clic y progreso, banner global, configuración pública con reintentos, pruebas de los 3 modos |
+| 2B Sesiones | `d4b9fd4` | Cookie `HttpOnly` + tabla `sesiones` (hash), revocación en 7 situaciones, CSRF de dos capas, límite de login por IP+correo, sin tokens en el navegador |
+| 2C Autorización | `eb42736` | Matriz automatizada de 84 rutas × 3 roles + sin sesión, aislamiento entre condominios; no se encontró ningún IDOR |
+| 2D Dependencias | `c6a80c0` | Zod 4, React Router 7, Vite 7, Vitest 5.1, sin `uuid`; auditoría 0/0 |
+| 2E Archivos y validación | `4d33c27` | Descargas con sesión (sin token en URL), `/uploads` no público, cabeceras seguras, límites de texto, contraseñas 8–128 |
+| 2G Confiabilidad | `36921e9` | Logs JSON redactados, `X-Request-Id`, `/ready`, 503 reintentable, cierre ordenado, índices, topes, caché, bundle |
+| 2F Pruebas | `eb42736`, `1610f4c`, `6e97b9b` | Cuatro capas; Fast Refresh sin warnings; guardia del seed |
+| 2H Accesibilidad | `6a76b25`, campana | axe + desborde en 6 tamaños; corrección WCAG 2.5.3 en incidencias |
+| 2J Demostración | `bbad780` | Seed con SOS y notificaciones, guion, checklists, plan de emergencia, preguntas |
+| 2K CI | `0fa1ab7` | Job de integración + E2E con PostgreSQL, CodeQL, Dependabot, gate de auditoría en «altas» |
+| 2I/2L Documentación | (último commit) | Arquitectura, operación, privacidad, 6 ADR, README |
+
+## 7. Decisiones
+
+Ver los ADR en [`docs/adr/`](adr/): sesiones en cookie (0001), CSRF (0002), archivos (0003), modo
+demo del SOS (0004), logs (0005) y estrategia de pruebas (0006).
+
+## 8. Migraciones de esta fase
+
+| Migración | Cambio | Compatibilidad | Rollback |
+|---|---|---|---|
+| `20261116000000_add_sesiones` | `CREATE TABLE sesiones` (+ índice único del hash, índice por usuario, FK con borrado en cascada) | Aditiva: el código anterior la ignora | `DROP TABLE sesiones` (todos vuelven a iniciar sesión) |
+| `20261116010000_indices_listados` | 7 `CREATE INDEX` | Aditiva | `DROP INDEX` de cada uno (`OPERACION.md` §2) |
+
+Ninguna borra ni modifica datos ni agrega restricciones que datos existentes puedan violar. Se
+aplicaron solo en las bases locales de desarrollo y de prueba; **no en producción** (las aplicará
+`prisma migrate deploy` al desplegar el merge).
+
+## 9. Riesgos residuales
+
+| Riesgo | Nivel | Mitigación / dueño |
+|---|---|---|
+| Cuentas demo con contraseña pública activas en producción | Medio (bajo durante la defensa) | 👤 `npm run deshabilitar-demo` antes del piloto |
+| SOS en modo real en producción | Alto **solo si** alguien lo prueba | 👤 `SOS_MODO_DEMO=true` antes de la defensa; checklist |
+| Respaldo automático no verificado | Medio | 👤 verificar plan de Supabase; respaldo manual semanal |
+| Plan gratuito (servidor dormido) | Medio para piloto | 👤 plan pagado para el piloto |
+| Idempotencia del SOS por ventana (no única) | Bajo | Límite por usuario; documentado |
+| Archivos en la base | Bajo para un condominio | ADR 0003 |
+| Retención de datos no automatizada (salvo sesiones) | Medio para piloto | Tarea antes del piloto |
+| Textos legales no revisados por profesional | Medio para piloto | 👤 revisión de `PRIVACIDAD.md` [R] |
+
+## 10. Plan de piloto real
+
+1. **Antes:** merge de esta fase; plan pagado de Render; verificar respaldos de Supabase y hacer un
+   respaldo manual; `SOS_MODO_DEMO` sin definir; `npm run vaciar-demo -- --confirmar` y
+   `npm run deshabilitar-demo`; `npm run crear-condominio`; revisión legal del aviso de privacidad;
+   monitor externo de `/ready`; protección de `main`.
+2. **Carga inicial:** torres, unidades, espacios, cuentas (contraseña temporal obligatoria de cambiar).
+3. **Capacitación:** 30 min por rol (administración, conserjería) y una guía breve para residentes.
+4. **Operación (4 a 8 semanas):** revisar logs y `Auditoría` semanalmente; respaldo semanal;
+   formulario de comentarios; métricas: accesos validados, encomiendas, reservas, incidencias
+   resueltas, tiempo de atención de SOS.
+5. **Cierre:** encuesta de satisfacción, lista de mejoras priorizadas, decisión de continuidad.
+
+## 11. Pendientes reales
+
+- **Bloqueantes de defensa (acción humana):** merge del PR; `SOS_MODO_DEMO=true` y
+  `MOSTRAR_CUENTAS_DEMO=true` en Render; verificar `/api/config`; ensayo y video de respaldo.
+- **Bloqueantes de piloto:** los del punto 10.1; automatizar la retención; definir el
+  procedimiento de solicitudes de datos personales.
+- **Mejoras futuras:** almacenamiento de objetos (ADR 0003); paginación con cursor; exportación de
+  datos por persona; métricas y alertas; app Android apuntando a la URL pública; Prisma 7, Express 5,
+  React 19 y Tailwind 4 en tareas propias.
+- **Limitaciones aceptadas:** ver `ARQUITECTURA.md` §6.

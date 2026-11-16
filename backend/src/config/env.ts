@@ -49,8 +49,9 @@ export const env = {
   port,
   nodeEnv: process.env.NODE_ENV ?? "development",
   databaseUrl: required("DATABASE_URL"),
-  // Firma los enlaces de descarga de corta vida (ver lib/archivos.ts). Las sesiones ya no usan JWT:
-  // son tokens aleatorios guardados (como hash) en la base (ver lib/sesiones.ts).
+  // Reservada: desde la Fase 2 no firma nada (las sesiones son tokens aleatorios guardados como hash
+  // en la base, y las descargas usan la sesion). Se mantiene obligatoria y fuerte para no romper
+  // despliegues existentes y para cualquier firma futura.
   jwtSecret: requiredSecret("JWT_SECRET"),
   // Duracion de las sesiones. Personal (administracion y conserjeria): corta, suelen usar equipos
   // compartidos. Residentes: larga, para no pedirles la contraseña todos los dias. Es seguro porque

@@ -130,7 +130,7 @@ Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:mi
 | Variable | Qué hace |
 |----------|----------|
 | `DATABASE_URL` | Conexión a la base (viene de `habitasmart-db` o de Neon) |
-| `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves de firma de enlaces de descarga y de códigos QR (Render las genera). Las sesiones no usan JWT: son tokens aleatorios guardados como hash en la tabla `sesiones` y viajan en una cookie `HttpOnly` |
+| `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves reservadas y de códigos QR antiguos (Render las genera; deben medir ≥ 32 caracteres). Las sesiones no usan JWT: son tokens aleatorios guardados como hash en la tabla `sesiones` y viajan en una cookie `HttpOnly` |
 | `APP_URL` | Dirección pública de la aplicación (se usa en los códigos QR y como origen permitido) |
 | `CORS_ORIGIN` | Orígenes adicionales permitidos (separados por comas). En producción puede quedar sin definir: la app se sirve desde el mismo origen |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Notificaciones del sistema (incluida la alerta SOS) |
