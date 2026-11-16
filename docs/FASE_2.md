@@ -95,16 +95,16 @@ Los resultados, decisiones y riesgos residuales están a continuación.
 
 ## 5. Resultados (antes → después)
 
-Medido en local sobre la rama al cierre de la fase (los resultados del CI remoto están en el PR).
+Medido en local sobre la rama al cierre de la fase. CI remoto del PR #5: los 5 checks en verde (verificación, integración + E2E, gitleaks, análisis CodeQL y resultado de CodeQL sin alertas).
 
 | Verificación | Antes (`cb72487`) | Después |
 |---|---|---|
 | Lint (frontend) | 0 errores, 13 warnings | **0 errores, 0 warnings** (sin desactivar reglas) |
-| Pruebas unitarias backend | 230 | **274** |
+| Pruebas unitarias backend | 230 | **276** |
 | Pruebas de integración HTTP (PostgreSQL real) | no existían | **148** |
 | Pruebas de frontend | no existían | **42** |
 | Pruebas E2E (Playwright, incluye accesibilidad) | no existían | **17** |
-| **Total** | **230** | **481** |
+| **Total** | **230** | **483** |
 | Build frontend / backend | correcto | correcto |
 | `prisma validate` | correcto | correcto (18 migraciones) |
 | `npm audit` (todo) | 14 (12 moderadas, 2 altas) | **0 vulnerabilidades** |
@@ -128,6 +128,7 @@ Medido en local sobre la rama al cierre de la fase (los resultados del CI remoto
 | 2J Demostración | `bbad780` | Seed con SOS y notificaciones, guion, checklists, plan de emergencia, preguntas |
 | 2K CI | `0fa1ab7` | Job de integración + E2E con PostgreSQL, CodeQL, Dependabot, gate de auditoría en «altas» |
 | 2I/2L Documentación | (último commit) | Arquitectura, operación, privacidad, 6 ADR, README |
+| Revisión del CI | `f898452`, `bff1f6a`, `82f4986` | Gitleaks: contraseña ficticia de prueba en la excepción por valor exacto. CodeQL: CSRF aplicado a todas las rutas, la sesión nueva se crea fuera de `cambiarPassword`, y el middleware CSRF legible para el análisis. Sin desactivar reglas |
 
 ## 7. Decisiones
 
