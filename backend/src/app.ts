@@ -51,9 +51,10 @@ app.use(cookieParser());
 // /uploads ya NO se sirve como carpeta publica: los documentos antiguos guardados en disco se leen
 // con la sesion verificada (ver lib/archivos.ts, leerArchivoHeredado).
 
-// Proteccion CSRF para toda la API (ver middleware/csrf.ts): origen permitido y token ligado a la
-// sesion en los metodos que modifican datos.
-app.use("/api", protegerCsrf);
+// Proteccion CSRF para TODAS las rutas (ver middleware/csrf.ts): origen permitido y token ligado a la
+// sesion en los metodos que modifican datos. Los GET (incluidos /health, /ready y los archivos del
+// frontend) pasan sin cambios; registrarla globalmente cubre tambien cualquier ruta futura.
+app.use(protegerCsrf);
 
 // /health: el proceso esta vivo (Render lo usa para saber si reiniciar). No toca la base.
 app.get("/health", (_req, res) => res.json({ status: "ok" }));

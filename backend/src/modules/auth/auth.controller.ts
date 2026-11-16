@@ -5,6 +5,7 @@ import { AppError, NotFoundError } from "../../lib/errors";
 import { fotoComoDataUri } from "../../lib/imagenes";
 import {
   borrarCookiesDeSesion,
+  crearSesion,
   escribirCookiesDeSesion,
   listarSesionesVigentes,
   revocarSesion,
@@ -69,8 +70,9 @@ export async function actualizarFotoController(req: Request, res: Response) {
 
 export async function cambiarPasswordController(req: Request, res: Response) {
   const { actual, nueva } = cambiarPasswordSchema.parse(req.body);
-  const { usuario, sesion } = await cambiarPassword(req.auth!.sub, actual, nueva, req.get("user-agent"));
-  // La sesion anterior quedo revocada: se entregan las cookies de la nueva.
+  const usuario = await cambiarPassword(req.auth!.sub, actual, nueva);
+  // Todas las sesiones anteriores quedaron revocadas: se abre una nueva para quien hizo el cambio.
+  const sesion = await crearSesion({ id: usuario.id, rol: usuario.rol }, req.get("user-agent"));
   escribirCookiesDeSesion(res, sesion);
   res.json({ usuario });
 }

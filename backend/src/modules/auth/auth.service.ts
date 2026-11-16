@@ -74,15 +74,10 @@ export async function actualizarFoto(usuarioId: string, fotoUrl: string) {
   return prisma.usuario.update({ where: { id: usuarioId }, data: { fotoUrl }, select: PERFIL_SELECT });
 }
 
-// Cambio de contraseña por la propia persona. Cierra TODAS sus sesiones (incluida la actual, que se
-// reemplaza por una nueva): si alguien tenia una sesion robada o abierta en un equipo ajeno, queda
-// fuera. El controlador escribe las cookies de la sesion nueva.
-export async function cambiarPassword(
-  usuarioId: string,
-  actual: string,
-  nueva: string,
-  agente?: string
-): Promise<{ usuario: Perfil; sesion: SesionEmitida }> {
+// Cambio de contraseña por la propia persona. Cierra TODAS sus sesiones (incluida la actual): si
+// alguien tenia una sesion robada o abierta en un equipo ajeno, queda fuera. La sesion nueva la crea
+// el controlador despues (asi el token de sesion nunca sale de una funcion que maneja contraseñas).
+export async function cambiarPassword(usuarioId: string, actual: string, nueva: string): Promise<Perfil> {
   const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
 
   const valido = await bcrypt.compare(actual, usuario.passwordHash);
@@ -103,6 +98,5 @@ export async function cambiarPassword(
     select: PERFIL_SELECT,
   });
   await revocarSesionesDeUsuario(usuarioId);
-  const sesion = await crearSesion({ id: usuario.id, rol: usuario.rol }, agente);
-  return { usuario: usuarioActualizado, sesion };
+  return usuarioActualizado;
 }

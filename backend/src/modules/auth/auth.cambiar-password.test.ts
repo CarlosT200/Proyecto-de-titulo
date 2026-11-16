@@ -10,7 +10,6 @@ vi.mock("../../lib/prisma", () => ({
 
 import { prisma } from "../../lib/prisma";
 import { cambiarPassword } from "./auth.service";
-import { hashDeToken } from "../../lib/sesiones";
 import { ConflictError, UnauthorizedError } from "../../lib/errors";
 
 const findUniqueOrThrow = prisma.usuario.findUniqueOrThrow as unknown as Mock;
@@ -44,9 +43,9 @@ describe("cambiarPassword", () => {
     expect(await bcrypt.compare("mi-clave-personal", data.passwordHash)).toBe(true);
   });
 
-  it("anota la fecha del cambio, REVOCA todas las sesiones y entrega una sesión nueva", async () => {
+  it("anota la fecha del cambio, REVOCA todas las sesiones y no crea sesión (eso lo hace el controlador)", async () => {
     const antes = Date.now();
-    const resultado = await cambiarPassword("u-1", "temporal-123", "mi-clave-personal");
+    const usuario = await cambiarPassword("u-1", "temporal-123", "mi-clave-personal");
 
     const { data } = update.mock.calls[0][0];
     expect(data.passwordCambiadaEn).toBeInstanceOf(Date);
@@ -57,10 +56,9 @@ describe("cambiarPassword", () => {
       where: { usuarioId: "u-1", revocadaEn: null },
       data: { revocadaEn: expect.any(Date) },
     });
-    // y la sesion nueva se crea DESPUES de revocar, para la misma persona
-    expect(revocar.mock.invocationCallOrder[0]).toBeLessThan(crearSesionEnBd.mock.invocationCallOrder[0]);
-    expect(crearSesionEnBd.mock.calls[0][0].data).toMatchObject({ usuarioId: "u-1", tokenHash: hashDeToken(resultado.sesion.token) });
-    expect(resultado.usuario).toEqual({ id: "u-1", debeCambiarPassword: false });
+    // el token de la sesion nueva nunca sale de una funcion que maneja contraseñas
+    expect(crearSesionEnBd).not.toHaveBeenCalled();
+    expect(usuario).toEqual({ id: "u-1", debeCambiarPassword: false });
   });
 
   it("rechaza si la contraseña actual no es la correcta (y no toca sesiones)", async () => {
