@@ -217,12 +217,37 @@ model Usuario {
   pagosGastoComunAnulados    PagoGastoComun[]      @relation("PagoGastoComunAnuladoPor")
   comprobantesInformados     ComprobantePago[]     @relation("ComprobanteInformadoPor")
   comprobantesRevisados      ComprobantePago[]     @relation("ComprobanteRevisadoPor")
+  sesiones                   Sesion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([condominioId, rol])
   @@map("usuarios")
+}
+
+// Sesiones del lado del servidor (Fase 2). El navegador recibe un token aleatorio en una cookie
+// HttpOnly; aqui se guarda SOLO su hash SHA-256 (si alguien lee la tabla no puede usar las
+// sesiones). Cerrar sesion, cambiar la contraseña o deshabilitar la cuenta marcan "revocadaEn":
+// la sesion deja de valer en el siguiente pedido.
+model Sesion {
+  id          String    @id @default(uuid())
+  usuarioId   String
+  tokenHash   String    @unique
+  // Token anti-CSRF ligado a esta sesion. No es secreto (el navegador lo lee de una cookie normal y
+  // lo repite en una cabecera); lo que importa es que un sitio ajeno no puede leerlo.
+  csrfToken   String
+  // User-Agent recortado, solo para que la persona reconozca sus sesiones ("Chrome en Windows").
+  agente      String?
+  creadaEn    DateTime  @default(now())
+  ultimoUsoEn DateTime  @default(now())
+  expiraEn    DateTime
+  revocadaEn  DateTime?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, expiraEn])
+  @@map("sesiones")
 }
 
 // ------------------------------

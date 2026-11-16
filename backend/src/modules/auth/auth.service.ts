@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
-import { signAuthToken } from "../../lib/jwt";
+import { crearSesion, revocarSesionesDeUsuario, type SesionEmitida } from "../../lib/sesiones";
 import { UnauthorizedError, ForbiddenError, ConflictError } from "../../lib/errors";
 
 const PERFIL_SELECT = {
@@ -24,8 +24,14 @@ export function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
 }
 
-export async function login(email: string, password: string) {
-  const usuario = await prisma.usuario.findUnique({ where: { email: email.toLowerCase().trim() } });
+export function normalizarEmail(email: string): string {
+  return email.toLowerCase().trim();
+}
+
+// Devuelve el perfil y la sesion recien creada (token para la cookie HttpOnly + token CSRF). El
+// controlador escribe las cookies; el token NUNCA se incluye en el JSON de respuesta.
+export async function login(email: string, password: string, agente?: string): Promise<{ usuario: Perfil; sesion: SesionEmitida }> {
+  const usuario = await prisma.usuario.findUnique({ where: { email: normalizarEmail(email) } });
 
   // HU-01: si las credenciales son incorrectas, se informa con un mensaje generico
   // (no se revela si el correo existe o no).
@@ -42,13 +48,15 @@ export async function login(email: string, password: string) {
     throw new ForbiddenError("Tu cuenta se encuentra deshabilitada. Contacta a la administración.");
   }
 
-  const token = signAuthToken({ sub: usuario.id, rol: usuario.rol, condominioId: usuario.condominioId });
+  const sesion = await crearSesion({ id: usuario.id, rol: usuario.rol }, agente);
 
   // Mismo perfil que /auth/me: antes se devolvia una version recortada (sin
   // condominio, departamento/torre ni telefono) y esos datos faltaban en la
   // credencial, el inicio y Perfil justo despues de entrar, hasta recargar.
-  return { token, usuario: await getPerfil(usuario.id) };
+  return { usuario: await getPerfil(usuario.id), sesion };
 }
+
+export type Perfil = Awaited<ReturnType<typeof getPerfil>>;
 
 export async function getPerfil(usuarioId: string) {
   return prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId }, select: PERFIL_SELECT });
@@ -66,7 +74,15 @@ export async function actualizarFoto(usuarioId: string, fotoUrl: string) {
   return prisma.usuario.update({ where: { id: usuarioId }, data: { fotoUrl }, select: PERFIL_SELECT });
 }
 
-export async function cambiarPassword(usuarioId: string, actual: string, nueva: string) {
+// Cambio de contraseña por la propia persona. Cierra TODAS sus sesiones (incluida la actual, que se
+// reemplaza por una nueva): si alguien tenia una sesion robada o abierta en un equipo ajeno, queda
+// fuera. El controlador escribe las cookies de la sesion nueva.
+export async function cambiarPassword(
+  usuarioId: string,
+  actual: string,
+  nueva: string,
+  agente?: string
+): Promise<{ usuario: Perfil; sesion: SesionEmitida }> {
   const usuario = await prisma.usuario.findUniqueOrThrow({ where: { id: usuarioId } });
 
   const valido = await bcrypt.compare(actual, usuario.passwordHash);
@@ -79,13 +95,14 @@ export async function cambiarPassword(usuarioId: string, actual: string, nueva: 
   }
 
   const passwordHash = await hashPassword(nueva);
-  // Al elegir una contraseña propia deja de ser obligatorio cambiarla. Se anotan la fecha del cambio
-  // (cierra las demas sesiones) y se entrega una sesion nueva para quien acaba de cambiarla.
+  // Al elegir una contraseña propia deja de ser obligatorio cambiarla. Se anota la fecha del cambio
+  // (defensa adicional en requireAuth) y se revocan las sesiones existentes.
   const usuarioActualizado = await prisma.usuario.update({
     where: { id: usuarioId },
     data: { passwordHash, debeCambiarPassword: false, passwordCambiadaEn: new Date() },
     select: PERFIL_SELECT,
   });
-  const token = signAuthToken({ sub: usuario.id, rol: usuario.rol, condominioId: usuario.condominioId });
-  return { token, usuario: usuarioActualizado };
+  await revocarSesionesDeUsuario(usuarioId);
+  const sesion = await crearSesion({ id: usuario.id, rol: usuario.rol }, agente);
+  return { usuario: usuarioActualizado, sesion };
 }

@@ -1,4 +1,4 @@
-import { getToken } from "../api/client";
+import { CABECERA_CSRF, tokenCsrf } from "../api/client";
 import type { TipoEmergenciaSos } from "../types";
 
 // Numeros de emergencia de Chile. Operacion real: el telefono del residente llama de verdad a este
@@ -45,12 +45,14 @@ export const BLOQUEO_TRAS_LLAMADA_MS = 4000;
 // Por eso nunca se afirma que el aviso "llego" sin confirmacion del servidor. Lanza si el servidor no
 // responde 2xx, para poder distinguir exito de error cuando si se espera la respuesta (modo demo).
 export async function enviarAlertaSos(tipo: TipoEmergenciaSos): Promise<void> {
-  const token = getToken();
+  // La sesion va en la cookie HttpOnly (misma origen); el token anti-CSRF, en la cabecera.
+  const csrf = tokenCsrf();
   const res = await fetch("/api/sos", {
     method: "POST",
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(csrf ? { [CABECERA_CSRF]: csrf } : {}),
     },
     body: JSON.stringify({ tipo }),
     keepalive: true,

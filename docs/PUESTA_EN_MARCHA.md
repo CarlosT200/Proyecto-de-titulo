@@ -130,11 +130,12 @@ Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:mi
 | Variable | Qué hace |
 |----------|----------|
 | `DATABASE_URL` | Conexión a la base (viene de `habitasmart-db` o de Neon) |
-| `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves de sesión y de códigos QR (Render las genera) |
-| `APP_URL` | Dirección pública de la aplicación (se usa en los códigos QR) |
+| `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves de firma de enlaces de descarga y de códigos QR (Render las genera). Las sesiones no usan JWT: son tokens aleatorios guardados como hash en la tabla `sesiones` y viajan en una cookie `HttpOnly` |
+| `APP_URL` | Dirección pública de la aplicación (se usa en los códigos QR y como origen permitido) |
+| `CORS_ORIGIN` | Orígenes adicionales permitidos (separados por comas). En producción puede quedar sin definir: la app se sirve desde el mismo origen |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Notificaciones del sistema (incluida la alerta SOS) |
-| `JWT_EXPIRES_IN` | Duración de la sesión del **personal** (administración y conserjería). Por defecto `8h` |
-| `JWT_EXPIRES_IN_RESIDENTE` | Duración de la sesión de los **residentes**. Por defecto `30d`: no tienen que volver a entrar cada día. Cambiar o restablecer la contraseña cierra todas las sesiones anteriores |
+| `SESION_PERSONAL_HORAS` | Duración de la sesión del **personal** (administración y conserjería). Por defecto `8` |
+| `SESION_RESIDENTE_DIAS` | Duración de la sesión de los **residentes**. Por defecto `30`: no tienen que volver a entrar cada día. Cambiar o restablecer la contraseña, deshabilitar la cuenta o «Cerrar todas» en Mi perfil cierran las sesiones abiertas |
 | `MOSTRAR_CUENTAS_DEMO` | `true` muestra en el login los botones de cuentas de demostración. **Por defecto están ocultos en producción.** Activar solo para una demostración o la defensa, y volver a quitar después |
 
 ## 6. Rutina de respaldos

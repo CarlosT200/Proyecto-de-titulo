@@ -1,10 +1,12 @@
 import "./lib/zodEspanol";
 import path from "path";
 import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env";
+import { protegerCsrf } from "./middleware/csrf";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { UPLOADS_DIR } from "./middleware/upload";
 
@@ -36,10 +38,16 @@ if (env.isProd) app.set("trust proxy", 1);
 
 // RNF-03/RNF-05: cabeceras de seguridad y validacion de entradas en el backend.
 app.use(helmet());
-app.use(cors({ origin: env.corsOrigin, credentials: true }));
+// Solo los origenes configurados (nunca "*": las peticiones llevan la cookie de sesion).
+app.use(cors({ origin: env.corsOrigins, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
+app.use(cookieParser());
 app.use(morgan(env.isProd ? "combined" : "dev"));
 app.use("/uploads", express.static(UPLOADS_DIR));
+
+// Proteccion CSRF para toda la API (ver middleware/csrf.ts): origen permitido y token ligado a la
+// sesion en los metodos que modifican datos.
+app.use("/api", protegerCsrf);
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 

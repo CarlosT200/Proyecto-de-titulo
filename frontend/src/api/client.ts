@@ -1,27 +1,64 @@
 import axios from "axios";
 
+// La sesion viaja en una cookie HttpOnly que escribe el servidor al iniciar sesion: este codigo
+// nunca ve el token. Lo unico que lee es la cookie (legible a proposito) con el token anti-CSRF,
+// que repite en una cabecera en cada pedido que modifica datos (ver backend/src/middleware/csrf.ts).
+export const COOKIE_CSRF = "habitasmart_csrf";
+export const CABECERA_CSRF = "X-CSRF-Token";
+
+// Nombre con el que versiones anteriores guardaban el JWT en localStorage. Ya no se usa; se borra al
+// arrancar para no dejar un token viejo al alcance de cualquier script.
+const TOKEN_ANTIGUO = "habitasmart_token";
+
 export const api = axios.create({
   baseURL: "/api",
+  // La API vive en el mismo origen; "withCredentials" solo importa en desarrollo si el frontend se
+  // sirviera desde otro puerto sin el proxy de Vite. Es explicito para que nunca se olvide.
+  withCredentials: true,
 });
 
-const TOKEN_KEY = "habitasmart_token";
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+export function leerCookie(nombre: string): string | null {
+  if (typeof document === "undefined") return null;
+  for (const parte of document.cookie.split(";")) {
+    const [clave, ...resto] = parte.trim().split("=");
+    if (clave === nombre) return decodeURIComponent(resto.join("="));
+  }
+  return null;
 }
 
-export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+export function tokenCsrf(): string | null {
+  return leerCookie(COOKIE_CSRF);
 }
 
-export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
+// La cookie de sesion no se puede leer (HttpOnly), pero la de CSRF se escribe y se borra junto con
+// ella: si existe, hay una sesion que vale la pena comprobar con /auth/me.
+export function haySesionLocal(): boolean {
+  return tokenCsrf() !== null;
 }
+
+// Borra la copia local de la cookie CSRF (el servidor ya la invalido o la borro). Sin esto, tras un
+// 401 la app seguiria creyendo que hay sesion hasta recargar.
+export function olvidarSesionLocal(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${COOKIE_CSRF}=; Max-Age=0; path=/`;
+}
+
+export function limpiarTokenAntiguo(): void {
+  try {
+    localStorage.removeItem(TOKEN_ANTIGUO);
+    sessionStorage.removeItem(TOKEN_ANTIGUO);
+  } catch {
+    // almacenamiento no disponible (modo privado estricto): no hay nada que limpiar
+  }
+}
+
+const METODOS_SEGUROS = new Set(["get", "head", "options"]);
 
 api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const metodo = (config.method ?? "get").toLowerCase();
+  if (!METODOS_SEGUROS.has(metodo)) {
+    const csrf = tokenCsrf();
+    if (csrf) config.headers[CABECERA_CSRF] = csrf;
   }
   return config;
 });
@@ -30,8 +67,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      clearToken();
-      if (!window.location.pathname.startsWith("/login")) {
+      olvidarSesionLocal();
+      const ruta = window.location.pathname;
+      // Paginas publicas (login, QR abierto desde la camara, aviso de privacidad): no se redirige,
+      // cada una decide que mostrar sin sesion.
+      if (!ruta.startsWith("/login") && !ruta.startsWith("/acceso/") && !ruta.startsWith("/privacidad")) {
         window.location.href = "/login";
       }
     }

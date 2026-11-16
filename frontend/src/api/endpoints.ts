@@ -24,6 +24,7 @@ import type {
   Notificacion,
   Reserva,
   Rol,
+  SesionActiva,
   TipoEmergenciaSos,
   Torre,
   Usuario,
@@ -32,9 +33,15 @@ import type {
 import type { DetalleAccesoData } from "../components/DetalleAcceso";
 
 // --- Auth ---
+// La sesion queda en una cookie HttpOnly que escribe el servidor: las respuestas solo traen el perfil.
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post<{ token: string; usuario: Usuario }>("/auth/login", { email, password }).then((r) => r.data),
+    api.post<{ usuario: Usuario }>("/auth/login", { email, password }).then((r) => r.data),
+  logout: () => api.post("/auth/logout").then(() => undefined),
+  // cierra todas las sesiones de la persona, incluida la actual
+  logoutTodas: () => api.post<{ cerradas: number }>("/auth/logout-todas").then((r) => r.data),
+  sesiones: () => api.get<SesionActiva[]>("/auth/sesiones").then((r) => r.data),
+  cerrarSesion: (id: string) => api.delete(`/auth/sesiones/${id}`).then(() => undefined),
   me: () => api.get<Usuario>("/auth/me").then((r) => r.data),
   actualizarPerfil: (data: { nombre?: string; apellido?: string; telefono?: string | null }) =>
     api.patch<Usuario>("/auth/me", data).then((r) => r.data),
@@ -43,9 +50,9 @@ export const authApi = {
     formData.append("foto", foto);
     return api.patch<Usuario>("/auth/me/foto", formData, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
   },
-  // devuelve una sesion nueva: al cambiar la contraseña se cierran las sesiones anteriores
+  // al cambiar la contraseña se cierran las sesiones anteriores; el servidor deja la cookie de la nueva
   cambiarPassword: (actual: string, nueva: string) =>
-    api.patch<{ token: string; usuario: Usuario }>("/auth/me/password", { actual, nueva }).then((r) => r.data),
+    api.patch<{ usuario: Usuario }>("/auth/me/password", { actual, nueva }).then((r) => r.data),
 };
 
 // --- Usuarios (HU-02) ---

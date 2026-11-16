@@ -20,6 +20,12 @@ async function main() {
     where: { email: { in: CORREOS_DEMO } },
     data: { activo: false },
   });
+  // Tambien se cierran sus sesiones abiertas (el acceso ya se corta por "activo", esto deja la tabla
+  // de sesiones coherente).
+  await prisma.sesion.updateMany({
+    where: { usuario: { email: { in: CORREOS_DEMO } }, revocadaEn: null },
+    data: { revocadaEn: new Date() },
+  });
   console.log(count === 0 ? "No hay cuentas de demostración en esta base de datos." : `Cuentas de demostración deshabilitadas: ${count}.`);
 }
 

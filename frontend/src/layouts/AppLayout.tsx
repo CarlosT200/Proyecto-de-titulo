@@ -126,10 +126,10 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
     // La suscripcion push queda ligada al navegador, no a la sesion: sin esto,
     // en un equipo compartido (ej. el computador de conserjeria) la siguiente
     // persona seguiria recibiendo las notificaciones de la cuenta anterior.
-    // Tiene que ir antes de logout(): borrarla en el backend necesita el token.
+    // Tiene que ir antes de logout(): borrarla en el backend necesita la sesion.
     // Con tope de tiempo para que una red lenta nunca bloquee el cierre de sesion.
     await Promise.race([desactivarPush().catch(() => {}), new Promise((r) => setTimeout(r, 2000))]);
-    logout();
+    await logout();
     navigate("/login");
   }
 

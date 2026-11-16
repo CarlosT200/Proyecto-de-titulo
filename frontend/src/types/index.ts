@@ -16,6 +16,16 @@ export interface Usuario {
   condominio?: { id: string; nombre: string } | null;
 }
 
+// Sesion vigente de la propia persona (Mi perfil). Nunca incluye el token.
+export interface SesionActiva {
+  id: string;
+  agente: string | null;
+  creadaEn: string;
+  ultimoUsoEn: string;
+  expiraEn: string;
+  actual: boolean;
+}
+
 export interface Condominio {
   id: string;
   nombre: string;

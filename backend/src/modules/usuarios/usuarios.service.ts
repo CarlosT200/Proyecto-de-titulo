@@ -1,6 +1,7 @@
 import { Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { hashPassword } from "../auth/auth.service";
+import { revocarSesionesDeUsuario } from "../../lib/sesiones";
 import { ConflictError, NotFoundError } from "../../lib/errors";
 
 const SELECT_PUBLICO = {
@@ -109,21 +110,27 @@ export async function actualizarUsuario(
 ) {
   await obtenerUsuario(condominioId, usuarioId);
   await validarUnidad(condominioId, data.departamentoId);
-  return prisma.usuario.update({
+  const usuario = await prisma.usuario.update({
     where: { id: usuarioId },
     data,
     select: SELECT_PUBLICO,
   });
+  // Deshabilitar la cuenta cierra sus sesiones abiertas: queda fuera en el siguiente pedido.
+  if (data.activo === false) await revocarSesionesDeUsuario(usuarioId);
+  return usuario;
 }
 
 // Para quien olvido su contraseña: la administracion define una nueva temporal y la persona tiene
-// que cambiarla al entrar. No se puede ver ni recuperar la anterior (solo se guarda su hash).
+// que cambiarla al entrar. No se puede ver ni recuperar la anterior (solo se guarda su hash). Se
+// cierran todas las sesiones existentes de esa cuenta.
 export async function restablecerPassword(condominioId: string, usuarioId: string, password: string) {
   await obtenerUsuario(condominioId, usuarioId);
   const passwordHash = await hashPassword(password);
-  return prisma.usuario.update({
+  const usuario = await prisma.usuario.update({
     where: { id: usuarioId },
     data: { passwordHash, debeCambiarPassword: true, passwordCambiadaEn: new Date() },
     select: SELECT_PUBLICO,
   });
+  await revocarSesionesDeUsuario(usuarioId);
+  return usuario;
 }

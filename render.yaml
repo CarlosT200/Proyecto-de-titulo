@@ -15,10 +15,14 @@ services:
       # sobrescribe en cada despliegue, asi un push de codigo no lo revierte a la base antigua.
       - key: DATABASE_URL
         sync: false
+      # Firma los enlaces de descarga de corta vida (las sesiones ya no usan JWT).
       - key: JWT_SECRET
         generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 8h
+      # Duracion de las sesiones del personal (horas) y de los residentes (dias).
+      - key: SESION_PERSONAL_HORAS
+        value: "8"
+      - key: SESION_RESIDENTE_DIAS
+        value: "30"
       - key: QR_TOKEN_SECRET
         generateValue: true
       - key: CORS_ORIGIN

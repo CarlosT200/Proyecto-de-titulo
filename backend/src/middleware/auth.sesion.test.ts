@@ -1,72 +1,74 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
-import jwt from "jsonwebtoken";
 import { Rol } from "@prisma/client";
 import type { Request, Response } from "express";
 
 vi.mock("../lib/prisma", () => ({
-  prisma: { usuario: { findUnique: vi.fn() } },
+  prisma: { sesion: { findUnique: vi.fn(), updateMany: vi.fn().mockResolvedValue({ count: 1 }) } },
 }));
 
 import { prisma } from "../lib/prisma";
-import { env } from "../config/env";
-import { signAuthToken } from "../lib/jwt";
+import { COOKIE_SESION, duracionSesionMs } from "../lib/sesiones";
 import { requireAuth } from "./auth";
 import { UnauthorizedError } from "../lib/errors";
 
-const findUsuario = prisma.usuario.findUnique as unknown as Mock;
+const findSesion = prisma.sesion.findUnique as unknown as Mock;
 
-async function ejecutar(token: string) {
-  const req = { headers: { authorization: `Bearer ${token}` } } as unknown as Request;
+async function ejecutar() {
+  const req = { method: "GET", cookies: { [COOKIE_SESION]: "t" }, get: () => undefined } as unknown as Request;
+  const res = { clearCookie: vi.fn() } as unknown as Response;
   const next = vi.fn();
-  await requireAuth(req, {} as Response, next);
+  await requireAuth(req, res, next);
   return next;
 }
 
-// Un token (aunque dure 30 dias) deja de valer cuando la persona cambia su contraseña o la
-// administracion se la restablece: una sesion robada o abierta en un equipo ajeno queda fuera.
+// Una sesion (aunque dure 30 dias) deja de valer cuando la persona cambia su contraseña o la
+// administracion se la restablece. La revocacion explicita ya lo cubre; esta es la defensa
+// adicional por fecha, por si una sesion quedara sin revocar.
 describe("sesiones y cambio de contraseña", () => {
-  const ahora = Math.floor(Date.now() / 1000);
-  const tokenEmitidoHace = (segundos: number) =>
-    jwt.sign({ sub: "u-1", rol: Rol.RESIDENTE, condominioId: "c-1", iat: ahora - segundos }, env.jwtSecret, { expiresIn: "30d" });
-  const cuenta = (cambiadaHaceSegundos: number | null) => ({
-    activo: true,
-    rol: Rol.RESIDENTE,
-    condominioId: "c-1",
-    passwordCambiadaEn: cambiadaHaceSegundos === null ? null : new Date((ahora - cambiadaHaceSegundos) * 1000),
+  const ahora = Date.now();
+  const sesionAbiertaHace = (segundos: number, cambiadaHaceSegundos: number | null) => ({
+    id: "s-1",
+    usuarioId: "u-1",
+    csrfToken: "c",
+    creadaEn: new Date(ahora - segundos * 1000),
+    ultimoUsoEn: new Date(ahora),
+    expiraEn: new Date(ahora + 30 * 86400 * 1000),
+    revocadaEn: null,
+    usuario: {
+      activo: true,
+      rol: Rol.RESIDENTE,
+      condominioId: "c-1",
+      passwordCambiadaEn: cambiadaHaceSegundos === null ? null : new Date(ahora - cambiadaHaceSegundos * 1000),
+    },
   });
 
   beforeEach(() => vi.clearAllMocks());
 
-  it("un token emitido ANTES de cambiar la contraseña deja de valer", async () => {
-    findUsuario.mockResolvedValue(cuenta(60)); // la clave cambio hace 1 minuto
-    const next = await ejecutar(tokenEmitidoHace(3600)); // el token tiene 1 hora
+  it("una sesión abierta ANTES de cambiar la contraseña deja de valer", async () => {
+    findSesion.mockResolvedValue(sesionAbiertaHace(3600, 60)); // sesion de 1 hora, clave cambiada hace 1 minuto
+    const next = await ejecutar();
     const error = next.mock.calls[0][0];
     expect(error).toBeInstanceOf(UnauthorizedError);
     expect(error.message).toMatch(/contraseña cambió/);
   });
 
-  it("un token emitido DESPUES del cambio sigue valiendo", async () => {
-    findUsuario.mockResolvedValue(cuenta(3600)); // la clave cambio hace 1 hora
-    const next = await ejecutar(tokenEmitidoHace(60)); // el token tiene 1 minuto
+  it("una sesión abierta DESPUÉS del cambio sigue valiendo", async () => {
+    findSesion.mockResolvedValue(sesionAbiertaHace(60, 3600));
+    const next = await ejecutar();
     expect(next).toHaveBeenCalledWith();
   });
 
-  it("si la contraseña nunca se cambio, el token vale", async () => {
-    findUsuario.mockResolvedValue(cuenta(null));
-    const next = await ejecutar(tokenEmitidoHace(86400 * 20));
+  it("si la contraseña nunca se cambió, la sesión vale", async () => {
+    findSesion.mockResolvedValue(sesionAbiertaHace(86400 * 20, null));
+    const next = await ejecutar();
     expect(next).toHaveBeenCalledWith();
   });
 });
 
-describe("duracion de la sesion segun el rol", () => {
-  const duracion = (rol: Rol) => {
-    const payload = jwt.decode(signAuthToken({ sub: "u", rol, condominioId: "c" })) as { iat: number; exp: number };
-    return payload.exp - payload.iat;
-  };
-
-  it("los residentes tienen sesion larga y el personal, corta", () => {
-    expect(duracion(Rol.RESIDENTE)).toBe(30 * 24 * 3600);
-    expect(duracion(Rol.ADMIN)).toBe(8 * 3600);
-    expect(duracion(Rol.CONSERJE)).toBe(8 * 3600);
+describe("duración de la sesión según el rol", () => {
+  it("los residentes tienen sesión larga y el personal, corta", () => {
+    expect(duracionSesionMs(Rol.RESIDENTE)).toBe(30 * 24 * 3600 * 1000);
+    expect(duracionSesionMs(Rol.ADMIN)).toBe(8 * 3600 * 1000);
+    expect(duracionSesionMs(Rol.CONSERJE)).toBe(8 * 3600 * 1000);
   });
 });
