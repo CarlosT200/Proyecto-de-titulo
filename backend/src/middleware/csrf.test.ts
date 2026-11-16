@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 import { ForbiddenError } from "../lib/errors";
 import { COOKIE_CSRF, COOKIE_SESION } from "../lib/sesiones";
-import { origenesConfigurados, protegerCsrf, verificarCsrfDeSesion } from "./csrf";
+import { origenesConfigurados, protegerCsrf, validarTokenCsrf, verificarCsrfDeSesion } from "./csrf";
 
 // En las pruebas env.corsOrigins = ["http://localhost:5173"] y env.appUrl = http://localhost:4000
 // (ver vitest.config.ts y config/env.ts).
@@ -94,5 +94,21 @@ describe("verificarCsrfDeSesion (token ligado a la sesión en la base)", () => {
 
   it("en GET no se exige", () => {
     expect(() => verificarCsrfDeSesion(pedido({ metodo: "GET" }), "de-la-sesion")).not.toThrow();
+  });
+});
+
+describe("validarTokenCsrf y nombres de cookies", () => {
+  it("los nombres literales que lee el middleware son los de las cookies que escribe la sesión", () => {
+    expect(COOKIE_SESION).toBe("habitasmart_sesion");
+    expect(COOKIE_CSRF).toBe("habitasmart_csrf");
+  });
+
+  it("solo acepta dos textos no vacíos e iguales", () => {
+    expect(validarTokenCsrf("abc", "abc")).toBe(true);
+    expect(validarTokenCsrf("abc", "abd")).toBe(false);
+    expect(validarTokenCsrf("", "")).toBe(false);
+    expect(validarTokenCsrf(undefined, "abc")).toBe(false);
+    expect(validarTokenCsrf("abc", undefined)).toBe(false);
+    expect(validarTokenCsrf(["abc"], "abc")).toBe(false);
   });
 });
