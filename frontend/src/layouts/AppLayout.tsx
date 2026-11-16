@@ -8,6 +8,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useConfirm } from "../context/ConfirmContext";
 import { notificacionesApi } from "../api/endpoints";
 import { NOTIFICACION_SOS_CLASE } from "../lib/badges";
+import { BannerModoDemo } from "../components/BannerModoDemo";
 import { BotonSOS } from "../components/BotonSOS";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { PieDePagina } from "../components/PieDePagina";
@@ -230,6 +231,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
       </div>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <BannerModoDemo />
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/95 px-4 py-3 lg:bg-white/80 lg:px-8 lg:backdrop-blur-xl dark:border-white/[0.06] dark:bg-slate-900/95 dark:lg:bg-slate-900/80">
           <div className="flex items-center gap-2">
             <button

@@ -11,12 +11,44 @@ const EMERGENCIA_LABEL: Record<TipoEmergenciaSos, string> = {
   AMBULANCIA: "Ambulancia",
 };
 
+// Ventana de idempotencia: si el mismo residente vuelve a pedir el mismo tipo de emergencia dentro
+// de este lapso y esa alerta sigue ACTIVA, se devuelve la alerta existente en vez de crear otra.
+// Cubre el doble clic, el reintento del navegador y la peticion keepalive que se repite al volver
+// de la llamada. No cubre dos peticiones estrictamente simultaneas (una ventana de tiempo no es
+// una restriccion unica); para eso esta ademas el limite por usuario de sos.routes.ts.
+export const VENTANA_IDEMPOTENCIA_SOS_MS = 60_000;
+
+export interface OpcionesCrearAlerta {
+  // Marca los avisos como de demostracion. Lo decide el servidor (SOS_MODO_DEMO), nunca el cliente.
+  modoDemo?: boolean;
+}
+
 // Boton SOS (HU adicional): el residente elige el tipo de emergencia; el
 // telefono del residente hace la llamada real al numero de emergencia
 // (eso lo resuelve el frontend via tel:), y en paralelo se avisa a
 // conserjeria/administracion para que puedan asistir (abrir reja, guiar a
 // la unidad, etc.) -- nunca reemplaza la llamada real.
-export async function crearAlerta(condominioId: string, usuarioId: string, tipo: TipoEmergenciaSos) {
+//
+// Devuelve la alerta y "repetida": true cuando se reutilizo una alerta reciente (ver
+// VENTANA_IDEMPOTENCIA_SOS_MS); en ese caso no se vuelve a avisar a nadie.
+export async function crearAlerta(
+  condominioId: string,
+  usuarioId: string,
+  tipo: TipoEmergenciaSos,
+  opciones: OpcionesCrearAlerta = {}
+) {
+  const reciente = await prisma.alertaSos.findFirst({
+    where: {
+      condominioId,
+      usuarioId,
+      tipo,
+      estado: EstadoAlertaSos.ACTIVA,
+      createdAt: { gte: new Date(Date.now() - VENTANA_IDEMPOTENCIA_SOS_MS) },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (reciente) return { ...reciente, repetida: true };
+
   const usuario = await prisma.usuario.findUnique({
     where: { id: usuarioId },
     select: { nombre: true, apellido: true, departamento: { select: { numero: true, torre: { select: { nombre: true } } } } },
@@ -38,12 +70,16 @@ export async function crearAlerta(condominioId: string, usuarioId: string, tipo:
     : "";
 
   const idsDestino = destinatarios.map((d) => d.id);
+  // En modo demostracion el aviso lo dice en el titulo y en el texto: quien lo reciba (en la app o
+  // como push) debe poder distinguir de un vistazo que no es una emergencia real.
+  const demo = opciones.modoDemo === true;
+  const quien = usuario
+    ? `${usuario.nombre} ${usuario.apellido}${unidad} activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`
+    : `Se activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`;
   const aviso = {
     tipo: `SOS_${tipo}`,
-    titulo: `🚨 Alerta SOS: ${EMERGENCIA_LABEL[tipo]}`,
-    mensaje: usuario
-      ? `${usuario.nombre} ${usuario.apellido}${unidad} activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`
-      : `Se activó una alerta de ${EMERGENCIA_LABEL[tipo]}.`,
+    titulo: `${demo ? "[DEMO] " : ""}🚨 Alerta SOS: ${EMERGENCIA_LABEL[tipo]}`,
+    mensaje: demo ? `${quien} Modo demostración: no se llamó a ningún número real.` : quien,
     entidadTipo: "AlertaSos",
     entidadId: alerta.id,
   };
@@ -61,7 +97,7 @@ export async function crearAlerta(condominioId: string, usuarioId: string, tipo:
     await enviarPushAUsuarios(idsDestino, aviso, { urgencia: "high" });
   }
 
-  return alerta;
+  return { ...alerta, repetida: false };
 }
 
 const INCLUIR = {

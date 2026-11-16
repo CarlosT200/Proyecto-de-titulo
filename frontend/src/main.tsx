@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
+import { ConfigPublicaProvider } from "./context/ConfigContext";
 import { ToastProvider } from "./context/ToastContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -17,15 +18,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <MotionConfig reducedMotion="user">
       <ThemeProvider>
         <BrowserRouter>
-          <ToastProvider>
-            <ConfirmProvider>
-              <AuthProvider>
-                <ErrorBoundary>
-                  <App />
-                </ErrorBoundary>
-              </AuthProvider>
-            </ConfirmProvider>
-          </ToastProvider>
+          <ConfigPublicaProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                <AuthProvider>
+                  <ErrorBoundary>
+                    <App />
+                  </ErrorBoundary>
+                </AuthProvider>
+              </ConfirmProvider>
+            </ToastProvider>
+          </ConfigPublicaProvider>
         </BrowserRouter>
       </ThemeProvider>
     </MotionConfig>
