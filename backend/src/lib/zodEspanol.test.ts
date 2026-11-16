@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import "./zodEspanol";
 
-const mensaje = (esquema: z.ZodTypeAny, valor: unknown) => {
+const mensaje = (esquema: z.ZodType, valor: unknown) => {
   const r = esquema.safeParse(valor);
   return r.success ? null : r.error.issues[0].message;
 };

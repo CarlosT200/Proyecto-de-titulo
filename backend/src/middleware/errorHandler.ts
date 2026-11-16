@@ -17,7 +17,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   if (err instanceof ZodError) {
     return res.status(422).json({
       error: "Datos inválidos.",
-      detalles: err.issues.map((issue) => ({ campo: issue.path.join("."), mensaje: issue.message })),
+      detalles: err.issues.map((issue) => ({ campo: issue.path.map(String).join("."), mensaje: issue.message })),
     });
   }
 

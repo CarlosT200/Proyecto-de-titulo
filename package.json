@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "description": "HabitaSmart - Plataforma integral para la gestion de condominios",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "workspaces": [
     "backend",
     "frontend"

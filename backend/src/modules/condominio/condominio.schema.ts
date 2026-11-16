@@ -12,7 +12,7 @@ export const crearTorreSchema = z.object({
 
 export const crearDepartamentoSchema = z.object({
   numero: z.string().min(1, "El número de departamento es obligatorio."),
-  torreId: z.string().uuid().optional().nullable(),
+  torreId: z.uuid().optional().nullable(),
 });
 
 const aMinutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));

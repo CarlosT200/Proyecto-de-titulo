@@ -5,8 +5,8 @@ export const crearVisitaSchema = z
   .object({
     nombreVisita: z.string().min(1, "El nombre de la visita es obligatorio."),
     fecha: fechaCalendario,
-    periodoInicio: z.string().datetime({ message: "periodoInicio debe ser una fecha/hora ISO válida." }),
-    periodoFin: z.string().datetime({ message: "periodoFin debe ser una fecha/hora ISO válida." }),
+    periodoInicio: z.iso.datetime({ error: "periodoInicio debe ser una fecha/hora ISO válida." }),
+    periodoFin: z.iso.datetime({ error: "periodoFin debe ser una fecha/hora ISO válida." }),
     observaciones: z.string().optional(),
     soloUnUso: z.boolean().default(false),
   })

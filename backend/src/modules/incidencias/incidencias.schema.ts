@@ -20,14 +20,14 @@ export const crearIncidenciaSchema = z.object({
 });
 
 export const actualizarIncidenciaSchema = z.object({
-  estado: z.nativeEnum(EstadoIncidencia).optional(),
-  prioridad: z.nativeEnum(PrioridadIncidencia).optional(),
+  estado: z.enum(EstadoIncidencia).optional(),
+  prioridad: z.enum(PrioridadIncidencia).optional(),
   categoria: z.enum(CODIGOS_CATEGORIA).optional(),
-  responsableId: z.string().uuid().optional().nullable(),
+  responsableId: z.uuid().optional().nullable(),
   observacion: textoOpcional(1000),
 });
 
 export const listarIncidenciasQuerySchema = z.object({
-  estado: z.nativeEnum(EstadoIncidencia).optional(),
-  prioridad: z.nativeEnum(PrioridadIncidencia).optional(),
+  estado: z.enum(EstadoIncidencia).optional(),
+  prioridad: z.enum(PrioridadIncidencia).optional(),
 });

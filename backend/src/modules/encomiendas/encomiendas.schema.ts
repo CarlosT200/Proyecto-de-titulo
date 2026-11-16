@@ -7,7 +7,8 @@ const textoOpcional = (max: number, mensaje: string) =>
   z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim().max(max, mensaje).optional());
 
 export const crearEncomiendaSchema = z.object({
-  usuarioId: z.string({ required_error: "Selecciona un residente." }).uuid("Selecciona un residente."),
+  // Mismo mensaje si falta o si no es un identificador valido: para quien registra, el problema es uno.
+  usuarioId: z.uuid({ error: "Selecciona un residente." }),
   remitente: textoOpcional(80, "El remitente puede tener hasta 80 caracteres."),
   numeroSeguimiento: textoOpcional(60, "El número de seguimiento puede tener hasta 60 caracteres."),
   ubicacion: textoOpcional(60, "La ubicación puede tener hasta 60 caracteres."),
@@ -21,12 +22,12 @@ export const entregarEncomiendaSchema = z.object({
 
 export const devolverEncomiendaSchema = z.object({
   motivo: z
-    .string({ required_error: "Indica el motivo de la devolución." })
+    .string({ error: "Indica el motivo de la devolución." })
     .trim()
     .min(1, "Indica el motivo de la devolución.")
     .max(300, "El motivo puede tener hasta 300 caracteres."),
 });
 
 export const listarEncomiendasQuerySchema = z.object({
-  estado: z.nativeEnum(EstadoEncomienda).optional(),
+  estado: z.enum(EstadoEncomienda).optional(),
 });

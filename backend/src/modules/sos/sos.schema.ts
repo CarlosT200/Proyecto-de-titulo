@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TipoEmergenciaSos } from "@prisma/client";
 
 export const crearAlertaSosSchema = z.object({
-  tipo: z.nativeEnum(TipoEmergenciaSos),
+  tipo: z.enum(TipoEmergenciaSos),
 });
 
 export const atenderAlertaSosSchema = z.object({

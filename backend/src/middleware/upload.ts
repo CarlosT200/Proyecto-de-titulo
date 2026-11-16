@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { randomUUID } from "node:crypto";
 import multer from "multer";
-import { v4 as uuid } from "uuid";
 import { AppError } from "../lib/errors";
 
 export const UPLOADS_DIR = path.join(__dirname, "..", "..", "uploads");
@@ -16,7 +16,8 @@ const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${uuid()}${ext}`);
+    // Nombre interno aleatorio: nunca se usa el nombre que manda el navegador (path traversal).
+    cb(null, `${randomUUID()}${ext}`);
   },
 });
 
