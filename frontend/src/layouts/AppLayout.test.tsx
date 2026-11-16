@@ -63,6 +63,16 @@ describe("AppLayout por rol", () => {
     expect(screen.getByTestId("banner-modo-demo")).toBeInTheDocument();
   });
 
+  it("la campana incluye en su nombre accesible el número visible de no leídas (WCAG 2.5.3)", async () => {
+    const { notificacionesApi } = await import("../api/endpoints");
+    vi.mocked(notificacionesApi.listar).mockResolvedValueOnce([
+      { id: "n1", tipo: "X", titulo: "Uno", mensaje: "m", leida: false, createdAt: "2026-11-16T10:00:00Z" },
+      { id: "n2", tipo: "X", titulo: "Dos", mensaje: "m", leida: false, createdAt: "2026-11-16T10:00:00Z" },
+    ] as never);
+    renderLayout("ADMIN");
+    expect(await screen.findByRole("button", { name: "Notificaciones, 2 sin leer" })).toBeInTheDocument();
+  });
+
   it("«Salir» cierra la sesión en el servidor y vuelve al login", async () => {
     const user = userEvent.setup();
     renderLayout("CONSERJE");

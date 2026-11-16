@@ -306,7 +306,9 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               <button
                 className="relative rounded-lg p-2 max-sm:p-3 max-[359px]:p-2.5 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                 onClick={() => setPanelAbierto((v) => !v)}
-                aria-label="Notificaciones"
+                // El numero visible del globo forma parte del nombre (WCAG 2.5.3).
+                aria-label={noLeidas > 0 ? `Notificaciones, ${noLeidas > 9 ? "9+" : noLeidas} sin leer` : "Notificaciones"}
+                aria-expanded={panelAbierto}
               >
                 <motion.span
                   className="block"
