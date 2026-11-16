@@ -8,7 +8,6 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { protegerCsrf } from "./middleware/csrf";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
-import { UPLOADS_DIR } from "./middleware/upload";
 
 import authRoutes from "./modules/auth/auth.routes";
 import usuariosRoutes from "./modules/usuarios/usuarios.routes";
@@ -43,7 +42,8 @@ app.use(cors({ origin: env.corsOrigins, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(morgan(env.isProd ? "combined" : "dev"));
-app.use("/uploads", express.static(UPLOADS_DIR));
+// /uploads ya NO se sirve como carpeta publica: los documentos antiguos guardados en disco se leen
+// con la sesion verificada (ver lib/archivos.ts, leerArchivoHeredado).
 
 // Proteccion CSRF para toda la API (ver middleware/csrf.ts): origen permitido y token ligado a la
 // sesion en los metodos que modifican datos.
@@ -80,7 +80,7 @@ const frontendDist = path.join(__dirname, "..", "..", "frontend", "dist");
 app.use(express.static(frontendDist));
 
 app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+  if (req.path.startsWith("/api")) {
     return next();
   }
   res.sendFile(path.join(frontendDist, "index.html"), (err) => {

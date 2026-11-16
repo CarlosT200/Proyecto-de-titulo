@@ -231,8 +231,7 @@ export const documentosApi = {
     api.post<Documento>("/documentos", data, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   listar: () => api.get<Documento[]>("/documentos").then((r) => r.data),
   eliminar: (id: string) => api.delete(`/documentos/${id}`),
-  // enlace temporal (2 minutos) para abrir el archivo en una pestaña nueva
-  crearEnlace: (id: string) => api.post<{ url: string }>(`/documentos/${id}/enlace`).then((r) => r.data),
+  // el archivo se abre con lib/documentos.ts (GET /documentos/:id/archivo con la cookie de sesion)
 };
 
 // --- Dashboard (HU-24) ---
@@ -318,5 +317,4 @@ export const gastosComunesApi = {
       .patch<{ monto: number; unidad: string; periodo: string; saldo: number; pagado: boolean }>(`/gastos-comunes/comprobantes/${id}/aprobar`, monto ? { monto } : {})
       .then((r) => r.data),
   rechazarComprobante: (id: string, motivo: string) => api.patch(`/gastos-comunes/comprobantes/${id}/rechazar`, { motivo }).then((r) => r.data),
-  enlaceComprobante: (id: string) => api.post<{ url: string }>(`/gastos-comunes/comprobantes/${id}/enlace`).then((r) => r.data),
 };

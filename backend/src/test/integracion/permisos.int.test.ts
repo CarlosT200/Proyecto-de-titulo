@@ -87,7 +87,7 @@ const RUTAS: Ruta[] = [
   // documentos
   { metodo: "post", ruta: "/api/documentos", roles: [Rol.ADMIN] },
   { metodo: "get", ruta: "/api/documentos", roles: TODOS },
-  { metodo: "post", ruta: `/api/documentos/${ID}/enlace`, roles: TODOS },
+  { metodo: "get", ruta: `/api/documentos/${ID}/archivo`, roles: TODOS },
   { metodo: "delete", ruta: `/api/documentos/${ID}`, roles: [Rol.ADMIN] },
   // dashboard
   { metodo: "get", ruta: "/api/dashboard", roles: [Rol.ADMIN] },
@@ -109,7 +109,7 @@ const RUTAS: Ruta[] = [
   { metodo: "get", ruta: "/api/gastos-comunes/mi-cuenta", roles: [Rol.RESIDENTE] },
   { metodo: "get", ruta: `/api/gastos-comunes/cobros/${ID}`, roles: [Rol.ADMIN, Rol.RESIDENTE] },
   { metodo: "post", ruta: `/api/gastos-comunes/cobros/${ID}/comprobantes`, roles: [Rol.RESIDENTE] },
-  { metodo: "post", ruta: `/api/gastos-comunes/comprobantes/${ID}/enlace`, roles: [Rol.ADMIN, Rol.RESIDENTE] },
+  { metodo: "get", ruta: `/api/gastos-comunes/comprobantes/${ID}/archivo`, roles: [Rol.ADMIN, Rol.RESIDENTE] },
   { metodo: "get", ruta: "/api/gastos-comunes/periodos", roles: [Rol.ADMIN] },
   { metodo: "post", ruta: "/api/gastos-comunes/periodos", roles: [Rol.ADMIN] },
   { metodo: "get", ruta: `/api/gastos-comunes/periodos/${ID}`, roles: [Rol.ADMIN] },
@@ -187,8 +187,6 @@ describe("matriz de permisos por rol", () => {
       "POST /api/auth/login",
       "GET /api/push/vapid-public-key",
       "POST /api/tareas/recordatorios",
-      "GET /api/documentos/archivo/:token",
-      "GET /api/gastos-comunes/comprobantes/archivo/:token",
       "GET *",
     ]);
     const declaradas = new Set(RUTAS.map((r) => `${r.metodo.toUpperCase()} ${r.ruta.replace(ID, ":id")}`));

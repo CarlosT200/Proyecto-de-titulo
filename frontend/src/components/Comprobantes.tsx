@@ -9,6 +9,7 @@ import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
 import { Alert, Badge, Button, EmptyState, Input, Label, Modal, Select, Textarea } from "./ui";
 import { formatFecha, formatMonto, hoyLocal, formatDia } from "../lib/format";
 import { MEDIO_PAGO_LABEL } from "../lib/badges";
+import { abrirComprobante } from "../lib/documentos";
 import { nombrePeriodo, nombreUnidad } from "../lib/gastosComunes";
 import type { ComprobantePago, ComprobanteParaRevisar, EstadoComprobante, MedioPago } from "../types";
 
@@ -29,20 +30,6 @@ export function BadgeComprobante({ estado }: { estado: EstadoComprobante }) {
       <Badge tone={ESTADO[estado].tono}>{ESTADO[estado].texto}</Badge>
     </span>
   );
-}
-
-// Abre el archivo en una pestaña nueva (misma tecnica que los documentos: la pestaña se abre en el
-// mismo toque y despues recibe el enlace de 2 minutos; si no, se usa la pestaña actual).
-export async function abrirComprobante(id: string) {
-  const ventana = window.open("", "_blank");
-  try {
-    const { url } = await gastosComunesApi.enlaceComprobante(id);
-    if (ventana) ventana.location.href = url;
-    else window.location.href = url;
-  } catch (error) {
-    ventana?.close();
-    throw error;
-  }
 }
 
 function tamano(bytes: number) {

@@ -162,7 +162,7 @@ describe("recursos por ID de otro condominio", () => {
     const documentos = await residenteA.get("/api/documentos");
     expect(documentos.body.map((d: { id: string }) => d.id)).not.toContain(idsB.documento);
     expect((await adminA.delete(`/api/documentos/${idsB.documento}`)).status).toBe(404);
-    expect((await residenteA.post(`/api/documentos/${idsB.documento}/enlace`)).status).toBe(404);
+    expect((await residenteA.get(`/api/documentos/${idsB.documento}/archivo`)).status).toBe(404);
   });
 
   it("SOS: las alertas de B no aparecen en A y no se pueden atender desde A", async () => {

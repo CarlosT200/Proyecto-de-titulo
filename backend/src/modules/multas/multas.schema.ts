@@ -2,17 +2,24 @@ import { z } from "zod";
 import { fechaCalendario } from "../../lib/fechas";
 import { EstadoMulta } from "@prisma/client";
 
+// Tope razonable para una multa de condominio (evita montos absurdos por error de tipeo).
+const MONTO_MAXIMO_MULTA = 10_000_000;
+
 export const crearMultaSchema = z.object({
   usuarioId: z.uuid(),
-  motivo: z.string().min(1, "El motivo es obligatorio."),
+  motivo: z.string().trim().min(1, "El motivo es obligatorio.").max(200, "El motivo puede tener hasta 200 caracteres."),
   fecha: fechaCalendario,
-  monto: z.number().int().positive("El monto debe ser mayor a cero."),
-  observaciones: z.string().optional(),
+  monto: z
+    .number()
+    .int("El monto debe ser un número entero de pesos.")
+    .positive("El monto debe ser mayor a cero.")
+    .max(MONTO_MAXIMO_MULTA, "El monto es demasiado alto."),
+  observaciones: z.string().trim().max(1000, "Las observaciones pueden tener hasta 1000 caracteres.").optional(),
 });
 
 export const actualizarMultaSchema = z.object({
   estado: z.enum(EstadoMulta).optional(),
-  observaciones: z.string().optional(),
+  observaciones: z.string().trim().max(1000, "Las observaciones pueden tener hasta 1000 caracteres.").optional(),
 });
 
 export const resolverApelacionSchema = z.object({

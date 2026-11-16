@@ -1,5 +1,7 @@
-import jwt from "jsonwebtoken";
-import { env } from "../config/env";
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { Response } from "express";
+import { AppError } from "./errors";
 
 // --- Verificacion del contenido real de un archivo subido ---------------------------------------
 // multer solo conoce el tipo que declara el navegador, que cualquiera puede falsear. Se comprueban
@@ -47,38 +49,50 @@ export function nombreDeArchivo(titulo: string, mime: string): string {
   return extension ? `${base}.${extension}` : base;
 }
 
-// --- Enlaces de descarga de corta vida ----------------------------------------------------------
-// Un enlace normal no puede llevar el encabezado de autorizacion, y abrir un "data:" en una pestaña
-// nueva lo bloquea Chrome. Por eso la aplicacion pide (con su sesion) un enlace que vale 2 minutos,
-// se abre en otra pestaña y se descarta. Se firma con una clave distinta a la de las sesiones, asi
-// un enlace de documento nunca sirve como token de sesion.
-const VIGENCIA_ENLACE_SEGUNDOS = 120;
-const claveEnlaces = () => `${env.jwtSecret}:enlace-documento`;
-
-export function firmarEnlaceDocumento(documentoId: string, condominioId: string): string {
-  return jwt.sign({ doc: documentoId, cnd: condominioId }, claveEnlaces(), { expiresIn: VIGENCIA_ENLACE_SEGUNDOS });
+// Content-Disposition seguro: el nombre ya viene limpio (solo ASCII y sin comillas), asi que no
+// puede cortar la cabecera ni inyectar otra. Siempre "inline": PDF e imagenes se muestran en la
+// pestaña; el navegador igual permite guardarlos.
+export function contentDisposition(nombre: string): string {
+  const seguro = nombre.replace(/["\\\r\n]/g, "").slice(0, 120) || "archivo";
+  return `inline; filename="${seguro}"`;
 }
 
-export function verificarEnlaceDocumento(token: string): { documentoId: string; condominioId: string } {
-  const payload = jwt.verify(token, claveEnlaces()) as { doc?: unknown; cnd?: unknown };
-  if (typeof payload.doc !== "string" || typeof payload.cnd !== "string") {
-    throw new Error("Enlace inválido.");
+// --- Entrega de un archivo verificado ------------------------------------------------------------
+// Solo se sirven PDF e imagenes cuyo contenido coincide con su tipo, con "nosniff" para que el
+// navegador no los reinterprete (por ejemplo como HTML) y sin cache compartida. Para los PDF se
+// quita la politica general de seguridad: el visor de PDF del navegador no funciona con
+// object-src 'none'; es seguro porque el contenido ya fue verificado por su firma.
+export function enviarArchivoVerificado(res: Response, archivo: { mime: string; buffer: Buffer }, nombre: string): void {
+  if (!coincideConTipo(archivo.buffer, archivo.mime)) {
+    throw new AppError("El archivo está dañado o no se puede mostrar.", 422);
   }
-  return { documentoId: payload.doc, condominioId: payload.cnd };
+  if (archivo.mime === "application/pdf") res.removeHeader("Content-Security-Policy");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Content-Type", archivo.mime);
+  res.setHeader("Content-Length", archivo.buffer.length);
+  res.setHeader("Content-Disposition", contentDisposition(nombre));
+  res.end(archivo.buffer);
 }
 
-// Mismo mecanismo para los comprobantes de pago, con su propia clave: un enlace de comprobante no
-// abre un documento ni al reves.
-const claveEnlacesComprobante = () => `${env.jwtSecret}:enlace-comprobante`;
-
-export function firmarEnlaceComprobante(comprobanteId: string, condominioId: string): string {
-  return jwt.sign({ cmp: comprobanteId, cnd: condominioId }, claveEnlacesComprobante(), { expiresIn: VIGENCIA_ENLACE_SEGUNDOS });
-}
-
-export function verificarEnlaceComprobante(token: string): { comprobanteId: string; condominioId: string } {
-  const payload = jwt.verify(token, claveEnlacesComprobante()) as { cmp?: unknown; cnd?: unknown };
-  if (typeof payload.cmp !== "string" || typeof payload.cnd !== "string") {
-    throw new Error("Enlace inválido.");
+// --- Archivos heredados en disco ----------------------------------------------------------------
+// Antes de guardar los documentos en la base, se escribian en backend/uploads y se servian como
+// carpeta publica. Esa carpeta ya no se expone: un documento antiguo ("/uploads/<nombre>") se lee
+// aqui, con la sesion verificada, y solo si esta dentro de la carpeta y es un PDF o imagen valido.
+export async function leerArchivoHeredado(uploadsDir: string, archivoUrl: string): Promise<{ mime: string; buffer: Buffer } | null> {
+  if (!archivoUrl.startsWith("/uploads/")) return null;
+  // Solo el nombre de archivo: cualquier "../" o subcarpeta queda fuera (path traversal).
+  const nombre = path.basename(archivoUrl.slice("/uploads/".length));
+  if (!nombre || nombre !== archivoUrl.slice("/uploads/".length)) return null;
+  const ruta = path.join(uploadsDir, nombre);
+  if (!ruta.startsWith(path.resolve(uploadsDir) + path.sep) && path.dirname(ruta) !== path.resolve(uploadsDir)) return null;
+  const extension = path.extname(nombre).toLowerCase().slice(1);
+  const mime = Object.entries(EXTENSIONES).find(([, ext]) => ext === extension)?.[0];
+  if (!mime) return null;
+  try {
+    const buffer = await fs.readFile(ruta);
+    return coincideConTipo(buffer, mime) ? { mime, buffer } : null;
+  } catch {
+    return null;
   }
-  return { comprobanteId: payload.cmp, condominioId: payload.cnd };
 }

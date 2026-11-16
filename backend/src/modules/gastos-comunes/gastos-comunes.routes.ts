@@ -8,9 +8,6 @@ import * as comprobantes from "./comprobantes.controller";
 
 const router = Router();
 
-// Antes de exigir sesion: el archivo de un comprobante se abre con un enlace firmado de 2 minutos.
-router.get("/comprobantes/archivo/:token", asyncHandler(comprobantes.archivoComprobanteController));
-
 router.use(requireAuth);
 
 // Residente: el estado de cuenta de su unidad
@@ -22,7 +19,8 @@ router.post(
   uploadArchivoMemoria.single("archivo"),
   asyncHandler(comprobantes.informarPagoController)
 );
-router.post("/comprobantes/:id/enlace", requireRole(Rol.ADMIN, Rol.RESIDENTE), asyncHandler(comprobantes.enlaceComprobanteController));
+// El archivo se abre en una pestaña nueva con la sesion (cookie): no hay enlaces con token en la URL.
+router.get("/comprobantes/:id/archivo", requireRole(Rol.ADMIN, Rol.RESIDENTE), asyncHandler(comprobantes.archivoComprobanteController));
 
 // Administracion (la conserjeria no ve datos de cobranza)
 router.get("/periodos", requireRole(Rol.ADMIN), asyncHandler(controller.listarPeriodosController));
