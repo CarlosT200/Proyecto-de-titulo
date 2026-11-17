@@ -63,6 +63,9 @@ jobs:
       - name: Pruebas de frontend
         run: npm run test:frontend
 
+      - name: Pruebas de la app de escritorio (validación de destinos de Electron)
+        run: npm run test:desktop
+
       - name: Build (frontend + backend)
         run: npm run build
 

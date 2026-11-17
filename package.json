@@ -20,6 +20,7 @@
     "prisma:seed": "npm run prisma:seed --workspace backend",
     "test:backend": "npm run test --workspace backend",
     "test:frontend": "npm run test --workspace frontend",
+    "test:desktop": "node --test desktop/destinos.test.js",
     "test:integracion": "npm run test:integracion --workspace backend",
     "test:e2e": "playwright test",
     "lint": "npm run lint --workspace frontend",

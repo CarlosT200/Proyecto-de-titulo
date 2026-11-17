@@ -7,6 +7,7 @@ import {
   coincideConTipo,
   contentDisposition,
   enviarArchivoVerificado,
+  extensionDeMime,
   leerArchivoHeredado,
   nombreDeArchivo,
   parsearDataUri,
@@ -37,6 +38,47 @@ describe("coincideConTipo", () => {
   it("rechaza un tipo que no esta permitido y un archivo vacio", () => {
     expect(coincideConTipo(PDF, "text/html")).toBe(false);
     expect(coincideConTipo(Buffer.alloc(0), "application/pdf")).toBe(false);
+  });
+
+  // CodeQL js/unvalidated-dynamic-method-call: el MIME elige que funcion se ejecuta. Con un acceso
+  // simple, "constructor" devolvia Object (y Object(buffer) es "verdadero"), asi que un archivo
+  // cualquiera pasaba como valido. Solo deben contar las claves propias de la tabla de firmas.
+  it("no ejecuta propiedades heredadas: constructor, __proto__, toString, hasOwnProperty", () => {
+    for (const mime of ["constructor", "__proto__", "toString", "hasOwnProperty", "valueOf", "__defineGetter__"]) {
+      expect(coincideConTipo(HTML, mime)).toBe(false);
+      expect(coincideConTipo(PDF, mime)).toBe(false);
+    }
+  });
+
+  it("un MIME desconocido o vacio devuelve false (no lanza)", () => {
+    for (const mime of ["application/x-desconocido", "", "IMAGE/PNG", "image/png ", "image/svg+xml"]) {
+      expect(coincideConTipo(PNG, mime)).toBe(false);
+    }
+  });
+
+  it("un tipo permitido con firma falsa se rechaza en los cuatro formatos", () => {
+    const falso = Buffer.from("esto no es ninguno de los formatos permitidos");
+    for (const mime of ["application/pdf", "image/png", "image/jpeg", "image/webp"]) {
+      expect(coincideConTipo(falso, mime)).toBe(false);
+    }
+    // firma de otro formato permitido: un PNG declarado como JPEG o PDF tampoco pasa
+    expect(coincideConTipo(PNG, "image/jpeg")).toBe(false);
+    expect(coincideConTipo(JPG, "application/pdf")).toBe(false);
+  });
+
+  it("devuelve siempre un booleano", () => {
+    expect(typeof coincideConTipo(PDF, "application/pdf")).toBe("boolean");
+    expect(typeof coincideConTipo(PDF, "constructor")).toBe("boolean");
+  });
+});
+
+describe("extensionDeMime", () => {
+  it("devuelve la extension de los tipos permitidos y null para claves heredadas o desconocidas", () => {
+    expect(extensionDeMime("application/pdf")).toBe("pdf");
+    expect(extensionDeMime("image/jpeg")).toBe("jpg");
+    expect(extensionDeMime("constructor")).toBeNull();
+    expect(extensionDeMime("__proto__")).toBeNull();
+    expect(extensionDeMime("text/html")).toBeNull();
   });
 });
 
