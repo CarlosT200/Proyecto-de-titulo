@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EstadoMulta, TipoEmergenciaSos } from "@prisma/client";
 import { cerrarBase, prepararBase, prisma, type DatosPrueba } from "./base";
 import { entrar, type ClienteHttp } from "./cliente";
+import { ahoraEnChile } from "../../lib/fechas";
 
 // --- Aislamiento entre condominios ---------------------------------------------------------------
 // Un usuario del condominio A (cualquier rol) no puede ver ni tocar datos del condominio B, aunque
@@ -30,10 +31,10 @@ let idsB: {
   periodo: string;
 };
 
+// Fecha de calendario en hora de Chile, igual que el servidor (con toISOString(), en UTC, entre las
+// 21:00 y la medianoche de Chile se correria un dia).
 function manana(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return ahoraEnChile(new Date(Date.now() + 24 * 3600 * 1000)).fecha;
 }
 
 beforeAll(async () => {

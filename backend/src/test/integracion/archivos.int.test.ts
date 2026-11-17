@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cerrarBase, prepararBase, prisma, type DatosPrueba } from "./base";
 import { anonimo, entrar, type ClienteHttp } from "./cliente";
+import { ahoraEnChile } from "../../lib/fechas";
 
 // Archivos: subida con verificacion de contenido, limite de tamano, descarga solo con sesion y
 // solo para quien corresponde, con cabeceras seguras.
@@ -19,10 +20,13 @@ let residenteA: ClienteHttp;
 let vecinaA: ClienteHttp;
 let adminB: ClienteHttp;
 
+// Fechas de calendario en hora de Chile, igual que el servidor: con toISOString() (UTC), entre
+// las 21:00 y la medianoche de Chile "hoy" ya seria el dia siguiente y la prueba fallaria.
+function hoy(): string {
+  return ahoraEnChile().fecha;
+}
 function manana(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return ahoraEnChile(new Date(Date.now() + 24 * 3600 * 1000)).fecha;
 }
 
 beforeAll(async () => {
@@ -113,7 +117,7 @@ describe("comprobantes de pago", () => {
     const res = await residenteA
       .post(`/api/gastos-comunes/cobros/${cobro.id}/comprobantes`)
       .field("monto", "1000")
-      .field("fechaPago", new Date().toISOString().slice(0, 10))
+      .field("fechaPago", hoy())
       .field("medio", "TRANSFERENCIA")
       .attach("archivo", PNG_1PX, { filename: "transferencia.png", contentType: "image/png" });
     expect(res.status).toBe(201);
@@ -180,7 +184,7 @@ describe("límites de entrada", () => {
     const fin = new Date(inicio.getTime() + 40 * 24 * 3600 * 1000);
     const res = await residenteA.post("/api/qr/visitas").send({
       nombreVisita: "Larga",
-      fecha: inicio.toISOString().slice(0, 10),
+      fecha: hoy(),
       periodoInicio: inicio.toISOString(),
       periodoFin: fin.toISOString(),
     });
