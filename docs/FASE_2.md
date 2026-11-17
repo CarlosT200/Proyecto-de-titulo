@@ -100,11 +100,11 @@ Medido en local sobre la rama al cierre de la fase. CI remoto del PR #5: los 5 c
 | Verificación | Antes (`cb72487`) | Después |
 |---|---|---|
 | Lint (frontend) | 0 errores, 13 warnings | **0 errores, 0 warnings** (sin desactivar reglas) |
-| Pruebas unitarias backend | 230 | **276** |
+| Pruebas unitarias backend | 230 | **278** |
 | Pruebas de integración HTTP (PostgreSQL real) | no existían | **148** |
 | Pruebas de frontend | no existían | **42** |
 | Pruebas E2E (Playwright, incluye accesibilidad) | no existían | **17** |
-| **Total** | **230** | **483** |
+| **Total** | **230** | **485** |
 | Build frontend / backend | correcto | correcto |
 | `prisma validate` | correcto | correcto (18 migraciones) |
 | `npm audit` (todo) | 14 (12 moderadas, 2 altas) | **0 vulnerabilidades** |

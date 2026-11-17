@@ -209,7 +209,7 @@ que «llegó». Si la configuración no carga, se pide confirmación antes de ll
 (sin disco persistente). Está documentado el plan para pasar a almacenamiento de objetos con URLs
 firmadas antes de crecer ([ADR 0003](adr/0003-almacenamiento-de-archivos.md)).
 
-**¿Cómo saben que funciona?** 483 pruebas automáticas en cuatro capas (unitarias, integración
+**¿Cómo saben que funciona?** 485 pruebas automáticas en cuatro capas (unitarias, integración
 HTTP con PostgreSQL, frontend y E2E en navegador, incluida accesibilidad WCAG en 6 tamaños) que corren
 en cada Pull Request, más CodeQL, auditoría de dependencias y detección de secretos.
 
