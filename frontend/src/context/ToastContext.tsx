@@ -1,7 +1,8 @@
-import { createContext, ReactNode, useCallback, useContext, useState } from "react";
+import { ReactNode, useCallback, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, WarningCircle, Info, X } from "@phosphor-icons/react";
 import clsx from "clsx";
+import { ToastContext, type ToastContextValue } from "./toast";
 
 type ToastTipo = "success" | "error" | "info";
 
@@ -11,13 +12,6 @@ interface Toast {
   mensaje: string;
 }
 
-interface ToastContextValue {
-  success: (mensaje: string) => void;
-  error: (mensaje: string) => void;
-  info: (mensaje: string) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const ICONS: Record<ToastTipo, typeof CheckCircle> = {
   success: CheckCircle,
@@ -102,10 +96,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast debe usarse dentro de ToastProvider");
-  return ctx;
 }

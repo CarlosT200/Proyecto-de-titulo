@@ -6,8 +6,8 @@ Guía para pasar de la versión de demostración a un uso real. Los comandos son
 
 | # | Qué | Cuándo |
 |---|-----|--------|
-| 1 | Hacer un **respaldo** de la base de datos de Render | Hoy, antes de tocar nada |
-| 2 | Resolver el **vencimiento de la base de datos gratuita** de Render | Antes del 24 de octubre de 2026 |
+| 1 | Hacer un **respaldo** de la base de datos de producción (Supabase) | Antes de tocar nada |
+| 2 | ~~Resolver el vencimiento de la base gratuita de Render~~ | **Resuelto:** la base se migró a Supabase el 21-oct-2026 |
 | 3 | Dejar el servicio **siempre encendido** (si habrá SOS reales) | Antes de entregarla al condominio |
 | 4 | Vaciar los datos de demostración y crear el **condominio real** | Al empezar el piloto |
 | 5 | Rutina de respaldos | Semanal y antes de cada cambio grande |
@@ -18,14 +18,23 @@ Guía para pasar de la versión de demostración a un uso real. Los comandos son
 
 El respaldo se guarda en un archivo comprimido (`.json.gz`) con **todo**: usuarios, reservas, multas, fotos, documentos, etc. No depende de `pg_dump`.
 
-1. En Render, abrir la base `habitasmart-db` y copiar la **External Database URL**.
-2. En PowerShell:
+La base de producción está en **Supabase** (ya no en Render). El procedimiento exacto, con la
+cadena de conexión pedida en un campo oculto (sin guardarla en archivos ni en el historial), está en
+[`OPERACION.md` §4](OPERACION.md#4-respaldos). En resumen:
+
+1. En Supabase → **Connect** → *Session pooler*, copiar la cadena de conexión (con la contraseña de la base).
+2. En PowerShell, desde la carpeta `backend`:
 
 ```powershell
-cd "C:\Users\toroc\Desktop\Proyecto\Proyecto de Titulo\backend"
-$env:DATABASE_URL = "PEGA_AQUI_LA_EXTERNAL_DATABASE_URL"
+$s = Read-Host "Cadena de Supabase (session pooler)" -AsSecureString
+$env:DATABASE_URL = [System.Net.NetworkCredential]::new("", $s).Password; Remove-Variable s
 npm run respaldo
+Remove-Item Env:DATABASE_URL
 ```
+
+> **Antes de mergear un cambio con migraciones nuevas** (como la Fase 2, que agrega la tabla
+> `sesiones`), este comando hay que correrlo con el código de `main`, no con el de la rama: la base
+> aún no tiene las tablas nuevas y el script se detiene avisando cuál falta. Ver `OPERACION.md` §4.1 y §4.3.
 
 3. Queda en `backend\respaldos\respaldo-AAAAMMDD-HHMM.json.gz` y el comando muestra cuántos registros guardó por tabla.
 
@@ -44,6 +53,9 @@ Al terminar compara los conteos con los del respaldo y avisa si algo no coincide
 ---
 
 ## 2. La base de datos gratuita de Render vence
+
+> **Resuelto (registro histórico):** la base de producción se migró a Supabase el 21 de octubre de 2026.
+> Lo que sigue describe la situación anterior y ya no requiere acción.
 
 Según la documentación de Render ([render.com/docs/free](https://render.com/docs/free)), las bases Postgres gratuitas **vencen a los 30 días de creadas**, tienen **14 días de gracia** para pasarlas a un plan de pago y después **se borran con todos sus datos**. Tampoco tienen respaldos. La base `habitasmart-db` se creó el 24 de septiembre de 2026, así que vence alrededor del **24 de octubre** (confirmar la fecha exacta en el panel de Render).
 
@@ -84,7 +96,7 @@ El servicio web gratuito de Render **se apaga tras 15 minutos sin visitas** y ta
 
 ## 4. Preparar la base para el condominio real
 
-Hoy la base de Render tiene datos de ejemplo y las **cuentas de demostración** (`admin@`, `residente@`, `conserje@habitasmart.cl`), que comparten una contraseña pública. Para el piloto conviene partir limpio. Se puede hacer **en la misma base**, sin crear otra.
+Hoy la base de producción (Supabase) tiene datos de ejemplo y las **cuentas de demostración** (`admin@`, `residente@`, `conserje@habitasmart.cl`), que comparten una contraseña pública. Para el piloto conviene partir limpio. Se puede hacer **en la misma base**, sin crear otra.
 
 ### Camino recomendado: vaciar la demo y crear el condominio real
 
@@ -130,11 +142,12 @@ Crear otra base (en Render o Neon), aplicar la estructura con `npm run prisma:mi
 | Variable | Qué hace |
 |----------|----------|
 | `DATABASE_URL` | Conexión a la base (viene de `habitasmart-db` o de Neon) |
-| `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves de sesión y de códigos QR (Render las genera) |
-| `APP_URL` | Dirección pública de la aplicación (se usa en los códigos QR) |
+| `JWT_SECRET`, `QR_TOKEN_SECRET` | Claves reservadas y de códigos QR antiguos (Render las genera; deben medir ≥ 32 caracteres). Las sesiones no usan JWT: son tokens aleatorios guardados como hash en la tabla `sesiones` y viajan en una cookie `HttpOnly` |
+| `APP_URL` | Dirección pública de la aplicación (se usa en los códigos QR y como origen permitido) |
+| `CORS_ORIGIN` | Orígenes adicionales permitidos (separados por comas). En producción puede quedar sin definir: la app se sirve desde el mismo origen |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Notificaciones del sistema (incluida la alerta SOS) |
-| `JWT_EXPIRES_IN` | Duración de la sesión del **personal** (administración y conserjería). Por defecto `8h` |
-| `JWT_EXPIRES_IN_RESIDENTE` | Duración de la sesión de los **residentes**. Por defecto `30d`: no tienen que volver a entrar cada día. Cambiar o restablecer la contraseña cierra todas las sesiones anteriores |
+| `SESION_PERSONAL_HORAS` | Duración de la sesión del **personal** (administración y conserjería). Por defecto `8` |
+| `SESION_RESIDENTE_DIAS` | Duración de la sesión de los **residentes**. Por defecto `30`: no tienen que volver a entrar cada día. Cambiar o restablecer la contraseña, deshabilitar la cuenta o «Cerrar todas» en Mi perfil cierran las sesiones abiertas |
 | `MOSTRAR_CUENTAS_DEMO` | `true` muestra en el login los botones de cuentas de demostración. **Por defecto están ocultos en producción.** Activar solo para una demostración o la defensa, y volver a quitar después |
 
 ## 6. Rutina de respaldos

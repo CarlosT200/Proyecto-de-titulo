@@ -15,10 +15,14 @@ services:
       # sobrescribe en cada despliegue, asi un push de codigo no lo revierte a la base antigua.
       - key: DATABASE_URL
         sync: false
+      # Reservada (las sesiones ya no usan JWT); se mantiene obligatoria.
       - key: JWT_SECRET
         generateValue: true
-      - key: JWT_EXPIRES_IN
-        value: 8h
+      # Duracion de las sesiones del personal (horas) y de los residentes (dias).
+      - key: SESION_PERSONAL_HORAS
+        value: "8"
+      - key: SESION_RESIDENTE_DIAS
+        value: "30"
       - key: QR_TOKEN_SECRET
         generateValue: true
       - key: CORS_ORIGIN
@@ -28,6 +32,10 @@ services:
       # Botones de cuentas de demostracion en el login. Oculto por defecto en produccion; poner
       # "true" en el dashboard solo para una demostracion (sync: false = el dashboard manda).
       - key: MOSTRAR_CUENTAS_DEMO
+        sync: false
+      # Modo demostracion del boton SOS ("true": avisa a conserjeria pero NO llama a numeros reales).
+      # Se define a mano en el dashboard SOLO para la defensa; ver docs/DEMOSTRACION.md.
+      - key: SOS_MODO_DEMO
         sync: false
       # Web Push (notificaciones del sistema, incluida la alerta SOS, aunque
       # la app este cerrada). No se pueden generar con generateValue: true

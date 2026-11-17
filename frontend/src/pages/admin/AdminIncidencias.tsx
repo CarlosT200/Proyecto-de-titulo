@@ -24,7 +24,7 @@ import { formatFechaHora } from "../../lib/format";
 import { ESTADO_INCIDENCIA_LABEL, PRIORIDAD_LABEL } from "../../lib/badges";
 import { CATEGORIAS_INCIDENCIA, etiquetaCategoria, normalizarCategoria } from "../../lib/categorias";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import type { EstadoIncidencia, Incidencia, PrioridadIncidencia } from "../../types";
 
 const ESTADOS: EstadoIncidencia[] = ["REPORTADA", "EN_REVISION", "EN_PROCESO", "RESUELTA"];
@@ -227,10 +227,10 @@ export default function AdminIncidencias() {
                   <button
                     type="button"
                     onClick={() => abrir(inc.id)}
-                    aria-label={`Abrir la incidencia ${inc.titulo}`}
                     className="block w-full space-y-1.5 px-5 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/60"
                   >
                     <span className="block break-words font-medium text-slate-900 dark:text-slate-100">{inc.titulo}</span>
+                    <span className="block space-y-1.5">
                     <span className="flex flex-wrap gap-1.5">
                       <BadgePrioridadIncidencia prioridad={inc.prioridad} largo />
                       <BadgeEstadoIncidencia estado={inc.estado} />
@@ -238,6 +238,7 @@ export default function AdminIncidencias() {
                     <span className="block break-words text-sm text-slate-600 dark:text-slate-300">{inc.ubicacion}</span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
                       {etiquetaCategoria(inc.categoria) ?? "Sin categoría"} · {nombreDe(inc)} · {formatFechaHora(inc.createdAt)}
+                    </span>
                     </span>
                   </button>
                 </li>
@@ -258,22 +259,24 @@ export default function AdminIncidencias() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
                   {filtradas.map((inc) => (
+                    // Toda la fila se puede tocar con el mouse; para teclado y lectores de pantalla el
+                    // control es el boton del titulo (la fila conserva su semantica de tabla).
                     <tr
                       key={inc.id}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`Abrir la incidencia ${inc.titulo}`}
-                      className="cursor-pointer transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:hover:bg-slate-700/60 dark:focus-visible:bg-slate-700/60"
+                      className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
                       onClick={() => abrir(inc.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          abrir(inc.id);
-                        }
-                      }}
                     >
                       <td className="max-w-xs px-5 py-3 font-medium text-slate-900 dark:text-slate-100">
-                        <span className="block break-words">{inc.titulo}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrir(inc.id);
+                          }}
+                          className="block break-words rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                        >
+                          {inc.titulo}
+                        </button>
                         <span className="block break-words text-xs font-normal text-slate-500 dark:text-slate-400">{inc.ubicacion}</span>
                       </td>
                       <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{etiquetaCategoria(inc.categoria) ?? "Sin categoría"}</td>

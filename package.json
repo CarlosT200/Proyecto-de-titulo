@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "description": "HabitaSmart - Plataforma integral para la gestion de condominios",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "workspaces": [
     "backend",
     "frontend"
@@ -16,9 +19,16 @@
     "prisma:migrate": "npm run prisma:migrate --workspace backend",
     "prisma:seed": "npm run prisma:seed --workspace backend",
     "test:backend": "npm run test --workspace backend",
+    "test:frontend": "npm run test --workspace frontend",
+    "test:integracion": "npm run test:integracion --workspace backend",
+    "test:e2e": "playwright test",
     "lint": "npm run lint --workspace frontend",
     "serve": "npm run build --workspace frontend && npm run dev --workspace backend",
     "build": "npm run build --workspace frontend && npm run build --workspace backend",
     "start": "npm run prisma:migrate:deploy --workspace backend && npm run start --workspace backend"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.1"
   }
 }

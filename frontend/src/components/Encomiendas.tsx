@@ -9,7 +9,7 @@ import { useFiltroUrl } from "../hooks/useFiltroUrl";
 import { useEsCelular } from "../hooks/useEsCelular";
 import { useAcercarAlAparecer } from "../hooks/useAcercarAlAparecer";
 import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "../context/toast";
 import { CeldaResumen } from "./CeldaResumen";
 import { Alert, Badge, Button, Card, EmptyState, Input, Label, Modal, SearchInput, Select, Spinner, Textarea } from "./ui";
 import { formatFechaHora } from "../lib/format";
@@ -51,7 +51,7 @@ function FilaTabla({ nueva, children }: { nueva: boolean; children: ReactNode })
   );
 }
 
-export function unidadDe(usuario: Encomienda["usuario"]): string | null {
+function unidadDe(usuario: Encomienda["usuario"]): string | null {
   if (!usuario?.departamento) return null;
   return [usuario.departamento.torre?.nombre, usuario.departamento.numero].filter(Boolean).join(" ");
 }

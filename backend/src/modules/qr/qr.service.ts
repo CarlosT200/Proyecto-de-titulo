@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import sharp from "sharp";
 import { EstadoVisita, ResultadoAcceso, TipoQrToken } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { esCodigoManual, esTokenCorto, normalizarCodigoManual, nuevoCodigoManual, nuevoTokenQr, verifyQrToken } from "../../lib/qrToken";
 import { ConflictError, NotFoundError } from "../../lib/errors";
 import { env } from "../../config/env";
@@ -115,6 +116,7 @@ export async function listarMisVisitas(residenteId: string) {
     where: { residenteId },
     include: { qrToken: { select: { expiraEn: true, revocado: true, usosRealizados: true } } },
     orderBy: { createdAt: "desc" },
+    take: LIMITE_LISTADO,
   });
 }
 

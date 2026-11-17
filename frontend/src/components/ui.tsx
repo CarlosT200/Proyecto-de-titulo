@@ -16,17 +16,9 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "framer-motion";
 import clsx from "clsx";
 import { Ilustracion, type NombreIlustracion } from "./Ilustraciones";
+import { STAT_TONES } from "../lib/estilos";
 import { ArrowUpRight, CheckCircle, Icon as PhosphorIcon, MagnifyingGlass, Tray, Warning, WarningCircle, X } from "@phosphor-icons/react";
 
-// Animacion de entrada escalonada para filas de tabla / items de lista.
-// Uso: data.map((item, i) => <motion.tr key={item.id} {...staggerFade(i)}>...</motion.tr>)
-export function staggerFade(index: number) {
-  return {
-    initial: { opacity: 0, y: 6 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.25, delay: Math.min(index * 0.04, 0.4) },
-  };
-}
 
 type NativeButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -187,16 +179,6 @@ export function PageHeader({
     </motion.div>
   );
 }
-
-// icono: degrade solido con icono blanco; brillo: mancha difusa de fondo del mismo tono.
-export const STAT_TONES: Record<string, { icono: string; brillo: string }> = {
-  slate: { icono: "from-slate-500 to-slate-700 shadow-slate-500/30", brillo: "bg-slate-400/20" },
-  brand: { icono: "from-brand-500 to-brand-700 shadow-brand-600/30", brillo: "bg-brand-500/20" },
-  green: { icono: "from-emerald-400 to-emerald-600 shadow-emerald-500/30", brillo: "bg-emerald-500/20" },
-  amber: { icono: "from-amber-400 to-orange-500 shadow-amber-500/30", brillo: "bg-amber-500/20" },
-  red: { icono: "from-red-500 to-rose-600 shadow-red-500/30", brillo: "bg-red-500/20" },
-  purple: { icono: "from-violet-500 to-purple-700 shadow-purple-500/30", brillo: "bg-purple-500/20" },
-};
 
 function AnimatedNumber({ value }: { value: number }) {
   const motionValue = useMotionValue(0);

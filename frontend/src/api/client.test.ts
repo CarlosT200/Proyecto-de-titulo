@@ -1,0 +1,97 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AxiosError, AxiosHeaders } from "axios";
+import { api, CABECERA_CSRF, COOKIE_CSRF, haySesionLocal, limpiarTokenAntiguo, mensajeError, olvidarSesionLocal, tokenCsrf } from "./client";
+
+function ponerCookie(nombre: string, valor: string) {
+  document.cookie = `${nombre}=${valor}; path=/`;
+}
+
+function borrarCookie(nombre: string) {
+  document.cookie = `${nombre}=; Max-Age=0; path=/`;
+}
+
+beforeEach(() => {
+  borrarCookie(COOKIE_CSRF);
+  localStorage.clear();
+  sessionStorage.clear();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("transición desde el token antiguo en localStorage", () => {
+  it("limpiarTokenAntiguo borra el JWT que guardaban versiones anteriores (localStorage y sessionStorage)", () => {
+    localStorage.setItem("habitasmart_token", "jwt-viejo");
+    sessionStorage.setItem("habitasmart_token", "jwt-viejo");
+    limpiarTokenAntiguo();
+    expect(localStorage.getItem("habitasmart_token")).toBeNull();
+    expect(sessionStorage.getItem("habitasmart_token")).toBeNull();
+  });
+
+  it("el cliente HTTP no guarda ningún token en el almacenamiento del navegador", () => {
+    ponerCookie(COOKIE_CSRF, "abc");
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+  });
+});
+
+describe("marca local de sesión (cookie CSRF legible)", () => {
+  it("haySesionLocal refleja la presencia de la cookie y olvidarSesionLocal la borra", () => {
+    expect(haySesionLocal()).toBe(false);
+    ponerCookie(COOKIE_CSRF, "abc123");
+    expect(haySesionLocal()).toBe(true);
+    expect(tokenCsrf()).toBe("abc123");
+    olvidarSesionLocal();
+    expect(haySesionLocal()).toBe(false);
+  });
+});
+
+describe("cabecera anti-CSRF", () => {
+  async function cabeceraEnviada(metodo: "get" | "post" | "patch" | "delete") {
+    const adaptador = vi.fn(async (config) => ({ data: {}, status: 200, statusText: "OK", headers: {}, config }));
+    api.defaults.adapter = adaptador;
+    await api.request({ method: metodo, url: "/prueba" });
+    const config = adaptador.mock.calls[0][0];
+    return { cabecera: config.headers[CABECERA_CSRF], withCredentials: config.withCredentials };
+  }
+
+  it("en POST/PATCH/DELETE repite el token de la cookie en X-CSRF-Token y envía credenciales", async () => {
+    ponerCookie(COOKIE_CSRF, "token-csrf");
+    for (const metodo of ["post", "patch", "delete"] as const) {
+      const { cabecera, withCredentials } = await cabeceraEnviada(metodo);
+      expect(cabecera).toBe("token-csrf");
+      expect(withCredentials).toBe(true);
+    }
+  });
+
+  it("en GET no agrega la cabecera, y sin cookie tampoco", async () => {
+    ponerCookie(COOKIE_CSRF, "token-csrf");
+    expect((await cabeceraEnviada("get")).cabecera).toBeUndefined();
+    borrarCookie(COOKIE_CSRF);
+    expect((await cabeceraEnviada("post")).cabecera).toBeUndefined();
+  });
+});
+
+describe("mensajeError", () => {
+  function errorHttp(status: number, data: unknown) {
+    const config = { headers: new AxiosHeaders() };
+    return new AxiosError("fallo", "ERR", config, {}, { status, data, statusText: "", headers: {}, config });
+  }
+
+  it("usa el mensaje del servidor y, en errores 5xx, agrega el código de referencia corto", () => {
+    expect(mensajeError(errorHttp(409, { error: "Ya existe." }))).toBe("Ya existe.");
+    expect(mensajeError(errorHttp(500, { error: "Ocurrió un error inesperado.", referencia: "abcdef12-3456-7890" }))).toBe(
+      "Ocurrió un error inesperado. (código abcdef12)"
+    );
+  });
+
+  it("une los detalles de validación", () => {
+    expect(mensajeError(errorHttp(422, { error: "Datos inválidos.", detalles: [{ campo: "a", mensaje: "Uno." }, { campo: "b", mensaje: "Dos." }] }))).toBe("Uno. Dos.");
+  });
+
+  it("sin respuesta del servidor explica que es un problema de conexión (nunca 'credenciales incorrectas')", () => {
+    const sinRespuesta = new AxiosError("Network Error", "ERR_NETWORK");
+    expect(mensajeError(sinRespuesta, "Correo o contraseña incorrectos.")).toMatch(/No se pudo conectar con el servidor/);
+  });
+});

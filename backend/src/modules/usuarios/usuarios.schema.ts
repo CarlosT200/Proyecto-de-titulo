@@ -1,30 +1,48 @@
 import { z } from "zod";
 import { Rol } from "@prisma/client";
 
+const nombre = (campo: string) =>
+  z.string().trim().min(1, `El ${campo} es obligatorio.`).max(80, `El ${campo} puede tener hasta 80 caracteres.`);
+
+// Telefono chileno o internacional: digitos, espacios, "+", guiones y parentesis. No se valida el
+// formato exacto (hay muchos validos), solo que sea plausible y acotado.
+export const telefono = z
+  .string()
+  .trim()
+  .max(30, "El teléfono puede tener hasta 30 caracteres.")
+  .regex(/^[+\d\s()-]*$/, "El teléfono solo puede tener números, espacios, +, guiones y paréntesis.");
+
+// 8 a 128 caracteres: bcrypt solo usa los primeros 72 bytes, y una contraseña enorme haria lento
+// el hash (abuso de CPU).
+const password = z
+  .string()
+  .min(8, "La contraseña debe tener al menos 8 caracteres.")
+  .max(128, "La contraseña puede tener hasta 128 caracteres.");
+
 export const crearUsuarioSchema = z.object({
-  nombre: z.string().min(1, "El nombre es obligatorio."),
-  apellido: z.string().min(1, "El apellido es obligatorio."),
-  email: z.string().email("Ingresa un correo válido."),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
-  rol: z.nativeEnum(Rol),
-  telefono: z.string().optional(),
-  departamentoId: z.string().uuid().optional().nullable(),
+  nombre: nombre("nombre"),
+  apellido: nombre("apellido"),
+  email: z.email("Ingresa un correo válido.").max(254, "El correo es demasiado largo."),
+  password,
+  rol: z.enum(Rol),
+  telefono: telefono.optional(),
+  departamentoId: z.uuid().optional().nullable(),
 });
 
 export const actualizarUsuarioSchema = z.object({
-  nombre: z.string().min(1).optional(),
-  apellido: z.string().min(1).optional(),
-  telefono: z.string().optional().nullable(),
-  departamentoId: z.string().uuid().optional().nullable(),
+  nombre: nombre("nombre").optional(),
+  apellido: nombre("apellido").optional(),
+  telefono: telefono.optional().nullable(),
+  departamentoId: z.uuid().optional().nullable(),
   activo: z.boolean().optional(),
 });
 
 export const restablecerPasswordSchema = z.object({
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+  password,
 });
 
 export const listarUsuariosQuerySchema = z.object({
-  rol: z.nativeEnum(Rol).optional(),
+  rol: z.enum(Rol).optional(),
   activo: z
     .enum(["true", "false"])
     .optional()

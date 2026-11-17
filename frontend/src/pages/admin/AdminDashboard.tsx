@@ -22,9 +22,10 @@ import {
 } from "@phosphor-icons/react";
 import { dashboardApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { Button, Card, CardHeader, EmptyState, Spinner, Alert, Badge, HorizontalBarChart } from "../../components/ui";
-import { BotonHero, HeroBanner, RequiereAtencion, saludoSegunHora } from "../../components/Inicio";
+import { BotonHero, HeroBanner, RequiereAtencion } from "../../components/Inicio";
+import { saludoSegunHora } from "../../lib/tiempo";
 import { Cifra } from "../../components/Cifra";
 import { formatFechaHora, formatMonto } from "../../lib/format";
 import { RESULTADO_ACCESO_LABEL } from "../../lib/badges";

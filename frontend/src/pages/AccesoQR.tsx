@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Buildings, CheckCircle, QrCode, SignIn, WarningCircle, XCircle } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 import { qrApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { Button, Spinner } from "../components/ui";

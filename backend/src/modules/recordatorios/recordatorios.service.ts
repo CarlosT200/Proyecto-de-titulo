@@ -5,6 +5,7 @@ import { fechaLarga, hoyEnChile, nombrePeriodo, pesos } from "../../lib/gastosCo
 import { ENCOMIENDA_ATRASADA_HORAS, ENCOMIENDA_MUY_ATRASADA_HORAS, HORA_MS } from "../../lib/umbrales";
 import { crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { idsResidentes } from "../gastos-comunes/gastos-comunes.service";
+import { logger } from "../../lib/logger";
 
 // Recordatorios automaticos: gasto comun por vencer y vencido, y encomiendas sin retirar.
 // Corre cada hora (ver recordatorios.programador.ts) y cada recordatorio sale UNA sola vez: antes de
@@ -34,7 +35,7 @@ async function avisar(usuarioIds: string[], data: Parameters<typeof crearNotific
     await crearNotificacionesMasivas(usuarioIds, data);
     return true;
   } catch (error) {
-    console.error("[recordatorios] No se pudo enviar un aviso:", error);
+    logger.error("recordatorios: no se pudo enviar un aviso", { error });
     return false;
   }
 }

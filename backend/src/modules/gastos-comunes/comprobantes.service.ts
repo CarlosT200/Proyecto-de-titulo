@@ -4,6 +4,7 @@ import { AppError, ConflictError, NotFoundError } from "../../lib/errors";
 import { crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { hoyEnChile, nombrePeriodo, nombreUnidad, pesos } from "../../lib/gastosComunes";
 import { UNIDAD, aFecha, idsResidentes, sumarPago } from "./gastos-comunes.service";
+import { logger } from "../../lib/logger";
 
 // El residente informa un pago con su comprobante (HU de cobranza): la administracion lo revisa y,
 // al aprobarlo, se registra el pago con la misma regla que un pago manual (nunca mas que el saldo).
@@ -83,7 +84,7 @@ export async function informarPago(
       entidadId: comprobante.id,
     });
   } catch (error) {
-    console.error("[comprobantes] No se pudo avisar a la administración:", error);
+    logger.error("comprobantes: no se pudo avisar a la administración", { error });
   }
 
   return { ...comprobante, unidad, periodo: nombre };

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import clsx from "clsx";
@@ -19,8 +19,9 @@ import {
   Siren,
   WarningCircle,
 } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
-import { api, mensajeError } from "../api/client";
+import { useAuth } from "../context/auth";
+import { useConfigPublica } from "../context/configPublica";
+import { mensajeError } from "../api/client";
 import { Button } from "../components/ui";
 import { SkylineBackground } from "../components/SkylineBackground";
 import { PieDePagina } from "../components/PieDePagina";
@@ -66,14 +67,11 @@ export default function Login() {
   // de iniciar sesion vuelve a ese QR en vez de caer en el inicio.
   const volverA = (location.state as { volverA?: string } | null)?.volverA;
   const destino = volverA?.startsWith("/acceso/") ? volverA : "/";
-  // El servidor decide si se muestran las cuentas de demostracion (ocultas en produccion).
-  const [cuentasDemo, setCuentasDemo] = useState(false);
-  useEffect(() => {
-    api
-      .get<{ cuentasDemo: boolean }>("/config")
-      .then((r) => setCuentasDemo(r.data.cuentasDemo))
-      .catch(() => setCuentasDemo(false));
-  }, []);
+  // El servidor decide si se muestran las cuentas de demostracion (ocultas en produccion) y si el
+  // SOS esta en modo demostracion (se indica aqui para poder comprobarlo antes de entrar).
+  const configPublica = useConfigPublica();
+  const cuentasDemo = configPublica.estado === "ok" && configPublica.config.cuentasDemo;
+  const sosModoDemo = configPublica.estado === "ok" && configPublica.config.sosModoDemo;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verPassword, setVerPassword] = useState(false);
@@ -309,6 +307,16 @@ export default function Login() {
                   </div>
                   <p className="mt-2 text-center text-xs text-slate-400">Contraseña de todas: {PASSWORD_DEMO}</p>
                 </div>
+                )}
+
+                {sosModoDemo && (
+                  <p
+                    data-testid="login-modo-demo"
+                    className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-amber-200/90"
+                  >
+                    <Siren size={14} weight="fill" aria-hidden />
+                    Modo demostración: el botón SOS no llama a números reales.
+                  </p>
                 )}
               </div>
             </motion.div>

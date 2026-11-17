@@ -9,7 +9,7 @@ import { ListaEncomiendas } from "../../components/Encomiendas";
 import { CapturaFoto } from "../../components/CapturaFoto";
 import { leerEtiqueta, emparejarResidente } from "../../lib/ocrEncomienda";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 
 // Empresas de despacho mas conocidas en Chile. "OTRO" habilita un campo de texto libre para
 // remitentes que no esten en la lista.

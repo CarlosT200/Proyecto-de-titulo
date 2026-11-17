@@ -10,6 +10,7 @@ export const FORMATO_RESPALDO = "habitasmart-respaldo-v1";
 
 export interface ModeloRespaldo {
   nombre: string; // "Usuario"
+  tabla: string; // "usuarios" (nombre real en PostgreSQL, por @@map)
   delegado: string; // "usuario" (como se llama en el cliente de Prisma)
   camposFecha: string[];
   camposJson: string[];
@@ -21,6 +22,7 @@ type ModeloDmmf = (typeof Prisma.dmmf.datamodel.models)[number];
 export function describirModelos(modelos: readonly ModeloDmmf[] = Prisma.dmmf.datamodel.models): ModeloRespaldo[] {
   return modelos.map((m) => ({
     nombre: m.name,
+    tabla: m.dbName ?? m.name,
     delegado: m.name.charAt(0).toLowerCase() + m.name.slice(1),
     camposFecha: m.fields.filter((f) => f.kind === "scalar" && f.type === "DateTime").map((f) => f.name),
     camposJson: m.fields.filter((f) => f.kind === "scalar" && f.type === "Json").map((f) => f.name),
@@ -32,6 +34,23 @@ export function describirModelos(modelos: readonly ModeloDmmf[] = Prisma.dmmf.da
       ),
     ],
   }));
+}
+
+// Antes de respaldar o restaurar: el esquema del codigo (cliente de Prisma) debe coincidir con las
+// tablas de la base. Si falta alguna, se DETIENE con un error claro; nunca se salta la tabla, porque
+// eso produciria un respaldo incompleto sin aviso. Caso tipico: correr el script de una version mas
+// nueva contra una base a la que aun no se le aplicaron sus migraciones (ver docs/OPERACION.md §4).
+export function verificarTablasDelEsquema(modelos: Pick<ModeloRespaldo, "nombre" | "tabla">[], tablasDeLaBase: Iterable<string>): void {
+  const existentes = new Set(tablasDeLaBase);
+  const faltantes = modelos.filter((m) => !existentes.has(m.tabla)).map((m) => m.tabla);
+  if (faltantes.length > 0) {
+    throw new Error(
+      `La base de datos no tiene ${faltantes.length === 1 ? "la tabla" : "las tablas"} ${faltantes.join(", ")}, que este código sí espera. ` +
+        "El código es más nuevo que la base (sus migraciones aún no se aplican). Para producción antes de un merge con migraciones, " +
+        "respalda con el código de main o con pg_dump; en una base local o de prueba, aplica antes npm run prisma:migrate:deploy. " +
+        "Ver docs/OPERACION.md §4."
+    );
+  }
 }
 
 // Orden de insercion: cada tabla despues de aquellas de las que depende (clave foranea).

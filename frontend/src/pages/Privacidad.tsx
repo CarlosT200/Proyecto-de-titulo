@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ShieldCheck } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 import { PieDePagina } from "../components/PieDePagina";
 
 // Aviso de privacidad (Ley N.º 19.628 modificada por la Ley N.º 21.719, vigente desde el 1 de
@@ -13,7 +13,7 @@ import { PieDePagina } from "../components/PieDePagina";
 // comunidad debe confirmarlos, idealmente con alguien con formacion legal, antes de usar la app
 // con residentes reales.
 const REGION_SERVIDORES = "Estados Unidos";
-const ULTIMA_ACTUALIZACION = "5 de octubre de 2026";
+const ULTIMA_ACTUALIZACION = "16 de noviembre de 2026";
 
 const DATOS: [string, string, string, string][] = [
   [
@@ -103,6 +103,7 @@ const PLAZOS: [string, string, string][] = [
   ["Cuenta y perfil", "Mientras seas residente o trabajador, más 6 meses", "Se eliminan o anonimizan"],
   ["Registro de accesos QR e invitaciones", "12 meses desde el ingreso", "Se eliminan"],
   ["Alertas SOS", "12 meses desde la alerta", "Se eliminan"],
+  ["Sesiones abiertas (tipo de navegador y fechas)", "Hasta que la sesión vence o se cierra, más 30 días", "Se eliminan automáticamente"],
   ["Suscripción push", "Hasta que desactives las notificaciones o el navegador la invalide", "Se elimina de inmediato"],
   ["Notificaciones", "Hasta que las borres, o 6 meses", "Se eliminan"],
   ["Multas y reservas", "5 años, por posibles reclamos o cobros", "Se eliminan"],
@@ -211,7 +212,11 @@ export default function Privacidad() {
             analítica ni publicidad, y no vendemos tus datos.
           </p>
           <Tabla columnas={["Categoría", "Datos", "De quién", "De dónde salen"]} filas={DATOS} />
-          <p>En tu dispositivo, la app guarda tu sesión y tu preferencia de tema claro u oscuro. No usa cookies de terceros.</p>
+          <p>
+            En tu dispositivo, la app guarda tu sesión en una cookie propia y protegida (necesaria para funcionar: se borra al salir y
+            vence sola) y tu preferencia de tema claro u oscuro. Para que puedas revisar tus sesiones abiertas, guarda también el tipo
+            de navegador de cada una. No usa cookies de terceros ni de publicidad.
+          </p>
           <p>
             <strong>Datos de visitas:</strong> cuando invitas a alguien, nos entregas su nombre. Avísale que registrarás ese
             dato para su ingreso al condominio.

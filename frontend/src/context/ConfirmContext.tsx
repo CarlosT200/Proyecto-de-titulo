@@ -1,23 +1,13 @@
-import { createContext, ReactNode, useCallback, useContext, useState } from "react";
+import { ReactNode, useCallback, useState } from "react";
 import { WarningCircle } from "@phosphor-icons/react";
 import { Button, Modal } from "../components/ui";
-
-interface ConfirmOptions {
-  titulo?: string;
-  textoConfirmar?: string;
-  textoCancelar?: string;
-  /** "peligro" (rojo, por defecto) para acciones destructivas; "normal" para confirmaciones neutras. */
-  tono?: "peligro" | "normal";
-}
+import { ConfirmContext, type Confirmar, type ConfirmOptions } from "./confirmar";
 
 interface ConfirmState extends ConfirmOptions {
   mensaje: string;
   resolve: (valor: boolean) => void;
 }
 
-type Confirmar = (mensaje: string, opciones?: ConfirmOptions) => Promise<boolean>;
-
-const ConfirmContext = createContext<Confirmar | undefined>(undefined);
 
 // Reemplaza window.confirm() -- ese dialogo nativo del navegador se ve fuera
 // de lugar (barra con el dominio, botones del sistema) en vez de parte de la
@@ -67,10 +57,4 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       </Modal>
     </ConfirmContext.Provider>
   );
-}
-
-export function useConfirm(): Confirmar {
-  const ctx = useContext(ConfirmContext);
-  if (!ctx) throw new Error("useConfirm debe usarse dentro de ConfirmProvider");
-  return ctx;
 }

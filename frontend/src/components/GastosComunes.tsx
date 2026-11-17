@@ -4,7 +4,7 @@ import { Prohibit, Receipt } from "@phosphor-icons/react";
 import { gastosComunesApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { useAsync } from "../hooks/useAsync";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "../context/toast";
 import { Alert, Badge, Button, Input, Label, Modal, Select, Spinner, Textarea } from "./ui";
 import { formatFecha, formatMonto, hoyLocal } from "../lib/format";
 import { usePulsoAlCambiar } from "../hooks/usePulsoAlCambiar";

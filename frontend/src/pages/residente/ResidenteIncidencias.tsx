@@ -25,7 +25,7 @@ import { PRIORIDAD_LABEL, PRIORIDAD_TONO } from "../../lib/badges";
 import { CATEGORIAS_INCIDENCIA, etiquetaCategoria, iconoCategoria } from "../../lib/categorias";
 import type { Incidencia } from "../../types";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 
 // Una incidencia en "Mis incidencias". La recien reportada entra con un movimiento corto y, si la lista
 // quedo fuera de la pantalla (con una columna el formulario esta arriba), se acerca para confirmarlo.

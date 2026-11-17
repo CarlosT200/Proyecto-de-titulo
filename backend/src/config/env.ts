@@ -31,19 +31,35 @@ function requiredSecret(name: string): string {
 
 const port = Number(process.env.PORT ?? 4000);
 
+// Un numero positivo desde una variable de entorno, o el valor por defecto si falta o no es valido.
+function numeroPositivo(name: string, porDefecto: number): number {
+  const valor = Number(process.env[name]);
+  return Number.isFinite(valor) && valor > 0 ? valor : porDefecto;
+}
+
+// Origenes permitidos para CORS y para la verificacion de "Origin" (CSRF): lista separada por comas.
+function listaDeOrigenes(valor: string): string[] {
+  return valor
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
+
 export const env = {
   port,
   nodeEnv: process.env.NODE_ENV ?? "development",
   databaseUrl: required("DATABASE_URL"),
+  // Reservada: desde la Fase 2 no firma nada (las sesiones son tokens aleatorios guardados como hash
+  // en la base, y las descargas usan la sesion). Se mantiene obligatoria y fuerte para no romper
+  // despliegues existentes y para cualquier firma futura.
   jwtSecret: requiredSecret("JWT_SECRET"),
-  // Personal (administracion y conserjeria): sesion corta, suelen usar equipos compartidos.
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "8h",
-  // Residentes: sesion larga para no pedirles la contraseña todos los dias. Es seguro porque cada
-  // pedido revisa la cuenta en la base (se corta al deshabilitarla) y cambiar o restablecer la
-  // contraseña cierra las sesiones anteriores (ver middleware/auth.ts).
-  jwtExpiresInResidente: process.env.JWT_EXPIRES_IN_RESIDENTE ?? "30d",
+  // Duracion de las sesiones. Personal (administracion y conserjeria): corta, suelen usar equipos
+  // compartidos. Residentes: larga, para no pedirles la contraseña todos los dias. Es seguro porque
+  // cada pedido revisa la sesion y la cuenta en la base, y cualquier sesion se puede revocar.
+  sesionPersonalHoras: numeroPositivo("SESION_PERSONAL_HORAS", 8),
+  sesionResidenteDias: numeroPositivo("SESION_RESIDENTE_DIAS", 30),
   qrTokenSecret: requiredSecret("QR_TOKEN_SECRET"),
-  corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  corsOrigins: listaDeOrigenes(process.env.CORS_ORIGIN ?? "http://localhost:5173"),
   // Base publica de la app (mismo origen que sirve frontend+API). Se usa para
   // que el QR codifique un link real (https://.../acceso/<token>) en vez de
   // solo el token en texto plano -- asi cualquier camara de celular puede

@@ -36,3 +36,11 @@ export function duracionLegible(horas: number): string {
   const dias = Math.round((horas / 24) * 10) / 10;
   return `${dias.toLocaleString("es-CL")} ${dias === 1 ? "día" : "días"}`;
 }
+
+// Saludo del banner de inicio segun la hora local del dispositivo.
+export function saludoSegunHora(fecha = new Date()): string {
+  const hora = fecha.getHours();
+  if (hora < 12) return "Buenos días";
+  if (hora < 20) return "Buenas tardes";
+  return "Buenas noches";
+}

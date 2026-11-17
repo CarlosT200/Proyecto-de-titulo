@@ -6,6 +6,7 @@ vi.mock("../../lib/prisma", () => ({
   prisma: {
     usuario: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
     departamento: { findFirst: vi.fn() },
+    sesion: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
   },
 }));
 
@@ -19,6 +20,7 @@ const findMany = prisma.usuario.findMany as unknown as Mock;
 const create = prisma.usuario.create as unknown as Mock;
 const update = prisma.usuario.update as unknown as Mock;
 const unidadFindFirst = prisma.departamento.findFirst as unknown as Mock;
+const revocarSesiones = prisma.sesion.updateMany as unknown as Mock;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -54,8 +56,12 @@ describe("restablecerPassword", () => {
     expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "u-1", condominioId: "condo-1" } }));
     const { data } = update.mock.calls[0][0];
     expect(data.debeCambiarPassword).toBe(true);
-    // las sesiones que la persona tenia abiertas dejan de valer
+    // las sesiones que la persona tenia abiertas dejan de valer: por fecha y por revocacion explicita
     expect(data.passwordCambiadaEn).toBeInstanceOf(Date);
+    expect(revocarSesiones).toHaveBeenCalledWith({
+      where: { usuarioId: "u-1", revocadaEn: null },
+      data: { revocadaEn: expect.any(Date) },
+    });
     expect(await bcrypt.compare("otra-temporal-456", data.passwordHash)).toBe(true);
   });
 
@@ -63,6 +69,23 @@ describe("restablecerPassword", () => {
     findFirst.mockResolvedValue(null);
     await expect(restablecerPassword("condo-1", "ajeno", "otra-temporal-456")).rejects.toThrow(NotFoundError);
     expect(update).not.toHaveBeenCalled();
+    expect(revocarSesiones).not.toHaveBeenCalled();
+  });
+});
+
+describe("actualizarUsuario", () => {
+  it("deshabilitar la cuenta revoca sus sesiones abiertas; otros cambios no", async () => {
+    findFirst.mockResolvedValue({ id: "u-1" });
+    update.mockResolvedValue({ id: "u-1" });
+
+    await actualizarUsuario("condo-1", "u-1", { telefono: "+56 9 1111 1111" });
+    expect(revocarSesiones).not.toHaveBeenCalled();
+
+    await actualizarUsuario("condo-1", "u-1", { activo: false });
+    expect(revocarSesiones).toHaveBeenCalledWith({
+      where: { usuarioId: "u-1", revocadaEn: null },
+      data: { revocadaEn: expect.any(Date) },
+    });
   });
 });
 

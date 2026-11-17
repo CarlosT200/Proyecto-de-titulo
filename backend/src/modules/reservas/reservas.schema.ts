@@ -5,7 +5,7 @@ const horaRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const crearReservaSchema = z
   .object({
-    espacioComunId: z.string().uuid(),
+    espacioComunId: z.uuid(),
     fecha: fechaCalendario,
     horaInicio: z.string().regex(horaRegex, "Formato de hora inválido (HH:mm)."),
     horaFin: z.string().regex(horaRegex, "Formato de hora inválido (HH:mm)."),
@@ -16,14 +16,14 @@ export const crearReservaSchema = z
   });
 
 export const disponibilidadQuerySchema = z.object({
-  espacioComunId: z.string().uuid(),
+  espacioComunId: z.uuid(),
   fecha: fechaCalendario,
 });
 
 // Calendario: hasta dos meses de una vez.
 export const ocupacionQuerySchema = z
   .object({
-    espacioComunId: z.string().uuid(),
+    espacioComunId: z.uuid(),
     desde: fechaCalendario,
     hasta: fechaCalendario,
   })

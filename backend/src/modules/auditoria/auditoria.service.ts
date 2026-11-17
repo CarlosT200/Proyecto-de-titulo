@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 // RNF-06: el sistema registra las acciones administrativas relevantes para mantener trazabilidad.
 export type AccionAuditoria = "CREAR" | "ACTUALIZAR" | "ELIMINAR" | "CANCELAR";
@@ -41,7 +42,7 @@ export async function registrarAuditoria(registro: RegistroAuditoria): Promise<v
   } catch (error) {
     // Un fallo al dejar el rastro no debe deshacer ni ocultar la accion que ya se hizo, pero
     // tampoco puede pasar en silencio: queda en el log del servidor.
-    console.error("No se pudo registrar la auditoría:", registro.accion, registro.entidad, error);
+    logger.error("no se pudo registrar la auditoría", { accion: registro.accion, entidad: registro.entidad, error });
   }
 }
 

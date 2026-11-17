@@ -1,4 +1,5 @@
 import { enviarRecordatorios } from "./recordatorios.service";
+import { logger } from "../../lib/logger";
 
 const CADA_MS = 60 * 60 * 1000;
 
@@ -10,10 +11,10 @@ export async function correrRecordatorios(origen: string) {
   try {
     const r = await enviarRecordatorios();
     const total = r.gastoPorVencer + r.gastoVencido + r.encomiendas;
-    if (total > 0) console.log(`[recordatorios] (${origen}) enviados: ${JSON.stringify(r)}`);
+    if (total > 0) logger.info("recordatorios enviados", { origen, ...r });
     return r;
   } catch (error) {
-    console.error("[recordatorios] Falló la revisión:", error);
+    logger.error("recordatorios: falló la revisión", { origen, error });
     return null;
   } finally {
     enCurso = false;

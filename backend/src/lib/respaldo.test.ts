@@ -6,6 +6,7 @@ import {
   ordenarPorDependencias,
   reconstruirFila,
   validarArchivo,
+  verificarTablasDelEsquema,
 } from "./respaldo";
 
 // RNF-12: si el orden de restauracion o la conversion de fechas falla, el respaldo no se puede
@@ -35,8 +36,25 @@ describe("respaldo", () => {
     expect(posicion.get("QrToken")!).toBeLessThan(posicion.get("AccesoLog")!);
   });
 
+  it("conoce el nombre real de cada tabla (@@map), incluida la de sesiones de la Fase 2", () => {
+    const tablas = new Map(modelos.map((m) => [m.nombre, m.tabla]));
+    expect(tablas.get("Usuario")).toBe("usuarios");
+    expect(tablas.get("Sesion")).toBe("sesiones");
+  });
+
+  it("se detiene con un error claro si la base no tiene una tabla del esquema (nunca la salta)", () => {
+    const todas = modelos.map((m) => m.tabla);
+    expect(() => verificarTablasDelEsquema(modelos, todas)).not.toThrow();
+    // base anterior a la Fase 2: todo menos "sesiones"
+    const sinSesiones = todas.filter((t) => t !== "sesiones");
+    expect(() => verificarTablasDelEsquema(modelos, sinSesiones)).toThrow(/no tiene la tabla sesiones/);
+    expect(() => verificarTablasDelEsquema(modelos, sinSesiones)).toThrow(/OPERACION\.md/);
+    // tablas extra en la base (por ejemplo _prisma_migrations) no molestan
+    expect(() => verificarTablasDelEsquema(modelos, [...todas, "_prisma_migrations"])).not.toThrow();
+  });
+
   it("detecta dependencias circulares en vez de quedarse en un ciclo infinito", () => {
-    const base = { delegado: "x", camposFecha: [], camposJson: [] };
+    const base = { tabla: "x", delegado: "x", camposFecha: [], camposJson: [] };
     expect(() =>
       ordenarPorDependencias([
         { ...base, nombre: "A", dependencias: ["B"] },

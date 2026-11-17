@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { NotFoundError } from "../../lib/errors";
 
 // HU-22: publicar documentos.
@@ -22,6 +23,7 @@ export async function listarDocumentos(condominioId: string) {
     where: { condominioId },
     select: { id: true, titulo: true, categoria: true, createdAt: true },
     orderBy: { createdAt: "desc" },
+    take: LIMITE_LISTADO,
   });
 }
 

@@ -3,11 +3,12 @@ import { FileText, UploadSimple } from "@phosphor-icons/react";
 import { documentosApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Alert, Button, Card, CardHeader, EmptyState, Input, Label, PageHeader, Spinner } from "../../components/ui";
-import { ListaDocumentos, categoriasDe } from "../../components/Documentos";
+import { ListaDocumentos } from "../../components/Documentos";
+import { categoriasDe } from "../../lib/documentos";
 import { abrirDocumento } from "../../lib/documentos";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import type { Documento } from "../../types";
 
 // Mismo limite que el servidor (middleware/upload.ts): se avisa antes de subir para no esperar en vano.

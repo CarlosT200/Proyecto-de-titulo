@@ -1,13 +1,14 @@
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { BellRinging, Camera, Export as IconoCompartir, LockKey, Pencil, ShieldCheck, UserCircle } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/auth";
+import { useToast } from "../context/toast";
 import { authApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { abiertaComoApp, esIOS } from "../lib/push";
 import { Alert, Button, Card, CardHeader, Input, Label, PageHeader } from "../components/ui";
+import { SesionesActivas } from "../components/SesionesActivas";
 
 const ROL_LABEL: Record<string, string> = {
   ADMIN: "Administrador",
@@ -16,7 +17,7 @@ const ROL_LABEL: Record<string, string> = {
 };
 
 export default function Perfil() {
-  const { usuario, actualizarUsuario, reemplazarSesion } = useAuth();
+  const { usuario, actualizarUsuario } = useAuth();
   const toast = useToast();
   const push = usePushNotifications();
   const iosSinInstalar = !push.soportado && esIOS() && !abiertaComoApp();
@@ -97,8 +98,9 @@ export default function Perfil() {
     }
     setCambiandoPassword(true);
     try {
-      const sesion = await authApi.cambiarPassword(actual, nueva);
-      reemplazarSesion(sesion.token, sesion.usuario);
+      // El servidor cierra las demas sesiones y deja la cookie de la nueva.
+      const { usuario: actualizado } = await authApi.cambiarPassword(actual, nueva);
+      actualizarUsuario(actualizado);
       setActual("");
       setNueva("");
       setConfirmarNueva("");
@@ -289,6 +291,8 @@ export default function Perfil() {
           )}
         </div>
       </Card>
+
+      <SesionesActivas />
 
       <Card plana className="h-fit">
         <CardHeader nivel={2} title="Privacidad" subtitle="Qué datos tuyos usa HabitaSmart y cómo pedir acceso, corrección o eliminación." />

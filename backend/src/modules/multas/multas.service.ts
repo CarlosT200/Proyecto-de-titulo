@@ -1,5 +1,6 @@
 import { EstadoMulta, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { AppError, ConflictError, NotFoundError } from "../../lib/errors";
 import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import { ESTADO_MULTA_LABEL } from "../../lib/etiquetas";
@@ -39,7 +40,7 @@ export async function crearMulta(
 
 // HU-07: el residente consulta sus propias multas.
 export async function listarMisMultas(usuarioId: string) {
-  return prisma.multa.findMany({ where: { usuarioId }, orderBy: { fecha: "desc" } });
+  return prisma.multa.findMany({ where: { usuarioId }, orderBy: { fecha: "desc" }, take: LIMITE_LISTADO });
 }
 
 export async function listarMultasCondominio(
@@ -50,6 +51,7 @@ export async function listarMultasCondominio(
     where: { condominioId, estado: filtros.estado, usuarioId: filtros.usuarioId },
     include: { usuario: { select: { id: true, nombre: true, apellido: true, departamento: true } } },
     orderBy: { fecha: "desc" },
+    take: LIMITE_LISTADO,
   });
 }
 

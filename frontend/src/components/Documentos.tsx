@@ -5,14 +5,8 @@ import { EmptyState, SearchInput } from "./ui";
 import { useAcercarAlAparecer } from "../hooks/useAcercarAlAparecer";
 import { formatDia } from "../lib/format";
 import { horasDesde } from "../lib/tiempo";
+import { categoriaDe, categoriasDe } from "../lib/documentos";
 import type { Documento } from "../types";
-
-const SIN_CATEGORIA = "General";
-const categoriaDe = (d: Documento) => d.categoria?.trim() || SIN_CATEGORIA;
-
-export function categoriasDe(docs: Documento[]): string[] {
-  return [...new Set(docs.map(categoriaDe))].sort((a, b) => a.localeCompare(b, "es"));
-}
 
 function FilaDocumento({ nuevo, children }: { nuevo: boolean; children: ReactNode }) {
   const ref = useAcercarAlAparecer<HTMLLIElement>(nuevo, 1023);

@@ -9,8 +9,8 @@ import { BadgeEstadoReserva } from "../../components/Reservas";
 import { CeldaResumen } from "../../components/CeldaResumen";
 import { formatFecha } from "../../lib/format";
 import { esDeHoy, esProxima, estadoVisible, ordenarReservas } from "../../lib/reservas";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import type { Reserva } from "../../types";
 
 const VISTAS = ["hoy", "proximas", "canceladas"] as const;

@@ -1,0 +1,43 @@
+name: CodeQL
+
+# Análisis estático de seguridad de GitHub (gratuito en repositorios públicos) para JavaScript y
+# TypeScript: busca inyecciones, XSS, redirecciones abiertas, uso inseguro de criptografía, etc.
+# Los hallazgos aparecen en la pestaña "Security" del repositorio. Corre en cada PR hacia main, en
+# cada push a main y una vez por semana (para detectar reglas nuevas sobre código que no cambió).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "30 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analizar:
+    name: Analizar JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # necesario solo para publicar los resultados en la pestaña Security
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Inicializar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Analizar
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

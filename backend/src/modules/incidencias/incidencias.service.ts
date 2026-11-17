@@ -1,5 +1,6 @@
 import { EstadoIncidencia, Prisma, PrioridadIncidencia, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { NotFoundError } from "../../lib/errors";
 import { sugerirClasificacion } from "./clasificador-ia";
 import { crearNotificacion, crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
@@ -83,17 +84,42 @@ export async function crearIncidencia(
 
 // HU-09: consultar estado (residente, solo sus incidencias).
 // Las listas no llevan la foto (base64, decenas de KB cada una): se ve al abrir el detalle.
-function sinFoto<T extends { fotoUrl: string | null }>(incidencia: T) {
-  const { fotoUrl, ...resto } = incidencia;
-  return { ...resto, tieneFoto: Boolean(fotoUrl) };
+// Campos de la lista SIN la foto: la foto va en base64 dentro de la fila (decenas de KB) y antes
+// cada listado la traia completa solo para saber si existia. Ahora se marca con una consulta liviana.
+const CAMPOS_LISTA = {
+  id: true,
+  condominioId: true,
+  usuarioId: true,
+  titulo: true,
+  descripcion: true,
+  ubicacion: true,
+  categoria: true,
+  prioridad: true,
+  estado: true,
+  responsableId: true,
+  sugerenciaIA: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+async function conMarcaDeFoto<T extends { id: string }>(incidencias: T[]): Promise<(T & { tieneFoto: boolean })[]> {
+  if (incidencias.length === 0) return [];
+  const conFoto = await prisma.incidencia.findMany({
+    where: { id: { in: incidencias.map((i) => i.id) }, fotoUrl: { not: null } },
+    select: { id: true },
+  });
+  const ids = new Set(conFoto.map((i) => i.id));
+  return incidencias.map((i) => ({ ...i, tieneFoto: ids.has(i.id) }));
 }
 
 export async function listarMisIncidencias(usuarioId: string) {
   const incidencias = await prisma.incidencia.findMany({
     where: { usuarioId },
+    select: CAMPOS_LISTA,
     orderBy: { createdAt: "desc" },
+    take: LIMITE_LISTADO,
   });
-  return incidencias.map(sinFoto);
+  return conMarcaDeFoto(incidencias);
 }
 
 // HU-10: el administrador visualiza todas las incidencias del condominio.
@@ -103,13 +129,15 @@ export async function listarIncidenciasCondominio(
 ) {
   const incidencias = await prisma.incidencia.findMany({
     where: { condominioId, estado: filtros.estado, prioridad: filtros.prioridad },
-    include: {
+    select: {
+      ...CAMPOS_LISTA,
       usuario: { select: { id: true, nombre: true, apellido: true, departamento: true } },
       responsable: { select: { id: true, nombre: true, apellido: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: LIMITE_LISTADO,
   });
-  return incidencias.map(sinFoto);
+  return conMarcaDeFoto(incidencias);
 }
 
 // HU-11: historial de una incidencia.

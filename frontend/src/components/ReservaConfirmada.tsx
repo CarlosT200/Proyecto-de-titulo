@@ -2,7 +2,7 @@ import { CalendarPlus, Clock, MapPin } from "@phosphor-icons/react";
 import { Button, Modal } from "./ui";
 import { CheckAnimado } from "./Celebracion";
 import { fechaConDia } from "../lib/reservas";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "../context/toast";
 
 export interface DatosReservaConfirmada {
   id: string;

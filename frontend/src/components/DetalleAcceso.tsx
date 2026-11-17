@@ -11,16 +11,9 @@ export type DetalleAccesoData =
   | null
   | undefined;
 
-export function formatUnidad(departamento: DepartamentoInfo): string | null {
+function formatUnidad(departamento: DepartamentoInfo): string | null {
   if (!departamento) return null;
   return `${departamento.torre?.nombre ?? ""} ${departamento.numero}`.trim();
-}
-
-export function nombrePersonaAcceso(detalle: DetalleAccesoData): string | null {
-  if (!detalle) return null;
-  if ("residente" in detalle) return `${detalle.residente.nombre} ${detalle.residente.apellido}`;
-  if ("visita" in detalle) return detalle.visita.nombreVisita;
-  return null;
 }
 
 export function DetalleAcceso({ detalle, className }: { detalle: DetalleAccesoData; className?: string }) {

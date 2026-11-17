@@ -4,7 +4,7 @@ import { CheckCircle, Warning } from "@phosphor-icons/react";
 import { multasApi } from "../../api/endpoints";
 import { mensajeError } from "../../api/client";
 import { useAsync } from "../../hooks/useAsync";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { Alert, Button, Card, EmptyState, Label, Modal, PageHeader, Spinner, Textarea } from "../../components/ui";
 import { BadgeEstadoMulta } from "../../components/Multas";
 import { RespuestaApelacion } from "../../components/RespuestaApelacion";

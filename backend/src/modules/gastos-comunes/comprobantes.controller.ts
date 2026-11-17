@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { aprobarComprobanteSchema, informarPagoSchema, rechazarComprobanteSchema } from "./gastos-comunes.schema";
 import * as service from "./comprobantes.service";
 import { AppError } from "../../lib/errors";
-import { coincideConTipo, firmarEnlaceComprobante, nombreDeArchivo, parsearDataUri, verificarEnlaceComprobante } from "../../lib/archivos";
+import { coincideConTipo, enviarArchivoVerificado, nombreDeArchivo, parsearDataUri } from "../../lib/archivos";
 import { auditar } from "../auditoria/auditoria.service";
 import { pesos } from "../../lib/gastosComunes";
 
@@ -48,32 +48,13 @@ export async function rechazarComprobanteController(req: Request, res: Response)
   res.json(r);
 }
 
-// Con la sesion iniciada: un enlace de 2 minutos para abrir el archivo en otra pestaña.
-export async function enlaceComprobanteController(req: Request, res: Response) {
-  await service.obtenerArchivoComprobante(req.auth!.condominioId, req.params.id, { id: req.auth!.sub, rol: req.auth!.rol });
-  const token = firmarEnlaceComprobante(req.params.id, req.auth!.condominioId);
-  res.json({ url: `/api/gastos-comunes/comprobantes/archivo/${token}` });
-}
-
-// Sin sesion (el enlace ya es la autorizacion): sirve el archivo con su tipo real.
+// Con la sesion iniciada (cookie): el archivo, solo para la administracion del condominio o un
+// residente de la unidad que informo el pago.
 export async function archivoComprobanteController(req: Request, res: Response) {
-  let enlace;
-  try {
-    enlace = verificarEnlaceComprobante(req.params.token);
-  } catch {
-    throw new AppError("El enlace venció. Vuelve a abrir el comprobante desde la aplicación.", 410);
-  }
-  const archivo = parsearDataUri(await service.obtenerArchivoComprobante(enlace.condominioId, enlace.comprobanteId));
-  if (!archivo || !coincideConTipo(archivo.buffer, archivo.mime)) {
+  const contenido = await service.obtenerArchivoComprobante(req.auth!.condominioId, req.params.id, { id: req.auth!.sub, rol: req.auth!.rol });
+  const archivo = parsearDataUri(contenido);
+  if (!archivo) {
     throw new AppError("El archivo está dañado o no se puede mostrar.", 422);
   }
-  // Igual que en documentos: el visor de PDF necesita quitar la politica general; solo se sirven
-  // archivos verificados por su contenido y con "nosniff".
-  res.removeHeader("Content-Security-Policy");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Cache-Control", "private, no-store");
-  res.setHeader("Content-Type", archivo.mime);
-  res.setHeader("Content-Length", archivo.buffer.length);
-  res.setHeader("Content-Disposition", `inline; filename="${nombreDeArchivo("comprobante", archivo.mime)}"`);
-  res.end(archivo.buffer);
+  enviarArchivoVerificado(res, archivo, nombreDeArchivo("comprobante", archivo.mime));
 }

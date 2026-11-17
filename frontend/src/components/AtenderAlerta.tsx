@@ -2,16 +2,12 @@ import { FormEvent, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react";
 import { sosApi } from "../api/endpoints";
 import { mensajeError } from "../api/client";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "../context/toast";
 import { Alert, Button, Label, Modal, Textarea } from "./ui";
 import { haceCuanto } from "../lib/tiempo";
 import { TIPO_EMERGENCIA_LABEL } from "../lib/badges";
 import type { AlertaSos } from "../types";
-
-export function unidadDeAlerta(a: AlertaSos): string | null {
-  if (!a.usuario.departamento) return null;
-  return [a.usuario.departamento.torre?.nombre, a.usuario.departamento.numero].filter(Boolean).join(" ");
-}
+import { unidadDeAlerta } from "../lib/unidades";
 
 // Modal para registrar que una alerta fue atendida (con una nota opcional de lo que se hizo).
 export function ModalAtenderAlerta({ alerta, onClose, onAtendida }: { alerta: AlertaSos; onClose: () => void; onAtendida: () => void }) {

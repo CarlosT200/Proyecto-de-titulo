@@ -11,13 +11,14 @@ import {
   Wrench,
 } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { comunicadosApi, encomiendasApi, gastosComunesApi, incidenciasApi, multasApi } from "../../api/endpoints";
 import { useAsync } from "../../hooks/useAsync";
 import { Card, CardHeader, EmptyState, Spinner } from "../../components/ui";
 import { Cifra } from "../../components/Cifra";
 import { ItemComunicado } from "../../components/Comunicados";
-import { AccesoRapido, ChipHero, HeroBanner, saludoSegunHora } from "../../components/Inicio";
+import { AccesoRapido, ChipHero, HeroBanner } from "../../components/Inicio";
+import { saludoSegunHora } from "../../lib/tiempo";
 import { formatMonto } from "../../lib/format";
 
 export default function ResidenteInicio() {

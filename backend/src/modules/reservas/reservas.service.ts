@@ -1,5 +1,6 @@
 import { EstadoReserva } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { LIMITE_LISTADO } from "../../lib/limites";
 import { ConflictError, ForbiddenError, NotFoundError } from "../../lib/errors";
 import { ahoraEnChile } from "../../lib/fechas";
 
@@ -118,6 +119,7 @@ export async function listarMisReservas(usuarioId: string) {
     where: { usuarioId },
     include: { espacioComun: true },
     orderBy: { fecha: "desc" },
+    take: LIMITE_LISTADO,
   });
 }
 
@@ -130,6 +132,7 @@ export async function listarReservasCondominio(condominioId: string) {
       usuario: { select: { id: true, nombre: true, apellido: true, departamento: true } },
     },
     orderBy: { fecha: "desc" },
+    take: LIMITE_LISTADO,
   });
 }
 

@@ -18,8 +18,8 @@ import { gastosComunesApi } from "../../api/endpoints";
 import { mensajeError } from "../../api/client";
 import { useAsync } from "../../hooks/useAsync";
 import { useFiltroUrl } from "../../hooks/useFiltroUrl";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
 import {
   Alert,
   Button,

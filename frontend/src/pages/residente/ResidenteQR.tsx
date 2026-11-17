@@ -23,9 +23,9 @@ import { compartirQr } from "../../lib/compartirQr";
 import { horaLocal } from "../../lib/dias";
 import { ESTADO_VISITA_LABEL, ESTADO_VISITA_TONO } from "../../lib/badges";
 import { mensajeError } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
-import { useConfirm } from "../../context/ConfirmContext";
-import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/toast";
+import { useConfirm } from "../../context/confirmar";
+import { useAuth } from "../../context/auth";
 
 // El QR del residente se renueva solo cada ROTACION_SEGUNDOS: cada vez que
 // se pide uno nuevo, el backend revoca el anterior (ver

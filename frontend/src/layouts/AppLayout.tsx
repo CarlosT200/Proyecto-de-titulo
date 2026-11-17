@@ -3,11 +3,12 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { Bell, Buildings, List, Moon, SignOut, Sun, Trash, UserCircle, X } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
-import { useConfirm } from "../context/ConfirmContext";
+import { useAuth } from "../context/auth";
+import { useTheme } from "../context/tema";
+import { useConfirm } from "../context/confirmar";
 import { notificacionesApi } from "../api/endpoints";
 import { NOTIFICACION_SOS_CLASE } from "../lib/badges";
+import { BannerModoDemo } from "../components/BannerModoDemo";
 import { BotonSOS } from "../components/BotonSOS";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { PieDePagina } from "../components/PieDePagina";
@@ -125,10 +126,10 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
     // La suscripcion push queda ligada al navegador, no a la sesion: sin esto,
     // en un equipo compartido (ej. el computador de conserjeria) la siguiente
     // persona seguiria recibiendo las notificaciones de la cuenta anterior.
-    // Tiene que ir antes de logout(): borrarla en el backend necesita el token.
+    // Tiene que ir antes de logout(): borrarla en el backend necesita la sesion.
     // Con tope de tiempo para que una red lenta nunca bloquee el cierre de sesion.
     await Promise.race([desactivarPush().catch(() => {}), new Promise((r) => setTimeout(r, 2000))]);
-    logout();
+    await logout();
     navigate("/login");
   }
 
@@ -230,6 +231,7 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
       </div>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <BannerModoDemo />
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/70 bg-white/95 px-4 py-3 lg:bg-white/80 lg:px-8 lg:backdrop-blur-xl dark:border-white/[0.06] dark:bg-slate-900/95 dark:lg:bg-slate-900/80">
           <div className="flex items-center gap-2">
             <button
@@ -304,7 +306,9 @@ export function AppLayout({ nav, children }: { nav: NavItem[]; children: ReactNo
               <button
                 className="relative rounded-lg p-2 max-sm:p-3 max-[359px]:p-2.5 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                 onClick={() => setPanelAbierto((v) => !v)}
-                aria-label="Notificaciones"
+                // El numero visible del globo forma parte del nombre (WCAG 2.5.3).
+                aria-label={noLeidas > 0 ? `Notificaciones, ${noLeidas > 9 ? "9+" : noLeidas} sin leer` : "Notificaciones"}
+                aria-expanded={panelAbierto}
               >
                 <motion.span
                   className="block"

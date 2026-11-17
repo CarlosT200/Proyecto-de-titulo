@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { MedioPago, MetodoProrrateo, Prisma, Rol } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 import { AppError, ConflictError, NotFoundError } from "../../lib/errors";
 import { crearNotificacionesMasivas } from "../notificaciones/notificaciones.service";
 import {
@@ -230,7 +231,7 @@ export async function crearPeriodo(condominioId: string, creadoPorId: string, da
         entidadId: cobro.id,
       });
     } catch (error) {
-      console.error("[gastos-comunes] No se pudo avisar a una unidad:", error);
+      logger.error("gastos comunes: no se pudo avisar a una unidad", { error });
     }
   }
 
