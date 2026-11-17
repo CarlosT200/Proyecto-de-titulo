@@ -22,6 +22,12 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # En versiones 0.x, pasar de 0.4 a 0.5 es un cambio incompatible aunque Dependabot lo trate
+      # como "menor": eslint-plugin-react-refresh 0.5 exige ESLint 9 o 10 y el frontend usa ESLint 8.
+      # Con ESLint 8, npm instala un ESLint 10 aparte y el lint se cae (visto en el PR #7).
+      # QUITAR esta excepcion cuando se migre a ESLint 9 (configuracion "flat"), en una tarea propia.
+      - dependency-name: "eslint-plugin-react-refresh"
+        versions: [">=0.5.0"]
     groups:
       menores-y-parches:
         update-types: ["minor", "patch"]
