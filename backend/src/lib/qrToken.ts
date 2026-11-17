@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 
@@ -23,14 +23,17 @@ export function esTokenCorto(token: string): boolean {
 
 // Codigo corto y legible para la validacion manual (cuando la camara no puede leer el QR). Se
 // muestra bajo el QR del residente y de la visita. Alfabeto sin caracteres ambiguos (sin O, 0, I,
-// 1, L) para que no se confundan al leerlo o teclearlo. 6 caracteres = 30^6 (~729 millones) de
-// combinaciones; la unicidad la garantiza el indice unico de la base al generarlo.
-const ALFABETO_CODIGO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+// 1, L) para que no se confundan al leerlo o teclearlo. 31 simbolos y 6 caracteres = 31^6
+// (~887 millones) de combinaciones; la unicidad la garantiza el indice unico de la base al generarlo.
+export const ALFABETO_CODIGO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+export const LARGO_CODIGO_MANUAL = 6;
 
+// Cada caracter se elige con crypto.randomInt, que es uniforme. Antes se usaba byte % 31: como 256
+// no es multiplo de 31, los primeros 8 simbolos salian algo mas seguido (CodeQL
+// js/biased-cryptographic-random).
 export function nuevoCodigoManual(): string {
-  const bytes = randomBytes(6);
   let codigo = "";
-  for (let i = 0; i < 6; i++) codigo += ALFABETO_CODIGO[bytes[i] % ALFABETO_CODIGO.length];
+  for (let i = 0; i < LARGO_CODIGO_MANUAL; i++) codigo += ALFABETO_CODIGO[randomInt(ALFABETO_CODIGO.length)];
   return codigo;
 }
 
@@ -40,7 +43,7 @@ export function normalizarCodigoManual(entrada: string): string {
 }
 
 export function esCodigoManual(valor: string): boolean {
-  return valor.length === 6 && [...valor].every((c) => ALFABETO_CODIGO.includes(c));
+  return valor.length === LARGO_CODIGO_MANUAL && [...valor].every((c) => ALFABETO_CODIGO.includes(c));
 }
 
 // Formato para mostrar: dos grupos de tres (ABJ-K7P) para que sea mas facil de leer y dictar.

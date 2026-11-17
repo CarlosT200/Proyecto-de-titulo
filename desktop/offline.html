@@ -59,13 +59,24 @@
     <h1>Sin conexion a internet</h1>
     <p>No se pudo conectar con el servidor de HabitaSmart. Revisa tu conexion a internet y vuelve a intentarlo.</p>
     <button id="reintentar">Reintentar</button>
+    <p id="ayuda" hidden>Para volver a intentarlo usa el menu HabitaSmart &rarr; Recargar (Ctrl+R).</p>
+    <script src="destinos.js"></script>
     <script>
-      // La URL del sitio llega como parametro ?u= desde main.js.
+      // main.js pasa la URL del sitio en ?u= (y dev=1 si la app no esta empaquetada).
+      // Ese valor NUNCA se usa directamente como destino: destinoDeReintento solo
+      // devuelve un origen de la lista conocida (https oficial, o localhost en
+      // desarrollo). Si no coincide, el boton no navega y se indica el menu Recargar,
+      // que en main.js vuelve a cargar la URL configurada.
       var params = new URLSearchParams(location.search);
-      var url = params.get("u");
+      var destino = window.DestinosHabitaSmart
+        ? window.DestinosHabitaSmart.destinoDeReintento(params.get("u"), { desarrollo: params.get("dev") === "1" })
+        : null;
       document.getElementById("reintentar").addEventListener("click", function () {
-        if (url) location.href = url;
-        else location.reload();
+        if (destino) {
+          location.replace(destino);
+        } else {
+          document.getElementById("ayuda").hidden = false;
+        }
       });
     </script>
   </body>

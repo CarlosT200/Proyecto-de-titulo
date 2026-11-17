@@ -85,6 +85,18 @@ describe("caché de recursos estáticos", () => {
   });
 });
 
+describe("límite del fallback de la SPA en la app real", () => {
+  it("el fallback lleva las cabeceras RateLimit; /health, /ready, /api/config y /api no", async () => {
+    const spa = await anonimo().get("/residente/qr");
+    expect(spa.headers["ratelimit"]).toBeDefined();
+    expect(spa.headers["x-ratelimit-limit"]).toBeUndefined();
+    for (const ruta of ["/health", "/ready", "/api/config", "/api/no-existe"]) {
+      const res = await anonimo().get(ruta);
+      expect(res.headers["ratelimit"], ruta).toBeUndefined();
+    }
+  });
+});
+
 describe("SOS en el entorno de pruebas (modo demostración)", () => {
   it("/api/config indica sosModoDemo:true en este entorno", async () => {
     const res = await anonimo().get("/api/config");

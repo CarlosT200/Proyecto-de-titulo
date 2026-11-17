@@ -10,6 +10,7 @@ import { logger } from "./lib/logger";
 import { protegerCsrf } from "./middleware/csrf";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { asignarRequestId, registrarSolicitud } from "./middleware/solicitud";
+import { limiteSpa } from "./middleware/limiteSpa";
 
 import authRoutes from "./modules/auth/auth.routes";
 import usuariosRoutes from "./modules/usuarios/usuarios.routes";
@@ -123,7 +124,8 @@ app.use(
   })
 );
 
-app.get("*", (req, res, next) => {
+// Fallback de la SPA, con su propio limite generoso (ver middleware/limiteSpa.ts).
+app.get("*", limiteSpa, (req, res, next) => {
   if (req.path.startsWith("/api")) {
     return next();
   }
