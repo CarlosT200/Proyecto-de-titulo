@@ -13,9 +13,18 @@ const FIRMAS: Record<string, (b: Buffer) => boolean> = {
   "image/webp": (b) => b.length >= 12 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WEBP",
 };
 
+// El MIME viene de fuera (navegador o data URI guardado): solo se usan claves PROPIAS de la tabla.
+// Sin esta comprobacion, "constructor" o "__proto__" devolverian funciones heredadas de Object y se
+// ejecutarian como si fueran una firma (alerta js/unvalidated-dynamic-method-call de CodeQL).
+// (Equivale a Object.hasOwn, que no esta en la lib ES2021 del tsconfig.)
+function esClavePropia(objeto: object, clave: string): boolean {
+  return Object.prototype.hasOwnProperty.call(objeto, clave);
+}
+
 export function coincideConTipo(buffer: Buffer, mime: string): boolean {
+  if (typeof mime !== "string" || !esClavePropia(FIRMAS, mime)) return false;
   const verificar = FIRMAS[mime];
-  return verificar ? verificar(buffer) : false;
+  return typeof verificar === "function" && verificar(buffer) === true;
 }
 
 const EXTENSIONES: Record<string, string> = {
@@ -26,7 +35,7 @@ const EXTENSIONES: Record<string, string> = {
 };
 
 export function extensionDeMime(mime: string): string | null {
-  return EXTENSIONES[mime] ?? null;
+  return esClavePropia(EXTENSIONES, mime) ? EXTENSIONES[mime] : null;
 }
 
 // Los documentos se guardan como "data:<tipo>;base64,<contenido>" dentro de la base de datos.
