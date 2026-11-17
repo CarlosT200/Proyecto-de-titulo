@@ -4,9 +4,17 @@
 //   npm run respaldo
 //   npm run respaldo -- mi-respaldo.json.gz
 //
-// Usa la base de datos de DATABASE_URL (backend/.env). Para respaldar la de produccion, pasarla
-// solo para ese comando (sin guardarla en ningun archivo):
-//   PowerShell:  $env:DATABASE_URL="<External Database URL de Render>"; npm run respaldo
+// Usa la base de datos de DATABASE_URL (backend/.env). Para respaldar la de produccion (Supabase),
+// pasar su cadena de conexion solo para ese comando, sin guardarla en ningun archivo ni en el
+// historial: ver el procedimiento exacto en docs/OPERACION.md §4.
+//
+// El respaldo incluye TODAS las tablas del esquema de Prisma de ESTE codigo. Por eso el codigo y la
+// base deben estar en la misma version de migraciones:
+// - Antes de mergear un PR con migraciones nuevas (por ejemplo la Fase 2, que agrega "sesiones"),
+//   la base de produccion aun no las tiene: el respaldo previo se hace con el codigo de main (o con
+//   pg_dump), no con el de la rama. Si se intenta con el de la rama, el script se DETIENE antes de
+//   leer nada e indica que tabla falta; nunca la salta ni deja un respaldo incompleto.
+// - Despues del deploy (migraciones aplicadas), este script respalda tambien "sesiones".
 //
 // IMPORTANTE: el archivo contiene datos personales y contraseñas cifradas. Guardarlo en un lugar
 // privado; no subirlo a GitHub (la carpeta respaldos/ ya esta ignorada por git).
@@ -15,7 +23,13 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { PrismaClient } from "@prisma/client";
-import { ArchivoRespaldo, describirModelos, FORMATO_RESPALDO, ordenarPorDependencias } from "../src/lib/respaldo";
+import {
+  ArchivoRespaldo,
+  describirModelos,
+  FORMATO_RESPALDO,
+  ordenarPorDependencias,
+  verificarTablasDelEsquema,
+} from "../src/lib/respaldo";
 
 const prisma = new PrismaClient({ log: ["error"] });
 
@@ -30,6 +44,11 @@ function nombreDeArchivo(): string {
 
 async function main() {
   const modelos = ordenarPorDependencias(describirModelos());
+  // El esquema del codigo debe coincidir con la base (si no, se detiene: ver el comentario de arriba).
+  const tablasDeLaBase = await prisma.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename FROM pg_tables WHERE schemaname = current_schema()`;
+  verificarTablasDelEsquema(modelos, tablasDeLaBase.map((t) => t.tablename));
+
   const tablas: ArchivoRespaldo["tablas"] = {};
   const conteos: ArchivoRespaldo["conteos"] = {};
 

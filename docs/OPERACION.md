@@ -17,7 +17,8 @@ Complementa [`PUESTA_EN_MARCHA.md`](PUESTA_EN_MARCHA.md) (preparar un condominio
 
 1. CI verde en el PR (lint, unitarias, frontend, integración, E2E, build, auditoría, gitleaks, CodeQL).
 2. Si el PR trae migraciones, leer el SQL y su sección de rollback (ver §3).
-3. Respaldo de producción (§4) si hay migraciones.
+3. Si hay migraciones: respaldo de producción **con el código de `main`, no con el de la rama**
+   (§4.3), o con `pg_dump` (§4.4). Comprobar que terminó sin error y guardar los conteos.
 4. Merge **squash** desde GitHub.
 
 ### Después del merge (👤)
@@ -69,27 +70,166 @@ DELETE FROM "_prisma_migrations" WHERE migration_name IN ('20261116010000_indice
 
 **Estado real hoy:** existe el respaldo **manual** `npm run respaldo` (archivo `.json.gz` con todas
 las tablas, en una sola transacción de lectura) y `npm run restaurar` (solo sobre una base vacía,
-compara conteos al final). **No hay respaldos automáticos configurados por este proyecto.** Supabase
-ofrece respaldos diarios según su plan: 👤 verificar en *Project Settings → Database → Backups* qué
-incluye el plan contratado antes del piloto.
+compara conteos al final). **No hay respaldos automáticos configurados por este proyecto.** Según
+la página de precios de Supabase, el plan **Free no incluye respaldos automáticos** (los diarios
+son de los planes pagados): 👤 confirmar en *Database → Backups* del proyecto antes de contar con
+ellos.
 
-Procedimiento (👤, semanal y antes de cada cambio con migraciones):
+### 4.1 Regla: el código y la base deben estar en la misma versión de migraciones
+
+`npm run respaldo` respalda **todas las tablas del esquema de Prisma del código que lo ejecuta**.
+Si ese código es más nuevo que la base (trae migraciones que la base aún no tiene), el script **se
+detiene antes de leer nada**, sin crear archivo, con un mensaje como:
+
+```
+No se pudo crear el respaldo: La base de datos no tiene la tabla sesiones, que este código sí espera. …
+```
+
+Nunca salta la tabla ni deja un respaldo incompleto. `npm run restaurar` hace la misma comprobación
+antes de escribir. Verificado el 2026-11-16 con bases locales (esquema de `main` frente al de la
+Fase 2).
+
+| Momento | ¿La base de producción tiene `sesiones`? | Cómo respaldar |
+|---|---|---|
+| **Antes del merge de la Fase 2** (o de cualquier PR con migraciones) | No | Con el código de **`main`** (§4.3, recomendado) o con **`pg_dump`** (§4.4). **No** con el de la rama |
+| **Después** de que el deploy aplicó las migraciones | Sí | Con el código de `main`, que ya es la Fase 2. El archivo incluye `sesiones` (solo hashes de tokens) |
+
+### 4.2 Cadena de conexión de producción (sin guardarla en ningún lado)
+
+- Origen: **Supabase** → proyecto → **Connect** → *Session pooler* (puerto **5432**, funciona con
+  IPv4). No usar el *Transaction pooler* (puerto 6543) para respaldos. Reemplazar
+  `[YOUR-PASSWORD]` por la contraseña de la base (está en el gestor de contraseñas del responsable).
+- La base ya **no está en Render**: no buscar ninguna «External Database URL» en Render.
+- Se escribe en una variable **de la sesión de la terminal**, pedida con un campo oculto: no queda en
+  archivos, ni en `.env`, ni en el historial de comandos. Al terminar se borra.
+
+PowerShell:
+
+```powershell
+$env:DATABASE_URL = Read-Host "Cadena de Supabase (session pooler)" -MaskInput   # PowerShell 7
+# En Windows PowerShell 5.1 (no tiene -MaskInput):
+#   $s = Read-Host "Cadena de Supabase (session pooler)" -AsSecureString
+#   $env:DATABASE_URL = [System.Net.NetworkCredential]::new("", $s).Password; Remove-Variable s
+npm run respaldo -- "$HOME\RespaldosHabitaSmart\respaldo-AAAAMMDD.json.gz"
+Remove-Item Env:DATABASE_URL
+```
+
+Bash:
 
 ```bash
-# desde backend/, sin guardar la URL en ningún archivo
-DATABASE_URL="<URL de Supabase>" npm run respaldo
+read -rsp "Cadena de Supabase (session pooler): " DATABASE_URL; echo; export DATABASE_URL
+npm run respaldo -- ~/RespaldosHabitaSmart/respaldo-AAAAMMDD.json.gz
+unset DATABASE_URL
 ```
+
+Una variable de entorno ya definida tiene prioridad sobre `backend/.env` (que apunta a la base
+local): el comando usa Supabase solo mientras exista la variable.
+
+### 4.3 Respaldo previo al merge con el código de `main` (recomendado)
+
+Por qué: produce el mismo formato que carga `npm run restaurar`, y el cliente de Prisma de `main` no
+incluye `Sesion`, igual que la base actual. Se usa una carpeta aparte (`git worktree`) para no
+tocar la rama de trabajo.
+
+PowerShell (desde la carpeta del repositorio, `Proyecto de Titulo`):
+
+```powershell
+git fetch origin
+git worktree add --detach ..\habitasmart-main origin/main
+cd ..\habitasmart-main
+npm ci -w backend --include-workspace-root=false
+cd backend
+npx prisma generate
+# definir $env:DATABASE_URL como en §4.2 y luego:
+npm run respaldo -- "$HOME\RespaldosHabitaSmart\respaldo-antes-fase2.json.gz"
+Remove-Item Env:DATABASE_URL
+cd "..\..\Proyecto de Titulo"
+git worktree remove ..\habitasmart-main
+```
+
+Bash:
+
+```bash
+git fetch origin
+git worktree add --detach ../habitasmart-main origin/main
+cd ../habitasmart-main && npm ci -w backend --include-workspace-root=false && cd backend && npx prisma generate
+# definir DATABASE_URL como en §4.2 y luego:
+npm run respaldo -- ~/RespaldosHabitaSmart/respaldo-antes-fase2.json.gz
+unset DATABASE_URL
+cd "../../Proyecto de Titulo" && git worktree remove ../habitasmart-main
+```
+
+- El archivo se guarda **fuera** de la carpeta temporal (en `RespaldosHabitaSmart`), así no se
+  pierde al quitar el *worktree*.
+- Si `npm ci` muestra un aviso de *allow-scripts*, es normal: `npx prisma generate` hace lo que
+  faltaba.
+- Comprobar que termina con «Respaldo creado: … (N registros)» y anotar los conteos por tabla.
+  **No** debe aparecer `Sesion` (la base aún no la tiene).
+
+### 4.4 Alternativa o complemento: `pg_dump`
+
+Por qué: no depende del código de la aplicación y copia la base tal cual (estructura, datos y la
+tabla `_prisma_migrations`). Requiere las herramientas cliente de PostgreSQL con versión **igual o
+mayor** que la de Supabase (ver *Database → Settings*); en este equipo está PostgreSQL 17.
+`--schema=public` deja fuera los esquemas internos de Supabase (`auth`, `storage`…), que la
+aplicación no usa.
+
+PowerShell:
+
+```powershell
+$pg = "C:\Program Files\PostgreSQL\17\bin"
+$env:DATABASE_URL = Read-Host "Cadena de Supabase (session pooler)" -MaskInput   # o la variante 5.1 de §4.2
+& "$pg\pg_dump.exe" --format=custom --schema=public --no-owner --no-privileges `
+  --file "$HOME\RespaldosHabitaSmart\antes-fase2.dump" --dbname $env:DATABASE_URL
+Remove-Item Env:DATABASE_URL
+& "$pg\pg_restore.exe" --list "$HOME\RespaldosHabitaSmart\antes-fase2.dump" | Select-String "TABLE DATA"
+```
+
+Bash:
+
+```bash
+read -rsp "Cadena de Supabase (session pooler): " DATABASE_URL; echo; export DATABASE_URL
+pg_dump --format=custom --schema=public --no-owner --no-privileges \
+  --file ~/RespaldosHabitaSmart/antes-fase2.dump --dbname "$DATABASE_URL"
+unset DATABASE_URL
+pg_restore --list ~/RespaldosHabitaSmart/antes-fase2.dump | grep "TABLE DATA"
+```
+
+La lista debe mostrar los datos de todas las tablas (`usuarios`, `reservas`, …) y **no** `sesiones`.
+Crear antes la carpeta `RespaldosHabitaSmart` (`pg_dump` no la crea; `npm run respaldo` sí).
+
+### 4.5 Respaldo de Supabase (solo si el plan lo incluye)
+
+Sirve como respaldo previo **solo si** 👤 en *Database → Backups* aparece un respaldo con fecha y
+hora posteriores al último cambio de datos que importe. En el plan Free no existe: usar §4.3 o §4.4.
+
+### 4.6 Compatibilidad al restaurar
+
+- **Respaldo anterior a la Fase 2 → base nueva con la Fase 2:** funciona. Crear la base vacía,
+  aplicar las migraciones del código actual y restaurar; `sesiones` queda **vacía** (cada persona
+  inicia sesión de nuevo). Verificado el 2026-11-16 en local: 74 registros, todos los conteos
+  iguales, `sesiones = 0`.
+  - Desde `.json.gz`: `npm run prisma:migrate:deploy` y luego `npm run restaurar -- <archivo>.json.gz`.
+  - Desde `.dump`: `pg_restore --clean --if-exists --no-owner --no-privileges --dbname <base vacía>
+    <archivo>.dump` y luego `npm run prisma:migrate:deploy`, que aplica solo las 2 migraciones de la
+    Fase 2 (también verificado).
+- **Respaldo de la Fase 2 → base sin migrar:** no se puede. `restaurar` se detiene antes de escribir
+  porque falta `sesiones`.
+
+### 4.7 Custodia
 
 - El archivo contiene datos personales y hashes de contraseñas: guardarlo **cifrado** (por ejemplo, en
   una carpeta de un disco cifrado o un archivo 7-Zip con AES-256 y contraseña larga) y fuera del
-  computador (al menos 3 copias, una fuera del lugar). Nunca en GitHub (la carpeta está ignorada).
+  computador (al menos 3 copias, una fuera del lugar). Nunca en GitHub (la carpeta `respaldos/` está
+  ignorada).
+- Frecuencia: semanal y **antes de cada merge con migraciones** (según §4.1).
 - Retención propuesta: 4 respaldos semanales + 3 mensuales. Borrar los más antiguos de forma segura.
 
 ### Verificación de restauración (👤, al menos una vez al mes)
 
 1. Crear una base vacía de prueba (local o en Supabase, nombre terminado en `_demo`).
-2. `DATABASE_URL=<base vacía> npm run prisma:migrate:deploy`
-3. `DATABASE_URL=<base vacía> npm run restaurar -- respaldos/<archivo>.json.gz`
+2. Con `DATABASE_URL` apuntando a esa base (nunca a la de producción): `npm run prisma:migrate:deploy`
+3. `npm run restaurar -- <archivo>.json.gz`
 4. El script compara los conteos por tabla; deben coincidir. Anotar fecha y resultado.
 5. Borrar la base de prueba.
 
@@ -97,7 +237,7 @@ DATABASE_URL="<URL de Supabase>" npm run respaldo
 
 | Indicador | Objetivo | Con qué se logra |
 |---|---|---|
-| RPO (datos que se pueden perder) | ≤ 24 h | Respaldo diario de Supabase (verificar plan) + respaldo manual semanal |
+| RPO (datos que se pueden perder) | ≤ 24 h | Respaldo diario de Supabase (solo planes pagados; verificar) + respaldo manual semanal |
 | RTO (tiempo para volver a operar) | ≤ 4 h | Nueva base + `migrate deploy` + `restaurar` + cambiar `DATABASE_URL` en Render |
 
 ## 5. Escenarios de falla

@@ -152,7 +152,7 @@ aplicaron solo en las bases locales de desarrollo y de prueba; **no en producci�
 |---|---|---|
 | Cuentas demo con contraseña pública activas en producción | Medio (bajo durante la defensa) | 👤 `npm run deshabilitar-demo` antes del piloto |
 | SOS en modo real en producción | Alto **solo si** alguien lo prueba | 👤 `SOS_MODO_DEMO=true` antes de la defensa; checklist |
-| Respaldo automático no verificado | Medio | 👤 verificar plan de Supabase; respaldo manual semanal |
+| Respaldo automático no verificado (el plan Free de Supabase no lo incluye) | Medio | 👤 verificar plan de Supabase; respaldo manual semanal (`OPERACION.md` §4) |
 | Plan gratuito (servidor dormido) | Medio para piloto | 👤 plan pagado para el piloto |
 | Idempotencia del SOS por ventana (no única) | Bajo | Límite por usuario; documentado |
 | Archivos en la base | Bajo para un condominio | ADR 0003 |
@@ -174,7 +174,8 @@ aplicaron solo en las bases locales de desarrollo y de prueba; **no en producci�
 
 ## 11. Pendientes reales
 
-- **Bloqueantes de defensa (acción humana):** merge del PR; `SOS_MODO_DEMO=true` y
+- **Bloqueantes de defensa (acción humana):** respaldo de producción **antes** del merge con el
+  código de `main` o con `pg_dump` (`OPERACION.md` §4.3/§4.4; no con el de esta rama); merge del PR; `SOS_MODO_DEMO=true` y
   `MOSTRAR_CUENTAS_DEMO=true` en Render; verificar `/api/config`; ensayo y video de respaldo.
 - **Bloqueantes de piloto:** los del punto 10.1; automatizar la retención; definir el
   procedimiento de solicitudes de datos personales.

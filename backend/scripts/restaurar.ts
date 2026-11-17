@@ -3,13 +3,24 @@
 // Uso (desde la carpeta backend), con la base nueva ya migrada (npm run prisma:migrate:deploy):
 //   npm run restaurar -- respaldos/respaldo-20261003-1700.json.gz
 //
+// Un respaldo de una version anterior (por ejemplo, de antes de la Fase 2, sin la tabla "sesiones")
+// se puede restaurar en una base migrada con la version actual: las tablas que no estaban en el
+// respaldo quedan vacias (las sesiones se crean al iniciar sesion). Lo contrario no: si la base de
+// destino no tiene todas las tablas del esquema, se detiene antes de escribir.
+//
 // Por seguridad se niega a escribir si la base de destino ya tiene datos: restaurar encima de una
 // base en uso mezclaria registros. Al terminar compara los conteos con los del respaldo.
 
 import fs from "node:fs";
 import zlib from "node:zlib";
 import { PrismaClient } from "@prisma/client";
-import { describirModelos, ordenarPorDependencias, reconstruirFila, validarArchivo } from "../src/lib/respaldo";
+import {
+  describirModelos,
+  ordenarPorDependencias,
+  reconstruirFila,
+  validarArchivo,
+  verificarTablasDelEsquema,
+} from "../src/lib/respaldo";
 
 const prisma = new PrismaClient({ log: ["error"] });
 const LOTE = 25; // filas con fotos y documentos en base64 pesan: lotes chicos
@@ -30,6 +41,10 @@ async function main() {
 
   const modelos = ordenarPorDependencias(describirModelos());
   const delegados = prisma as unknown as Record<string, Delegado>;
+
+  const tablasDeLaBase = await prisma.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename FROM pg_tables WHERE schemaname = current_schema()`;
+  verificarTablasDelEsquema(modelos, tablasDeLaBase.map((t) => t.tablename));
 
   for (const modelo of modelos) {
     const existentes = await delegados[modelo.delegado].count();
