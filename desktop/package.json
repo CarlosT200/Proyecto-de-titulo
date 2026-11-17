@@ -8,6 +8,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test": "node --test destinos.test.js",
     "icono": "node scripts/make-icon.js",
     "dist": "electron-builder --win"
   },
@@ -26,6 +27,7 @@
     },
     "files": [
       "main.js",
+      "destinos.js",
       "loading.html",
       "offline.html",
       "assets/**/*"
