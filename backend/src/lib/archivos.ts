@@ -6,25 +6,47 @@ import { AppError } from "./errors";
 // --- Verificacion del contenido real de un archivo subido ---------------------------------------
 // multer solo conoce el tipo que declara el navegador, que cualquiera puede falsear. Se comprueban
 // los primeros bytes (la "firma" de cada formato) para que un archivo no se haga pasar por otro.
-const FIRMAS: Record<string, (b: Buffer) => boolean> = {
-  "application/pdf": (b) => b.subarray(0, 5).toString("latin1") === "%PDF-",
-  "image/png": (b) => b.length >= 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
-  "image/jpeg": (b) => b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
-  "image/webp": (b) => b.length >= 12 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WEBP",
-};
+const FIRMA_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-// El MIME viene de fuera (navegador o data URI guardado): solo se usan claves PROPIAS de la tabla.
-// Sin esta comprobacion, "constructor" o "__proto__" devolverian funciones heredadas de Object y se
-// ejecutarian como si fueran una firma (alerta js/unvalidated-dynamic-method-call de CodeQL).
+function esPdf(b: Buffer): boolean {
+  return b.subarray(0, 5).toString("latin1") === "%PDF-";
+}
+
+function esPng(b: Buffer): boolean {
+  return b.length >= 8 && b.subarray(0, 8).equals(FIRMA_PNG);
+}
+
+function esJpeg(b: Buffer): boolean {
+  return b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+}
+
+function esWebp(b: Buffer): boolean {
+  return b.length >= 12 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WEBP";
+}
+
+// El MIME viene de fuera (navegador o data URI guardado), asi que NO decide que funcion se ejecuta:
+// cada tipo permitido llama a su verificador con una llamada fija, y cualquier otro valor
+// (incluidos "constructor", "__proto__" o "toString") cae en default y devuelve false.
+export function coincideConTipo(buffer: Buffer, mime: string): boolean {
+  switch (mime) {
+    case "application/pdf":
+      return esPdf(buffer);
+    case "image/png":
+      return esPng(buffer);
+    case "image/jpeg":
+      return esJpeg(buffer);
+    case "image/webp":
+      return esWebp(buffer);
+    default:
+      return false;
+  }
+}
+
+// Para la tabla de extensiones (solo datos, no funciones) se usan unicamente claves PROPIAS: asi
+// "constructor" o "__proto__" no devuelven valores heredados de Object.
 // (Equivale a Object.hasOwn, que no esta en la lib ES2021 del tsconfig.)
 function esClavePropia(objeto: object, clave: string): boolean {
   return Object.prototype.hasOwnProperty.call(objeto, clave);
-}
-
-export function coincideConTipo(buffer: Buffer, mime: string): boolean {
-  if (typeof mime !== "string" || !esClavePropia(FIRMAS, mime)) return false;
-  const verificar = FIRMAS[mime];
-  return typeof verificar === "function" && verificar(buffer) === true;
 }
 
 const EXTENSIONES: Record<string, string> = {
